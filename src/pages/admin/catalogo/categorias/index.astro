@@ -1,0 +1,13 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import CategoriasCrud from '@/components/admin/categorias/CategoriasCrud';
+import { listCategorias } from '@/lib/categorias';
+
+export const prerender = false;
+
+const items = await listCategorias();
+---
+
+<AdminLayout title="Categorías">
+	<CategoriasCrud client:load initialItems={items} />
+</AdminLayout>

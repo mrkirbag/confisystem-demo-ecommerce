@@ -1,0 +1,211 @@
+---
+import { FONT_OPTIONS, type TiendaPersonalizacionInput } from '@/lib/tienda';
+
+interface Props {
+	values: TiendaPersonalizacionInput;
+}
+
+const { values } = Astro.props;
+
+const colors = [
+	{ name: 'color_primario', label: 'Primario', hint: 'Botones, menú activo y acentos' },
+	{ name: 'color_secundario', label: 'Secundario', hint: 'Barra de menú y tarjetas' },
+	{ name: 'color_fondo', label: 'Fondo', hint: 'Lienzo del contenido' },
+	{ name: 'color_texto', label: 'Texto', hint: 'Títulos y párrafos' },
+] as const;
+---
+
+<form
+	class="admin-form"
+	data-theme-form
+	action="/api/admin/personalizacion"
+>
+	<div class="admin-form__alert" role="alert" data-form-alert hidden></div>
+
+	<section class="admin-form__card">
+		<h2 class="admin-form__legend">Colores</h2>
+		<div class="admin-theme__colors">
+			{
+				colors.map((color) => (
+					<label class="admin-theme__swatch">
+						<span>{color.label}</span>
+						<small class="admin-form__hint">{color.hint}</small>
+						<div class="admin-theme__swatch-row">
+							<input
+								class="admin-theme__picker"
+								type="color"
+								value={values[color.name]}
+								data-color-picker={color.name}
+								aria-label={`${color.label} (selector)`}
+							/>
+							<input
+								class="admin-form__input admin-theme__hex"
+								type="text"
+								name={color.name}
+								required
+								maxlength="7"
+								value={values[color.name]}
+								data-color-hex={color.name}
+							/>
+						</div>
+					</label>
+				))
+			}
+		</div>
+	</section>
+
+	<section class="admin-form__card">
+		<h2 class="admin-form__legend">Tipografías</h2>
+		<div class="admin-form__grid">
+			<label class="admin-form__field">
+				Títulos
+				<select class="admin-form__input" name="fuente_titulos" data-font-titulos>
+					{
+						FONT_OPTIONS.map((font) => (
+							<option value={font} selected={font === values.fuente_titulos}>
+								{font}
+							</option>
+						))
+					}
+				</select>
+			</label>
+
+			<label class="admin-form__field">
+				Cuerpo
+				<select class="admin-form__input" name="fuente_cuerpo" data-font-cuerpo>
+					{
+						FONT_OPTIONS.map((font) => (
+							<option value={font} selected={font === values.fuente_cuerpo}>
+								{font}
+							</option>
+						))
+					}
+				</select>
+			</label>
+		</div>
+	</section>
+
+	<section
+		class="admin-theme__preview"
+		data-theme-preview
+		style={`--preview-primario:${values.color_primario};--preview-secundario:${values.color_secundario};--preview-fondo:${values.color_fondo};--preview-texto:${values.color_texto};--preview-titulos:'${values.fuente_titulos}', sans-serif;--preview-cuerpo:'${values.fuente_cuerpo}', sans-serif;`}
+	>
+		<p class="admin-theme__preview-kicker">Vista previa</p>
+		<div class="admin-theme__preview-card">
+			<h3 data-preview-title>Tu tienda, con esta identidad</h3>
+			<p data-preview-body>Fondo en el contenido, secundario en el menú y las tarjetas, primario en el botón y texto en las letras.</p>
+			<button type="button" tabindex="-1">Pedir por WhatsApp</button>
+		</div>
+	</section>
+
+	<div class="admin-form__actions">
+		<button type="submit" class="admin-btn admin-btn--primary" data-form-submit>
+			<span data-btn-label>Guardar cambios</span>
+		</button>
+	</div>
+</form>
+
+<script>
+	const form = document.querySelector('[data-theme-form]');
+	const alertBox = document.querySelector('[data-form-alert]');
+	const submitBtn = document.querySelector('[data-form-submit]');
+	const label = document.querySelector('[data-btn-label]');
+	const preview = document.querySelector('[data-theme-preview]');
+	const titlePreview = document.querySelector('[data-preview-title]');
+	const bodyPreview = document.querySelector('[data-preview-body]');
+
+	if (label instanceof HTMLElement) {
+		label.dataset.idle = label.textContent || 'Guardar cambios';
+	}
+
+	function showAlert(message: string) {
+		if (!(alertBox instanceof HTMLElement)) return;
+		alertBox.hidden = false;
+		alertBox.textContent = message;
+		alertBox.classList.add('is-visible');
+	}
+
+	function setLoading(isLoading: boolean) {
+		if (!(submitBtn instanceof HTMLButtonElement) || !(label instanceof HTMLElement)) return;
+		submitBtn.disabled = isLoading;
+		submitBtn.setAttribute('aria-busy', String(isLoading));
+		label.textContent = isLoading ? 'Guardando…' : label.dataset.idle || 'Guardar cambios';
+	}
+
+	function syncPair(name: string, value: string) {
+		const picker = document.querySelector(`[data-color-picker="${name}"]`);
+		const hex = document.querySelector(`[data-color-hex="${name}"]`);
+		if (picker instanceof HTMLInputElement) picker.value = value;
+		if (hex instanceof HTMLInputElement) hex.value = value;
+	}
+
+	function updatePreview() {
+		if (!(preview instanceof HTMLElement) || !(form instanceof HTMLFormElement)) return;
+		const data = new FormData(form);
+		const primario = String(data.get('color_primario') || '');
+		const secundario = String(data.get('color_secundario') || '');
+		const fondo = String(data.get('color_fondo') || '');
+		const texto = String(data.get('color_texto') || '');
+		const titulos = String(data.get('fuente_titulos') || 'Poppins');
+		const cuerpo = String(data.get('fuente_cuerpo') || 'Inter');
+
+		preview.style.setProperty('--preview-primario', primario);
+		preview.style.setProperty('--preview-secundario', secundario);
+		preview.style.setProperty('--preview-fondo', fondo);
+		preview.style.setProperty('--preview-texto', texto);
+		preview.style.setProperty('--preview-titulos', `'${titulos}', sans-serif`);
+		preview.style.setProperty('--preview-cuerpo', `'${cuerpo}', sans-serif`);
+
+		if (titlePreview instanceof HTMLElement) titlePreview.style.fontFamily = `'${titulos}', sans-serif`;
+		if (bodyPreview instanceof HTMLElement) bodyPreview.style.fontFamily = `'${cuerpo}', sans-serif`;
+	}
+
+	document.querySelectorAll('[data-color-picker]').forEach((picker) => {
+		picker.addEventListener('input', () => {
+			if (!(picker instanceof HTMLInputElement)) return;
+			const name = picker.dataset.colorPicker;
+			if (name) syncPair(name, picker.value);
+			updatePreview();
+		});
+	});
+
+	document.querySelectorAll('[data-color-hex]').forEach((hex) => {
+		hex.addEventListener('input', () => {
+			if (!(hex instanceof HTMLInputElement)) return;
+			const value = hex.value.trim();
+			if (!/^#([0-9a-fA-F]{6})$/.test(value)) return;
+			const name = hex.dataset.colorHex;
+			if (name) syncPair(name, value);
+			updatePreview();
+		});
+	});
+
+	form?.addEventListener('change', updatePreview);
+
+	form?.addEventListener('submit', async (event) => {
+		event.preventDefault();
+		if (!(form instanceof HTMLFormElement)) return;
+
+		setLoading(true);
+		try {
+			const response = await fetch('/api/admin/personalizacion', {
+				method: 'PUT',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(Object.fromEntries(new FormData(form).entries())),
+			});
+			const payload = await response.json().catch(() => ({}));
+			if (!response.ok) {
+				showAlert(payload.error || 'No se pudo guardar.');
+				setLoading(false);
+				return;
+			}
+			window.location.assign(payload.redirect || '/admin/configuracion/identidad-visual?ok=updated');
+		} catch {
+			showAlert('No se pudo guardar. Revisa la conexión.');
+			setLoading(false);
+		}
+	});
+</script>

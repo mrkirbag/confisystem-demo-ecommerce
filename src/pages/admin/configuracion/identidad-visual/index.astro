@@ -1,0 +1,32 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
+import PersonalizacionForm from '@/components/admin/PersonalizacionForm.astro';
+import { FONT_OPTIONS, getTiendaPersonalizacion } from '@/lib/tienda';
+
+export const prerender = false;
+
+const ok = Astro.url.searchParams.get('ok');
+const theme = await getTiendaPersonalizacion();
+const allFontsHref = `https://fonts.googleapis.com/css2?${FONT_OPTIONS.map(
+	(name) => `family=${name.replace(/\s+/g, '+')}:wght@400;600;700`,
+).join('&')}&display=swap`;
+---
+
+<AdminLayout title="Identidad Visual">
+	<link rel="stylesheet" href={allFontsHref} />
+	<section>
+		<AdminSectionHeader title="Identidad Visual" kicker="Configuración" />
+		{ok === 'updated' && <div class="admin-flash">Cambios guardados.</div>}
+		<PersonalizacionForm
+			values={{
+				color_primario: theme.color_primario,
+				color_secundario: theme.color_secundario,
+				color_fondo: theme.color_fondo,
+				color_texto: theme.color_texto,
+				fuente_titulos: theme.fuente_titulos,
+				fuente_cuerpo: theme.fuente_cuerpo,
+			}}
+		/>
+	</section>
+</AdminLayout>

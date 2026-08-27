@@ -1,0 +1,38 @@
+{
+  "name": "demo-ecommerce",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "db:seed-admin": "node scripts/seed-admin.mjs"
+  },
+  "dependencies": {
+    "@astrojs/netlify": "^8.2.0",
+    "@astrojs/react": "^6.0.2",
+    "@aws-sdk/client-s3": "^3.1106.0",
+    "@libsql/client": "^0.17.4",
+    "astro": "^7.2.0",
+    "bcryptjs": "^3.0.3",
+    "canvas-confetti": "^1.9.4",
+    "dotenv": "^17.4.2",
+    "jose": "^6.2.8",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^1.30.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "recharts": "^3.10.1",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4"
+  }
+}

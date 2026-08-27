@@ -1,0 +1,360 @@
+---
+import type { TiendaConfiguracionInput } from '@/lib/tienda';
+
+interface Props {
+	values?: Partial<TiendaConfiguracionInput>;
+	logoUrl?: string | null;
+}
+
+const { values = {}, logoUrl = null } = Astro.props;
+
+function val(key: keyof TiendaConfiguracionInput) {
+	return values[key] ?? '';
+}
+---
+
+<form class="admin-form" data-admin-form data-method="PUT" action="/api/admin/tienda">
+	<div class="admin-form__alert" role="alert" data-form-alert hidden></div>
+
+	<section class="admin-form__card">
+		<h2 class="admin-form__legend">Identidad</h2>
+		<div class="admin-form__grid">
+			<label class="admin-form__field admin-form__field--full">
+				Nombre de la tienda
+				<input
+					class="admin-form__input"
+					type="text"
+					name="nombre_tienda"
+					required
+					maxlength="120"
+					placeholder="Mi tienda"
+					value={val('nombre_tienda')}
+				/>
+			</label>
+
+			<label class="admin-form__field">
+				RIF
+				<input
+					class="admin-form__input"
+					type="text"
+					name="rif"
+					maxlength="20"
+					placeholder="J-00000000-0"
+					value={val('rif')}
+				/>
+			</label>
+
+			<label class="admin-form__field">
+				Horario
+				<input
+					class="admin-form__input"
+					type="text"
+					name="horario"
+					maxlength="120"
+					placeholder="Lun–Sáb 9:00–18:00"
+					value={val('horario')}
+				/>
+			</label>
+		</div>
+	</section>
+
+	<section class="admin-form__card">
+		<h2 class="admin-form__legend">Contacto</h2>
+		<div class="admin-form__grid">
+			<label class="admin-form__field">
+				Teléfono
+				<input
+					class="admin-form__input"
+					type="tel"
+					name="telefono"
+					maxlength="30"
+					placeholder="0412-0000000"
+					value={val('telefono')}
+				/>
+			</label>
+
+			<label class="admin-form__field">
+				WhatsApp
+				<input
+					class="admin-form__input"
+					type="tel"
+					name="whatsapp"
+					maxlength="20"
+					placeholder="584120000000"
+					value={val('whatsapp')}
+				/>
+			</label>
+
+			<label class="admin-form__field admin-form__field--full">
+				Correo
+				<input
+					class="admin-form__input"
+					type="email"
+					name="correo"
+					maxlength="160"
+					placeholder="hola@mitienda.com"
+					value={val('correo')}
+				/>
+			</label>
+
+			<label class="admin-form__field admin-form__field--full">
+				Dirección
+				<textarea
+					class="admin-form__input admin-form__textarea"
+					name="direccion"
+					rows="3"
+					maxlength="240"
+					placeholder="Calle, sector, ciudad"
+				>{val('direccion')}</textarea>
+			</label>
+		</div>
+	</section>
+
+	<section class="admin-form__card">
+		<h2 class="admin-form__legend">Redes y marca</h2>
+		<div class="admin-form__grid">
+			<label class="admin-form__field">
+				Instagram
+				<input
+					class="admin-form__input"
+					type="text"
+					name="instagram"
+					maxlength="80"
+					placeholder="@mitienda"
+					value={val('instagram')}
+				/>
+			</label>
+
+			<label class="admin-form__field">
+				TikTok
+				<input
+					class="admin-form__input"
+					type="text"
+					name="tiktok"
+					maxlength="80"
+					placeholder="@mitienda"
+					value={val('tiktok')}
+				/>
+			</label>
+
+			<div class="admin-form__field admin-form__field--full">
+				<span>Logo</span>
+				<div
+					class:list={['admin-upload', { 'has-file': Boolean(logoUrl) }]}
+					data-logo-drop
+				>
+					<div class="admin-upload__preview" data-logo-preview>
+						{
+							logoUrl ? (
+								<img src={logoUrl} alt="Logo actual" />
+							) : (
+								<span class="admin-upload__placeholder" aria-hidden="true">
+									<svg viewBox="0 0 24 24" fill="none">
+										<rect x="3.5" y="5" width="17" height="14" rx="2.2" stroke="currentColor" stroke-width="1.6"></rect>
+										<circle cx="9" cy="10.2" r="1.5" stroke="currentColor" stroke-width="1.6"></circle>
+										<path
+											d="M7.5 16.5 11 13l2.2 2.1 1.6-1.8 3.7 3.2"
+											stroke="currentColor"
+											stroke-width="1.6"
+											stroke-linecap="round"
+											stroke-linejoin="round"></path>
+									</svg>
+								</span>
+							)
+						}
+					</div>
+
+					<div class="admin-upload__body">
+						<p class="admin-upload__title">Arrastra una imagen o selecciónala</p>
+						<p class="admin-upload__name" data-logo-name>
+							{logoUrl ? 'Logo actual de la tienda' : 'Ningún archivo seleccionado'}
+						</p>
+						<label class="admin-btn admin-btn--ghost admin-upload__cta">
+							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+								<path
+									d="M12 16V7m0 0 3.2 3.2M12 7 8.8 10.2"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"></path>
+								<path
+									d="M5 16.5V18a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 18v-1.5"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"></path>
+							</svg>
+							Seleccionar imagen
+							<input
+								class="admin-upload__input"
+								type="file"
+								accept="image/jpeg,image/png,image/webp,image/avif"
+								data-logo-file
+							/>
+						</label>
+						<p class="admin-form__hint">JPG, PNG, WebP o AVIF · máx. 5 MB · se optimiza a WebP</p>
+					</div>
+					<input type="hidden" name="logo_url" value={logoUrl ?? ''} data-logo-url />
+				</div>
+			</div>
+
+			<label class="admin-form__field admin-form__field--full">
+				Google Analytics
+				<input
+					class="admin-form__input"
+					type="text"
+					name="google_analytics"
+					maxlength="40"
+					placeholder="G-XXXXXXXXXX"
+					value={val('google_analytics')}
+				/>
+			</label>
+		</div>
+	</section>
+
+	<div class="admin-form__actions">
+		<button type="submit" class="admin-btn admin-btn--primary" data-form-submit>
+			<span data-btn-label>Guardar cambios</span>
+		</button>
+	</div>
+</form>
+
+<script>
+	const form = document.querySelector('[data-admin-form]');
+	const alertBox = document.querySelector('[data-form-alert]');
+	const submitBtn = document.querySelector('[data-form-submit]');
+	const label = document.querySelector('[data-btn-label]');
+	const logoFile = document.querySelector('[data-logo-file]');
+	const logoUrlInput = document.querySelector('[data-logo-url]');
+	const logoPreview = document.querySelector('[data-logo-preview]');
+	const logoDrop = document.querySelector('[data-logo-drop]');
+	const logoName = document.querySelector('[data-logo-name]');
+
+	if (label instanceof HTMLElement) {
+		label.dataset.idle = label.textContent || 'Guardar cambios';
+	}
+
+	function showAlert(message: string) {
+		if (!(alertBox instanceof HTMLElement)) return;
+		alertBox.hidden = false;
+		alertBox.textContent = message;
+		alertBox.classList.add('is-visible');
+		alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+	}
+
+	function setLoading(isLoading: boolean, text?: string) {
+		if (!(submitBtn instanceof HTMLButtonElement) || !(label instanceof HTMLElement)) return;
+		submitBtn.disabled = isLoading;
+		submitBtn.setAttribute('aria-busy', String(isLoading));
+		label.textContent = isLoading
+			? text || 'Guardando…'
+			: label.dataset.idle || 'Guardar cambios';
+	}
+
+	function setLogoPreview(src: string, fileName?: string) {
+		if (!(logoPreview instanceof HTMLElement)) return;
+		logoPreview.replaceChildren();
+		const img = document.createElement('img');
+		img.src = src;
+		img.alt = 'Logo';
+		logoPreview.append(img);
+		logoDrop?.classList.add('has-file');
+		if (logoName instanceof HTMLElement) {
+			logoName.textContent = fileName || 'Logo seleccionado';
+		}
+	}
+
+	function applyLogoFile(file: File) {
+		if (!(logoFile instanceof HTMLInputElement)) return;
+		const transfer = new DataTransfer();
+		transfer.items.add(file);
+		logoFile.files = transfer.files;
+		setLogoPreview(URL.createObjectURL(file), file.name);
+	}
+
+	logoFile?.addEventListener('change', () => {
+		if (!(logoFile instanceof HTMLInputElement)) return;
+		const file = logoFile.files?.[0];
+		if (!file) return;
+		setLogoPreview(URL.createObjectURL(file), file.name);
+	});
+
+	if (logoDrop instanceof HTMLElement) {
+		logoDrop.addEventListener('dragover', (event) => {
+			event.preventDefault();
+			logoDrop.classList.add('is-dragover');
+		});
+		logoDrop.addEventListener('dragleave', () => {
+			logoDrop.classList.remove('is-dragover');
+		});
+		logoDrop.addEventListener('drop', (event) => {
+			event.preventDefault();
+			logoDrop.classList.remove('is-dragover');
+			const file = event.dataTransfer?.files?.[0];
+			if (file) applyLogoFile(file);
+		});
+	}
+
+	form?.addEventListener('submit', async (event) => {
+		event.preventDefault();
+		if (!(form instanceof HTMLFormElement)) return;
+
+		const data = Object.fromEntries(new FormData(form).entries());
+		if (!String(data.nombre_tienda || '').trim()) {
+			showAlert('El nombre de la tienda es obligatorio.');
+			return;
+		}
+
+		setLoading(true);
+
+		try {
+			const file = logoFile instanceof HTMLInputElement ? logoFile.files?.[0] : null;
+			if (file) {
+				setLoading(true, 'Subiendo logo…');
+				const uploadData = new FormData();
+				uploadData.append('kind', 'logo');
+				uploadData.append('file', file);
+
+				const uploaded = await fetch('/api/admin/upload', {
+					method: 'POST',
+					headers: { Accept: 'application/json' },
+					body: uploadData,
+				});
+				const body = (await uploaded.json().catch(() => ({}))) as {
+					error?: string;
+					url?: string;
+				};
+				if (!uploaded.ok || !body.url) {
+					showAlert(body.error || 'No se pudo subir el logo.');
+					setLoading(false);
+					return;
+				}
+
+				data.logo_url = body.url;
+				if (logoUrlInput instanceof HTMLInputElement) logoUrlInput.value = body.url;
+				setLogoPreview(body.url, file.name);
+			}
+
+			setLoading(true, 'Guardando…');
+			const response = await fetch(form.getAttribute('action') || '/api/admin/tienda', {
+				method: 'PUT',
+				headers: {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(data),
+			});
+
+			const payload = await response.json().catch(() => ({}));
+			if (!response.ok) {
+				showAlert(payload.error || 'No se pudo guardar.');
+				setLoading(false);
+				return;
+			}
+
+			window.location.assign(payload.redirect || '/admin/configuracion/tienda?ok=updated');
+		} catch {
+			showAlert('No se pudo guardar. Revisa la conexión.');
+			setLoading(false);
+		}
+	});
+</script>

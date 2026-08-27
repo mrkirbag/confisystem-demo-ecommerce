@@ -1,0 +1,234 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { getTiendaConfig } from '@/lib/tienda';
+
+export const prerender = false;
+
+const error = Astro.url.searchParams.get('error');
+const next = Astro.url.searchParams.get('next') || '/admin';
+const config = await getTiendaConfig();
+const storeName = config.nombre_tienda || 'Demo Tienda';
+const logoUrl = config.logo_url;
+const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
+
+const errorMessage =
+	error === 'invalid'
+		? 'Correo o contraseña incorrectos.'
+		: error === 'missing'
+			? 'Completa correo y contraseña.'
+			: error === 'server'
+				? 'No se pudo iniciar sesión. Revisa la conexión a Turso.'
+				: null;
+---
+
+<AdminLayout title="Iniciar sesión" variant="auth">
+	<section class="admin-login">
+		<div class="admin-login__shell">
+			<aside class="admin-login__brand">
+				<div class="admin-login__brand-mark">
+					{
+						logoUrl ? (
+							<img class="admin-login__logo" src={logoUrl} alt={storeName} />
+						) : (
+							<span class="admin-login__logo-fallback" aria-hidden="true">
+								{initial}
+							</span>
+						)
+					}
+					<div class="admin-login__brand-copy">
+						<p class="admin-login__eyebrow">Panel de administración</p>
+						<p class="admin-login__store">{storeName}</p>
+					</div>
+				</div>
+
+				<div class="admin-login__brand-foot">
+					<p class="admin-login__lead">
+						Gestiona catálogo, inventario y ventas desde un solo lugar.
+					</p>
+					<p class="admin-login__secure">Acceso restringido al equipo</p>
+				</div>
+			</aside>
+
+			<div class="admin-login__panel">
+				<div class="admin-login__panel-head">
+					<h1 class="admin-login__title">Iniciar sesión</h1>
+					<p class="admin-login__subtitle">Ingresa tus credenciales para continuar.</p>
+				</div>
+
+				<div
+					class:list={['admin-login__alert', { 'is-visible': Boolean(errorMessage) }]}
+					role="alert"
+					data-login-alert
+					hidden={!errorMessage}
+				>
+					{errorMessage ?? ''}
+				</div>
+
+				<form class="admin-login__form" method="POST" action="/api/auth/login" data-login-form>
+					<input type="hidden" name="next" value={next} />
+
+					<label class="admin-login__field">
+						Correo electrónico
+						<input
+							class="admin-login__input"
+							type="email"
+							name="correo"
+							autocomplete="username"
+							required
+							placeholder="admin@mitienda.com"
+							data-login-input
+						/>
+					</label>
+
+					<label class="admin-login__field">
+						Contraseña
+						<span class="admin-login__password">
+							<input
+								class="admin-login__input"
+								type="password"
+								name="password"
+								autocomplete="current-password"
+								required
+								placeholder="••••••••"
+								data-login-input
+								data-login-password
+							/>
+							<button
+								type="button"
+								class="admin-login__peek"
+								data-login-peek
+								aria-label="Mostrar contraseña"
+							>
+								Mostrar
+							</button>
+						</span>
+					</label>
+
+					<button type="submit" class="admin-login__submit" data-login-submit>
+						<span class="admin-login__btn-label" data-btn-label>
+							<span>Entrar al panel</span>
+							<svg class="admin-login__btn-arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+								<path
+									d="M4 10h10m0 0-3.5-3.5M14 10l-3.5 3.5"
+									stroke="currentColor"
+									stroke-width="1.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"></path>
+							</svg>
+						</span>
+					</button>
+				</form>
+			</div>
+		</div>
+	</section>
+</AdminLayout>
+
+<script>
+	const form = document.querySelector('[data-login-form]');
+	const submitBtn = document.querySelector('[data-login-submit]');
+	const label = document.querySelector('[data-btn-label]');
+	const alertBox = document.querySelector('[data-login-alert]');
+	const inputs = document.querySelectorAll('[data-login-input]');
+	const passwordInput = document.querySelector('[data-login-password]');
+	const peekBtn = document.querySelector('[data-login-peek]');
+
+	peekBtn?.addEventListener('click', () => {
+		if (!(passwordInput instanceof HTMLInputElement) || !(peekBtn instanceof HTMLButtonElement)) {
+			return;
+		}
+		const hidden = passwordInput.type === 'password';
+		passwordInput.type = hidden ? 'text' : 'password';
+		peekBtn.textContent = hidden ? 'Ocultar' : 'Mostrar';
+		peekBtn.setAttribute('aria-label', hidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+	});
+
+	if (
+		form instanceof HTMLFormElement &&
+		submitBtn instanceof HTMLButtonElement &&
+		label instanceof HTMLElement &&
+		alertBox instanceof HTMLElement
+	) {
+		const idleHtml = label.innerHTML;
+		let messageTimer;
+
+		function setLoading(isLoading) {
+			submitBtn.disabled = isLoading;
+			submitBtn.classList.toggle('is-loading', isLoading);
+			submitBtn.setAttribute('aria-busy', String(isLoading));
+
+			inputs.forEach((input) => {
+				if (input instanceof HTMLInputElement) input.disabled = isLoading;
+			});
+			if (peekBtn instanceof HTMLButtonElement) peekBtn.disabled = isLoading;
+
+			window.clearInterval(messageTimer);
+
+			if (isLoading) {
+				const messages = ['Entrando…', 'Validando acceso…', 'Abriendo el panel…'];
+				let i = 0;
+				label.innerHTML = `<span class="admin-login__spinner" aria-hidden="true"></span><span>${messages[0]}</span>`;
+				messageTimer = window.setInterval(() => {
+					i = (i + 1) % messages.length;
+					const text = label.querySelector('span:last-child');
+					if (text) text.textContent = messages[i];
+				}, 900);
+			} else {
+				label.innerHTML = idleHtml;
+				submitBtn.classList.remove('is-success');
+			}
+		}
+
+		function showError(message) {
+			alertBox.hidden = false;
+			alertBox.textContent = message;
+			alertBox.classList.add('is-visible', 'is-shake');
+			window.setTimeout(() => alertBox.classList.remove('is-shake'), 450);
+		}
+
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+
+			const data = new FormData(form);
+			const correo = String(data.get('correo') ?? '').trim();
+			const password = String(data.get('password') ?? '');
+			const next = String(data.get('next') ?? '/admin');
+
+			if (!correo || !password) {
+				showError('Completa correo y contraseña.');
+				return;
+			}
+
+			setLoading(true);
+
+			try {
+				const response = await fetch('/api/auth/login', {
+					method: 'POST',
+					headers: {
+						Accept: 'application/json',
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ correo, password, next }),
+				});
+
+				const payload = await response.json().catch(() => ({}));
+
+				if (!response.ok) {
+					showError(payload.error || 'Credenciales inválidas');
+					setLoading(false);
+					return;
+				}
+
+				window.clearInterval(messageTimer);
+				submitBtn.classList.add('is-success');
+				label.innerHTML = '<span>¡Listo! Redirigiendo…</span>';
+
+				window.setTimeout(() => {
+					window.location.assign(payload.redirect || next || '/admin');
+				}, 400);
+			} catch {
+				showError('No se pudo iniciar sesión. Revisa la conexión.');
+				setLoading(false);
+			}
+		});
+	}
+</script>

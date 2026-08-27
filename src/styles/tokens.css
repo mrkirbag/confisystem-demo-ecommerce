@@ -1,0 +1,48 @@
+/* Roles de color (tienda_personalizacion)
+   --color-fondo      lienzo del contenido
+   --color-secundario menú lateral y tarjetas
+   --color-primario   botones, estado activo y acentos
+   --color-texto      títulos y cuerpo
+*/
+:root {
+	--color-primario: #0f766e;
+	--color-secundario: #ffffff;
+	--color-fondo: #f3efe6;
+	--color-texto: #1c1917;
+
+	--bg: var(--color-fondo);
+	--ink: var(--color-texto);
+	--panel: var(--color-secundario);
+	--accent: var(--color-primario);
+	--muted: var(--color-texto);
+	--line: color-mix(in srgb, var(--color-texto) 16%, var(--color-fondo));
+	--muted-on-panel: var(--color-texto);
+	--line-on-panel: color-mix(in srgb, var(--color-texto) 16%, var(--color-secundario));
+	--accent-ink: #ffffff;
+	--input-bg: #ffffff;
+	--input-ink: #1c1917;
+	--input-muted: #6b7280;
+	--danger-bg: #fef2f2;
+	--danger-ink: #991b1b;
+	--danger-line: #fecaca;
+	--danger-ink-on-panel: #991b1b;
+	--success-from: #15803d;
+	--success-to: #166534;
+
+	--radius-sm: 0.5rem;
+	--radius-md: 0.75rem;
+	--radius-lg: 1.15rem;
+	--shadow-soft: 0 18px 40px rgba(28, 25, 23, 0.06);
+
+	--font-sans: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	--font-titulos: var(--font-sans);
+	--font-cuerpo: var(--font-sans);
+
+	--admin-sidebar-width: 17.5rem;
+	--admin-mobile-bar-height: 3.75rem;
+
+	--scroll-size: 0.42rem;
+	--scroll-thumb: color-mix(in srgb, var(--color-primario) 38%, transparent);
+	--scroll-thumb-hover: color-mix(in srgb, var(--color-primario) 68%, transparent);
+	--scroll-track: color-mix(in srgb, var(--color-texto) 7%, transparent);
+}

@@ -1,0 +1,12 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
+
+export const prerender = false;
+---
+
+<AdminLayout title="Pedidos">
+	<section>
+		<AdminSectionHeader title="Pedidos" kicker="Ventas" />
+	</section>
+</AdminLayout>

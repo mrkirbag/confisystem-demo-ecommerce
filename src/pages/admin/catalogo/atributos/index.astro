@@ -1,0 +1,13 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import AtributosCrud from '@/components/admin/atributos/AtributosCrud';
+import { listAtributos } from '@/lib/atributos';
+
+export const prerender = false;
+
+const items = await listAtributos();
+---
+
+<AdminLayout title="Atributos">
+	<AtributosCrud client:load initialItems={items} />
+</AdminLayout>

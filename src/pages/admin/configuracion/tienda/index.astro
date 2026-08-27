@@ -1,0 +1,34 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
+import TiendaConfigForm from '@/components/admin/TiendaConfigForm.astro';
+import { EMPTY_TIENDA_FORM, getTiendaConfiguracion } from '@/lib/tienda';
+
+export const prerender = false;
+
+const ok = Astro.url.searchParams.get('ok');
+const item = await getTiendaConfiguracion();
+const values = item
+	? {
+			nombre_tienda: item.nombre_tienda,
+			rif: item.rif,
+			telefono: item.telefono,
+			correo: item.correo,
+			direccion: item.direccion,
+			horario: item.horario,
+			instagram: item.instagram,
+			tiktok: item.tiktok,
+			whatsapp: item.whatsapp,
+			google_analytics: item.google_analytics,
+		}
+	: EMPTY_TIENDA_FORM;
+const logoUrl = item?.logo_url ?? null;
+---
+
+<AdminLayout title="Tienda">
+	<section>
+		<AdminSectionHeader title="Tienda" kicker="Configuración" />
+		{ok === 'updated' && <div class="admin-flash">Cambios guardados.</div>}
+		<TiendaConfigForm values={values} logoUrl={logoUrl} />
+	</section>
+</AdminLayout>

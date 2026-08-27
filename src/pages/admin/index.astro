@@ -1,0 +1,44 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
+import { getDb } from '@/lib/db';
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+const db = getDb();
+
+let ventasPendientes = 0;
+let productosActivos = 0;
+
+try {
+	const ventas = await db.execute(
+		`SELECT COUNT(*) AS total FROM ventas WHERE estado = 'pendiente'`,
+	);
+	ventasPendientes = Number(ventas.rows[0]?.total ?? 0);
+
+	const productos = await db.execute(
+		`SELECT COUNT(*) AS total FROM productos WHERE activo = 1`,
+	);
+	productosActivos = Number(productos.rows[0]?.total ?? 0);
+} catch {
+	// ignore
+}
+---
+
+<AdminLayout title="Dashboard">
+	<section class="admin-dashboard">
+		<AdminSectionHeader title={`Bienvenido, ${admin.nombre}`} kicker="Dashboard" />
+
+		<div class="admin-dashboard__stats">
+			<article class="admin-dashboard__stat">
+				<span class="admin-dashboard__stat-label">Ventas pendientes</span>
+				<strong class="admin-dashboard__stat-value">{ventasPendientes}</strong>
+			</article>
+			<article class="admin-dashboard__stat">
+				<span class="admin-dashboard__stat-label">Productos activos</span>
+				<strong class="admin-dashboard__stat-value">{productosActivos}</strong>
+			</article>
+		</div>
+	</section>
+</AdminLayout>

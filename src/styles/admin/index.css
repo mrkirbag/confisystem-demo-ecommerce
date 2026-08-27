@@ -1,0 +1,9 @@
+/* Entrada de estilos del panel admin */
+@import '../tokens.css';
+@import '../base.css';
+@import './layout.css';
+@import './section-header.css';
+@import './login.css';
+@import './dashboard.css';
+@import './form.css';
+@import '../storefront/product.css';

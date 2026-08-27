@@ -1,0 +1,19 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"],
+  "compilerOptions": {
+    "paths": {
+      "@/lib/tienda": ["./src/lib/tienda/index.ts"],
+      "@/lib/usuarios": ["./src/lib/usuarios/index.ts"],
+      "@/lib/categorias": ["./src/lib/categorias/index.ts"],
+      "@/lib/atributos": ["./src/lib/atributos/index.ts"],
+      "@/lib/productos": ["./src/lib/productos/index.ts"],
+      "@/lib/auditoria": ["./src/lib/auditoria/index.ts"],
+      "@/lib/auth": ["./src/lib/auth/index.ts"],
+      "@/lib/db": ["./src/lib/db/index.ts"],
+      "@/lib/r2": ["./src/lib/r2/index.ts"],
+      "@/*": ["./src/*"]
+    }
+  }
+}

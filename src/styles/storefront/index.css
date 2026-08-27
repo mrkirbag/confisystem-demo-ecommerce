@@ -1,0 +1,4 @@
+/* Entrada de estilos del catálogo / tienda pública */
+@import '../tokens.css';
+@import '../base.css';
+@import './product.css';

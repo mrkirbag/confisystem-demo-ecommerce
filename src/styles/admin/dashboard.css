@@ -1,0 +1,27 @@
+/* Sección: dashboard */
+.admin-dashboard__stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 1rem;
+}
+
+.admin-dashboard__stat {
+	background: color-mix(in srgb, var(--bg) 18%, var(--panel));
+	border: 1px solid var(--line-on-panel, var(--line));
+	border-left: 4px solid var(--accent);
+	border-radius: 0.9rem;
+	padding: 1.25rem;
+	color: var(--ink-on-panel, var(--ink));
+}
+
+.admin-dashboard__stat-label {
+	display: block;
+	color: var(--ink-on-panel, var(--ink));
+	font-size: 0.9rem;
+	margin-bottom: 0.4rem;
+}
+
+.admin-dashboard__stat-value {
+	font-family: var(--font-titulos);
+	font-size: 1.8rem;
+}

@@ -1,0 +1,14 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import UsuariosCrud from '@/components/admin/usuarios/UsuariosCrud';
+import { listUsuarios } from '@/lib/usuarios';
+
+export const prerender = false;
+
+const admin = Astro.locals.admin!;
+const users = await listUsuarios();
+---
+
+<AdminLayout title="Usuarios">
+	<UsuariosCrud client:load initialUsers={users} currentUserId={admin.id} />
+</AdminLayout>

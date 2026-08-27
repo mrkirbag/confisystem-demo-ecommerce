@@ -1,0 +1,143 @@
+---
+import '../styles/admin/index.css';
+import AdminSidebarNav from '@/components/admin/AdminSidebarNav.astro';
+import {
+	getTiendaConfig,
+	getTiendaPersonalizacion,
+	googleFontsHref,
+	themeStyleVars,
+} from '@/lib/tienda';
+
+interface Props {
+	title?: string;
+	/** auth = login sin sidebar; panel = shell completo */
+	variant?: 'auth' | 'panel';
+}
+
+const { title = 'Admin', variant = 'panel' } = Astro.props;
+const pathname = Astro.url.pathname;
+
+const [config, theme] = await Promise.all([getTiendaConfig(), getTiendaPersonalizacion()]);
+
+const storeName = config.nombre_tienda || 'Demo Tienda';
+const logoUrl = config.logo_url;
+const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
+const fontsHref = googleFontsHref(theme.fuente_titulos, theme.fuente_cuerpo);
+const themeVars = themeStyleVars(theme);
+const isPanel = variant === 'panel';
+---
+
+<!doctype html>
+<html lang="es" style={themeVars}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link href={fontsHref} rel="stylesheet" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title} · {storeName}</title>
+	</head>
+	<body
+		class:list={['admin-app', isPanel ? 'admin-app--panel' : 'admin-app--auth']}
+		data-admin-app
+	>
+		{
+			isPanel ? (
+				<>
+					<header class="admin-mobile-bar">
+						<div class="admin-mobile-bar__brand">
+							{logoUrl ? (
+								<img class="admin-mobile-bar__logo" src={logoUrl} alt="" />
+							) : (
+								<span class="admin-mobile-bar__logo-fallback" aria-hidden="true">
+									{initial}
+								</span>
+							)}
+							<span class="admin-mobile-bar__name">{storeName}</span>
+						</div>
+						<button
+							type="button"
+							class="admin-burger"
+							aria-label="Abrir menú"
+							aria-expanded="false"
+							aria-controls="admin-sidebar"
+							data-admin-burger
+						>
+							<span class="admin-burger__box" aria-hidden="true">
+								<span class="admin-burger__line"></span>
+								<span class="admin-burger__line"></span>
+								<span class="admin-burger__line"></span>
+							</span>
+						</button>
+					</header>
+
+					<div class="admin-overlay" data-admin-overlay hidden></div>
+
+					<aside class="admin-sidebar" id="admin-sidebar" data-admin-sidebar>
+						<div class="admin-sidebar__head">
+							<a class="admin-sidebar__brand" href="/admin" aria-label="Ir al inicio">
+								{logoUrl ? (
+									<img class="admin-sidebar__logo-img" src={logoUrl} alt={storeName} />
+								) : (
+									<span class="admin-sidebar__logo-fallback">{initial}</span>
+								)}
+								<span class="admin-sidebar__name">{storeName}</span>
+							</a>
+						</div>
+
+						<AdminSidebarNav pathname={pathname} />
+
+						<div class="admin-sidebar__foot">
+							<form method="POST" action="/api/auth/logout">
+								<button type="submit" class="admin-sidebar__logout">
+									Cerrar sesión
+								</button>
+							</form>
+						</div>
+					</aside>
+
+					<div class="admin-content">
+						<div class="admin-content__inner">
+							<div class="admin-surface">
+								<slot />
+							</div>
+						</div>
+					</div>
+
+					<script>
+						const app = document.querySelector('[data-admin-app]');
+						const burger = document.querySelector('[data-admin-burger]');
+						const overlay = document.querySelector('[data-admin-overlay]');
+
+						function setOpen(open) {
+							if (!(app instanceof HTMLElement) || !(burger instanceof HTMLButtonElement)) return;
+							app.classList.toggle('is-nav-open', open);
+							burger.setAttribute('aria-expanded', String(open));
+							burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+							if (overlay instanceof HTMLElement) overlay.hidden = !open;
+							document.documentElement.style.overflow = open ? 'hidden' : '';
+						}
+
+						burger?.addEventListener('click', () => {
+							setOpen(!app?.classList.contains('is-nav-open'));
+						});
+
+						overlay?.addEventListener('click', () => setOpen(false));
+
+						window.addEventListener('keydown', (event) => {
+							if (event.key === 'Escape') setOpen(false);
+						});
+
+						document.querySelectorAll('[data-admin-nav-link]').forEach((link) => {
+							link.addEventListener('click', () => setOpen(false));
+						});
+					</script>
+				</>
+			) : (
+				<slot />
+			)
+		}
+	</body>
+</html>

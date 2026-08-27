@@ -1,0 +1,27 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import ProductosCrud from '@/components/admin/productos/ProductosCrud';
+import { listAtributos } from '@/lib/atributos';
+import { listCategorias } from '@/lib/categorias';
+import { listProductos } from '@/lib/productos';
+import { getTiendaConfig } from '@/lib/tienda';
+
+export const prerender = false;
+
+const [items, categorias, atributos, config] = await Promise.all([
+	listProductos(),
+	listCategorias(),
+	listAtributos(),
+	getTiendaConfig(),
+]);
+---
+
+<AdminLayout title="Productos">
+	<ProductosCrud
+		client:load
+		initialItems={items}
+		categorias={categorias}
+		atributos={atributos}
+		storeName={config.nombre_tienda || 'Demo Tienda'}
+	/>
+</AdminLayout>

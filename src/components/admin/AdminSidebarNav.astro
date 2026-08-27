@@ -1,0 +1,119 @@
+---
+import {
+	BarChart3,
+	ChevronDown,
+	ClipboardList,
+	Layers3,
+	Package,
+	Palette,
+	Settings,
+	SlidersHorizontal,
+	Store,
+	Tags,
+	Users,
+	type LucideIcon,
+} from 'lucide-react';
+import {
+	getAdminNav,
+	isGroupActive,
+	isNavActive,
+	type AdminNavIcon,
+} from '@/lib/nav/admin';
+
+interface Props {
+	pathname: string;
+}
+
+const { pathname } = Astro.props;
+const nav = getAdminNav();
+
+const ICONS: Record<AdminNavIcon, LucideIcon> = {
+	catalogo: Layers3,
+	categorias: Tags,
+	atributos: SlidersHorizontal,
+	productos: Package,
+	pedidos: ClipboardList,
+	estadisticas: BarChart3,
+	configuracion: Settings,
+	tienda: Store,
+	identidad: Palette,
+	usuarios: Users,
+};
+
+const iconProps = {
+	className: 'admin-sidebar__icon',
+	size: 18,
+	strokeWidth: 1.9,
+	'aria-hidden': 'true',
+};
+---
+
+<nav class="admin-sidebar__nav" aria-label="Administración">
+	{
+		nav.map((entry) => {
+			if (entry.type === 'link') {
+				const Icon = ICONS[entry.icon];
+				const active = isNavActive(pathname, entry.href);
+
+				return (
+					<a
+						href={entry.href}
+						class:list={['admin-sidebar__link', { 'is-active': active }]}
+						data-admin-nav-link
+					>
+						<Icon {...iconProps} />
+						<span class="admin-sidebar__label">{entry.label}</span>
+					</a>
+				);
+			}
+
+			const GroupIcon = ICONS[entry.icon];
+			const groupActive = isGroupActive(pathname, entry);
+
+			return (
+				<details
+					class:list={[
+						'admin-sidebar__group',
+						{ 'is-active': groupActive },
+					]}
+					open={groupActive || undefined}
+				>
+					<summary class="admin-sidebar__group-btn">
+						<span class="admin-sidebar__group-main">
+							<GroupIcon {...iconProps} />
+							<span class="admin-sidebar__label">{entry.label}</span>
+						</span>
+						<ChevronDown
+							className="admin-sidebar__chevron"
+							size={16}
+							strokeWidth={2}
+							aria-hidden="true"
+						/>
+					</summary>
+
+					<div class="admin-sidebar__submenu">
+						{entry.children.map((child) => {
+							const ChildIcon = ICONS[child.icon];
+							const active = isNavActive(pathname, child.href);
+
+							return (
+								<a
+									href={child.href}
+									class:list={[
+										'admin-sidebar__link',
+										'admin-sidebar__link--child',
+										{ 'is-active': active },
+									]}
+									data-admin-nav-link
+								>
+									<ChildIcon {...iconProps} />
+									<span class="admin-sidebar__label">{child.label}</span>
+								</a>
+							);
+						})}
+					</div>
+				</details>
+			);
+		})
+	}
+</nav>
