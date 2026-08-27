@@ -60,17 +60,17 @@ export function getR2Env(): R2Env {
 
 	cached = {
 		accessKeyId: required(
-			'AWS_ACCESS_KEY_ID',
-			import.meta.env.AWS_ACCESS_KEY_ID,
-			process.env.AWS_ACCESS_KEY_ID,
+			'R2_ACCESS_KEY_ID',
+			import.meta.env.R2_ACCESS_KEY_ID,
+			process.env.R2_ACCESS_KEY_ID,
 		),
 		secretAccessKey: required(
-			'AWS_SECRET_ACCESS_KEY',
-			import.meta.env.AWS_SECRET_ACCESS_KEY,
-			process.env.AWS_SECRET_ACCESS_KEY,
+			'R2_SECRET_ACCESS_KEY',
+			import.meta.env.R2_SECRET_ACCESS_KEY,
+			process.env.R2_SECRET_ACCESS_KEY,
 		),
 		region:
-			firstValue(import.meta.env.AWS_REGION, process.env.AWS_REGION) || 'auto',
+			firstValue(import.meta.env.R2_REGION, process.env.R2_REGION) || 'auto',
 		bucket,
 		endpoint: originOnly(
 			required('S3_ENDPOINT', import.meta.env.S3_ENDPOINT, process.env.S3_ENDPOINT),

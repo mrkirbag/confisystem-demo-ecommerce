@@ -4,9 +4,9 @@ interface ImportMetaEnv {
 	readonly TURSO_DATABASE_URL: string;
 	readonly TURSO_AUTH_TOKEN: string;
 	readonly JWT_SECRET: string;
-	readonly AWS_ACCESS_KEY_ID?: string;
-	readonly AWS_SECRET_ACCESS_KEY?: string;
-	readonly AWS_REGION?: string;
+	readonly R2_ACCESS_KEY_ID?: string;
+	readonly R2_SECRET_ACCESS_KEY?: string;
+	readonly R2_REGION?: string;
 	readonly S3_BUCKET?: string;
 	readonly S3_ENDPOINT?: string;
 	readonly S3_PUBLIC_URL?: string;
