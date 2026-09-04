@@ -4,13 +4,15 @@ import ProductosCrud from '@/components/admin/productos/ProductosCrud';
 import { listAtributos } from '@/lib/atributos';
 import { listCategorias } from '@/lib/categorias';
 import { listProductos } from '@/lib/productos';
+import { listSubcategorias } from '@/lib/subcategorias';
 import { getTiendaConfig } from '@/lib/tienda';
 
 export const prerender = false;
 
-const [items, categorias, atributos, config] = await Promise.all([
+const [items, categorias, subcategorias, atributos, config] = await Promise.all([
 	listProductos(),
 	listCategorias(),
+	listSubcategorias(),
 	listAtributos(),
 	getTiendaConfig(),
 ]);
@@ -21,6 +23,7 @@ const [items, categorias, atributos, config] = await Promise.all([
 		client:load
 		initialItems={items}
 		categorias={categorias}
+		subcategorias={subcategorias}
 		atributos={atributos}
 		storeName={config.nombre_tienda || 'Demo Tienda'}
 	/>

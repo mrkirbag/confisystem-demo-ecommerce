@@ -146,6 +146,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
 				antes: snapshotCategoria(current),
 				despues: snapshotCategoria(saved),
 				productos,
+				subcategorias: current.subcategorias,
 			},
 		});
 

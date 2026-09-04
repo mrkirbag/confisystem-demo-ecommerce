@@ -124,28 +124,39 @@ export default function AtributosCrud({ initialItems }: Props) {
 			) : null}
 
 			<div className="admin-toolbar">
-				<p className="admin-toolbar__meta">
-					{items.length === 1 ? '1 atributo' : `${items.length} atributos`}
-				</p>
-				<label className="admin-toolbar__search">
-					<IconSearch className="admin-toolbar__search-icon" />
-					<span className="visually-hidden">Buscar atributo</span>
-					<input
-						className="admin-form__input"
-						type="search"
-						placeholder="Buscar por nombre u opción"
-						value={query}
-						onChange={(event) => setQuery(event.target.value)}
-					/>
-				</label>
-				<button
-					type="button"
-					className="admin-btn admin-btn--primary"
-					onClick={() => setModal({ kind: 'create' })}
-				>
-					<IconPlus />
-					Nuevo atributo
-				</button>
+				<div className="admin-toolbar__bar">
+					<p className="admin-toolbar__count">
+						<strong>{query.trim() ? filtered.length : items.length}</strong>
+						<span>
+							{query.trim()
+								? `de ${items.length} ${items.length === 1 ? 'atributo' : 'atributos'}`
+								: items.length === 1
+									? 'atributo'
+									: 'atributos'}
+						</span>
+					</p>
+					<button
+						type="button"
+						className="admin-btn admin-btn--primary"
+						onClick={() => setModal({ kind: 'create' })}
+					>
+						<IconPlus />
+						Nuevo atributo
+					</button>
+				</div>
+				<div className="admin-toolbar__filters">
+					<label className="admin-toolbar__search">
+						<IconSearch className="admin-toolbar__search-icon" />
+						<span className="visually-hidden">Buscar atributo</span>
+						<input
+							className="admin-toolbar__control"
+							type="search"
+							placeholder="Buscar…"
+							value={query}
+							onChange={(event) => setQuery(event.target.value)}
+						/>
+					</label>
+				</div>
 			</div>
 
 			{items.length === 0 ? (

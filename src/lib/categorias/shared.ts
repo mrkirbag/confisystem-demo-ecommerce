@@ -6,6 +6,7 @@ export type Categoria = {
 	orden: number;
 	activo: boolean;
 	productos: number;
+	subcategorias: number;
 };
 
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

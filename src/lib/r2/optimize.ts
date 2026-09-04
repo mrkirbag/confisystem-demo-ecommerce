@@ -17,6 +17,7 @@ const ALLOWED_FORMATS = new Set(['jpeg', 'jpg', 'png', 'webp', 'avif']);
 const PRESETS: Record<ImageKind, { max: number; quality: number }> = {
 	logo: { max: 512, quality: 78 },
 	categoria: { max: 1200, quality: 72 },
+	subcategoria: { max: 1200, quality: 72 },
 	producto: { max: 1600, quality: 72 },
 };
 

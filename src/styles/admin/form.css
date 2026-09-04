@@ -1,56 +1,185 @@
 /* Formularios y tablas reutilizables del admin */
 
 .admin-toolbar {
+	display: grid;
+	gap: 0.75rem;
+	margin: 0 0 1.2rem;
+}
+
+.admin-toolbar__bar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	gap: 0.85rem;
+	min-height: 2.5rem;
+}
+
+.admin-toolbar__bar .admin-btn {
+	flex-shrink: 0;
+}
+
+.admin-toolbar__count {
+	display: flex;
+	align-items: baseline;
 	flex-wrap: wrap;
-	margin: -0.4rem 0 1.25rem;
-}
-
-.admin-toolbar__meta {
+	gap: 0.5rem;
+	min-width: 0;
+	margin: 0;
 	color: var(--ink-on-panel, var(--ink));
-	font-size: 0.92rem;
 }
 
-.admin-toolbar__filter {
-	flex: 0 1 13.5rem;
-	min-width: 11rem;
-	margin-left: auto;
+.admin-toolbar__count strong {
+	font-family: var(--font-titulos);
+	font-size: 1.7rem;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: -0.03em;
+	font-variant-numeric: tabular-nums;
 }
 
-.admin-toolbar__filter--status {
-	flex: 0 0 10.75rem;
-	min-width: 10.75rem;
+.admin-toolbar__count span {
+	font-size: 0.82rem;
+	font-weight: 500;
+	letter-spacing: 0.01em;
+	color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 58%, transparent);
+}
+
+.admin-toolbar__filters {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	padding: 0.35rem;
+	border: 1px solid var(--line-on-panel, var(--line));
+	border-radius: 0.9rem;
+	background: color-mix(in srgb, var(--bg) 22%, var(--panel));
+	flex-wrap: wrap;
+}
+
+.admin-toolbar__seg {
+	display: inline-flex;
+	flex: 0 0 auto;
+	padding: 0.15rem;
+	border-radius: 0.65rem;
+	background: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 6%, transparent);
+}
+
+.admin-toolbar__seg button {
+	min-height: 1.9rem;
+	padding: 0.25rem 0.75rem;
+	border: 0;
+	border-radius: 0.52rem;
+	background: transparent;
+	color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 72%, transparent);
+	font: inherit;
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+	cursor: pointer;
+	white-space: nowrap;
+	transition:
+		background 0.15s ease,
+		color 0.15s ease;
+}
+
+.admin-toolbar__seg button:hover {
+	color: var(--ink-on-panel, var(--ink));
+}
+
+.admin-toolbar__seg button.is-on {
+	background: var(--panel);
+	color: var(--ink-on-panel, var(--ink));
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.admin-toolbar__select,
+.admin-toolbar__search {
+	position: relative;
+	display: block;
+	min-width: 0;
+}
+
+.admin-toolbar__select {
+	flex: 0 1 11.5rem;
 }
 
 .admin-toolbar__search {
-	position: relative;
-	flex: 1 1 14rem;
-	min-width: 12rem;
-	max-width: 22rem;
-	margin-left: auto;
+	flex: 1 1 12rem;
+	min-width: 11rem;
 }
 
-.admin-toolbar__filter + .admin-toolbar__filter,
-.admin-toolbar__filter + .admin-toolbar__search {
-	margin-left: 0;
+.admin-toolbar__control {
+	width: 100%;
+	height: 2.15rem;
+	border: 0;
+	border-radius: 0.58rem;
+	background-color: transparent;
+	color: var(--ink-on-panel, var(--ink));
+	color-scheme: inherit;
+	font: inherit;
+	font-size: 0.84rem;
+	font-weight: 600;
+	transition:
+		background-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.admin-toolbar__select .admin-toolbar__control {
+	appearance: none;
+	padding: 0 1.85rem 0 0.7rem;
+	background-color: transparent;
+	background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+		linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position:
+		calc(100% - 0.95rem) calc(50% - 0.14rem),
+		calc(100% - 0.68rem) calc(50% - 0.14rem);
+	background-size: 0.28rem 0.28rem, 0.28rem 0.28rem;
+	background-repeat: no-repeat;
+	color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 78%, transparent);
+	cursor: pointer;
+}
+
+.admin-toolbar__select.is-on .admin-toolbar__control {
+	color: var(--ink-on-panel, var(--ink));
+	background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.admin-toolbar__search .admin-toolbar__control {
+	padding: 0 0.75rem 0 2.15rem;
+	appearance: none;
+	background-color: transparent;
+}
+
+.admin-toolbar__search .admin-toolbar__control::-webkit-search-decoration,
+.admin-toolbar__search .admin-toolbar__control::-webkit-search-cancel-button,
+.admin-toolbar__search .admin-toolbar__control::-webkit-search-results-button {
+	appearance: none;
+}
+
+.admin-toolbar__control::placeholder {
+	color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 52%, transparent);
+	font-weight: 500;
+	opacity: 1;
+}
+
+.admin-toolbar__control:hover {
+	background-color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 7%, transparent);
+}
+
+.admin-toolbar__control:focus {
+	outline: none;
+	background-color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 9%, transparent);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .admin-toolbar__search-icon {
 	position: absolute;
-	left: 0.85rem;
+	left: 0.7rem;
 	top: 50%;
-	width: 1rem;
-	height: 1rem;
+	width: 0.95rem;
+	height: 0.95rem;
 	transform: translateY(-50%);
-	color: var(--input-muted);
+	color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 45%, transparent);
 	pointer-events: none;
-}
-
-.admin-toolbar__search .admin-form__input {
-	padding-left: 2.45rem;
 }
 
 .admin-btn {
@@ -1367,22 +1496,39 @@ html:has(.admin-dialog[open]) {
 		flex: 1 1 auto;
 	}
 
-	.admin-toolbar {
+	.admin-toolbar__bar {
+		align-items: flex-end;
+	}
+
+	.admin-toolbar__count strong {
+		font-size: 1.5rem;
+	}
+
+	.admin-toolbar__filters {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: center;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.4rem;
+		padding: 0.4rem;
 	}
 
-	.admin-toolbar__meta {
-		margin: 0;
-	}
-
-	.admin-toolbar__filter,
+	.admin-toolbar__seg,
 	.admin-toolbar__search {
 		grid-column: 1 / -1;
-		max-width: none;
+	}
+
+	.admin-toolbar__seg {
+		display: flex;
+	}
+
+	.admin-toolbar__seg button {
+		flex: 1 1 0;
+	}
+
+	.admin-toolbar__select,
+	.admin-toolbar__search {
+		flex: none;
 		min-width: 0;
-		margin-left: 0;
+		max-width: none;
 	}
 
 	.admin-table-wrap {

@@ -118,28 +118,39 @@ export default function UsuariosCrud({ initialUsers, currentUserId }: Props) {
 			) : null}
 
 			<div className="admin-toolbar">
-				<p className="admin-toolbar__meta">
-					{users.length === 1 ? '1 usuario' : `${users.length} usuarios`}
-				</p>
-				<label className="admin-toolbar__search">
-					<IconSearch className="admin-toolbar__search-icon" />
-					<span className="visually-hidden">Buscar usuario</span>
-					<input
-						className="admin-form__input"
-						type="search"
-						placeholder="Buscar por nombre o correo"
-						value={query}
-						onChange={(event) => setQuery(event.target.value)}
-					/>
-				</label>
-				<button
-					type="button"
-					className="admin-btn admin-btn--primary"
-					onClick={() => setModal({ kind: 'create' })}
-				>
-					<IconPlus />
-					Nuevo usuario
-				</button>
+				<div className="admin-toolbar__bar">
+					<p className="admin-toolbar__count">
+						<strong>{query.trim() ? filtered.length : users.length}</strong>
+						<span>
+							{query.trim()
+								? `de ${users.length} ${users.length === 1 ? 'usuario' : 'usuarios'}`
+								: users.length === 1
+									? 'usuario'
+									: 'usuarios'}
+						</span>
+					</p>
+					<button
+						type="button"
+						className="admin-btn admin-btn--primary"
+						onClick={() => setModal({ kind: 'create' })}
+					>
+						<IconPlus />
+						Nuevo usuario
+					</button>
+				</div>
+				<div className="admin-toolbar__filters">
+					<label className="admin-toolbar__search">
+						<IconSearch className="admin-toolbar__search-icon" />
+						<span className="visually-hidden">Buscar usuario</span>
+						<input
+							className="admin-toolbar__control"
+							type="search"
+							placeholder="Buscar…"
+							value={query}
+							onChange={(event) => setQuery(event.target.value)}
+						/>
+					</label>
+				</div>
 			</div>
 
 			{users.length === 0 ? (

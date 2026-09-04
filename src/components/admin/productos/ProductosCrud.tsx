@@ -9,6 +9,7 @@ import {
 	initialsFromName,
 	type ProductoListado,
 } from '@/lib/productos/shared';
+import type { Subcategoria } from '@/lib/subcategorias/shared';
 import ConfirmDialog from '../crud/ConfirmDialog';
 import FormModal from '../crud/FormModal';
 import { IconEye, IconPencil, IconPlus, IconSearch, IconTrash } from '../crud/icons';
@@ -18,6 +19,7 @@ import ProductoPreview from './ProductoPreview';
 type Props = {
 	initialItems: ProductoListado[];
 	categorias: Categoria[];
+	subcategorias: Subcategoria[];
 	atributos: Atributo[];
 	storeName: string;
 };
@@ -29,26 +31,27 @@ type Modal =
 	| { kind: 'edit'; item: ProductoListado }
 	| { kind: 'preview'; item: ProductoListado };
 
-export default function ProductosCrud({ initialItems, categorias, atributos, storeName }: Props) {
+export default function ProductosCrud({ initialItems, categorias, subcategorias, atributos, storeName }: Props) {
 	const [items, setItems] = useState(initialItems);
 	const [modal, setModal] = useState<Modal | null>(null);
 	const [query, setQuery] = useState('');
 	const [vista, setVista] = useState<Vista>('activos');
 	const [categoriaId, setCategoriaId] = useState('');
+	const [subcategoriaId, setSubcategoriaId] = useState('');
 	const [flash, setFlash] = useState('');
 	const [listError, setListError] = useState('');
 	const [pendingOff, setPendingOff] = useState<ProductoListado | null>(null);
 	const [busy, setBusy] = useState(false);
 
 	const verEliminados = vista === 'eliminados';
-	const hasActiveCategoria = categorias.some((item) => item.activo);
+	const hasActiveSubcategoria = subcategorias.some((item) => item.activo);
 
 	const pool = useMemo(
 		() => items.filter((item) => (verEliminados ? !item.activo : item.activo)),
 		[items, verEliminados],
 	);
 
-	const hasFilters = Boolean(categoriaId) || Boolean(query.trim());
+	const hasFilters = Boolean(categoriaId) || Boolean(subcategoriaId) || Boolean(query.trim());
 
 	const categoriaOptions = useMemo(
 		() =>
@@ -58,21 +61,36 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 		[categorias],
 	);
 
+	const subcategoriaOptions = useMemo(
+		() =>
+			subcategorias
+				.filter((item) => item.activo && (!categoriaId || item.categoria_id === categoriaId))
+				.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+		[subcategorias, categoriaId],
+	);
+
 	const filtered = useMemo(() => {
 		const needle = query.trim().toLowerCase();
 		return pool.filter((item) => {
 			if (categoriaId && item.categoria_id !== categoriaId) return false;
+			if (subcategoriaId && item.subcategoria_id !== subcategoriaId) return false;
 			if (!needle) return true;
 			const haystack = `${item.nombre} ${item.slug} ${(item.skus ?? []).join(' ')}`.toLowerCase();
 			return haystack.includes(needle);
 		});
-	}, [pool, query, categoriaId]);
+	}, [pool, query, categoriaId, subcategoriaId]);
 
 	useEffect(() => {
 		if (categoriaId && !categoriaOptions.some((item) => item.id === categoriaId)) {
 			setCategoriaId('');
 		}
 	}, [categoriaId, categoriaOptions]);
+
+	useEffect(() => {
+		if (subcategoriaId && !subcategoriaOptions.some((item) => item.id === subcategoriaId)) {
+			setSubcategoriaId('');
+		}
+	}, [subcategoriaId, subcategoriaOptions]);
 
 	useEffect(() => {
 		if (!flash) return;
@@ -108,8 +126,8 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 	}
 
 	function openCreate() {
-		if (!hasActiveCategoria) {
-			setListError('Crea una categoría activa antes de agregar productos.');
+		if (!hasActiveSubcategoria) {
+			setListError('Crea una subcategoría activa antes de agregar productos.');
 			return;
 		}
 		setModal({ kind: 'create' });
@@ -193,76 +211,105 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 			) : null}
 
 			<div className="admin-toolbar">
-				<p className="admin-toolbar__meta">
-					{hasFilters
-						? `${filtered.length} de ${pool.length} ${verEliminados ? 'eliminados' : pool.length === 1 ? 'producto' : 'productos'}`
-						: verEliminados
-							? pool.length === 1
-								? '1 eliminado'
-								: `${pool.length} eliminados`
-							: pool.length === 1
-								? '1 producto'
-								: `${pool.length} productos`}
-				</p>
-				<label className="admin-toolbar__filter admin-toolbar__filter--status">
-					<span className="visually-hidden">Ver</span>
-					<select
-						className="admin-form__input admin-form__select"
-						value={vista}
-						onChange={(event) => setVista(event.target.value as Vista)}
-					>
-						<option value="activos">Activos</option>
-						<option value="eliminados">Eliminados</option>
-					</select>
-				</label>
-				<label className="admin-toolbar__filter">
-					<span className="visually-hidden">Filtrar por categoría</span>
-					<select
-						className="admin-form__input admin-form__select"
-						value={categoriaId}
-						onChange={(event) => setCategoriaId(event.target.value)}
-					>
-						<option value="">Todas las categorías</option>
-						{categoriaOptions.map((item) => (
-							<option key={item.id} value={item.id}>
-								{item.nombre}
-							</option>
-						))}
-					</select>
-				</label>
-				<label className="admin-toolbar__search">
-					<IconSearch className="admin-toolbar__search-icon" />
-					<span className="visually-hidden">Buscar producto</span>
-					<input
-						className="admin-form__input"
-						type="search"
-						placeholder="Buscar por nombre, slug o SKU"
-						value={query}
-						onChange={(event) => setQuery(event.target.value)}
-					/>
-				</label>
-				<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
-					<IconPlus />
-					Nuevo producto
-				</button>
+				<div className="admin-toolbar__bar">
+					<p className="admin-toolbar__count">
+						<strong>{hasFilters ? filtered.length : pool.length}</strong>
+						<span>
+							{hasFilters
+								? `de ${pool.length} ${verEliminados ? (pool.length === 1 ? 'eliminado' : 'eliminados') : pool.length === 1 ? 'producto' : 'productos'}`
+								: verEliminados
+									? pool.length === 1
+										? 'eliminado'
+										: 'eliminados'
+									: pool.length === 1
+										? 'producto'
+										: 'productos'}
+						</span>
+					</p>
+					<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
+						<IconPlus />
+						Nuevo producto
+					</button>
+				</div>
+				<div className="admin-toolbar__filters">
+					<div className="admin-toolbar__seg" role="group" aria-label="Estado">
+						<button
+							type="button"
+							className={vista === 'activos' ? 'is-on' : undefined}
+							aria-pressed={vista === 'activos'}
+							onClick={() => setVista('activos')}
+						>
+							Activos
+						</button>
+						<button
+							type="button"
+							className={vista === 'eliminados' ? 'is-on' : undefined}
+							aria-pressed={vista === 'eliminados'}
+							onClick={() => setVista('eliminados')}
+						>
+							Eliminados
+						</button>
+					</div>
+					<label className={`admin-toolbar__select${categoriaId ? ' is-on' : ''}`}>
+						<span className="visually-hidden">Filtrar por categoría</span>
+						<select
+							className="admin-toolbar__control"
+							value={categoriaId}
+							onChange={(event) => setCategoriaId(event.target.value)}
+						>
+							<option value="">Todas las categorías</option>
+							{categoriaOptions.map((item) => (
+								<option key={item.id} value={item.id}>
+									{item.nombre}
+								</option>
+							))}
+						</select>
+					</label>
+					<label className={`admin-toolbar__select${subcategoriaId ? ' is-on' : ''}`}>
+						<span className="visually-hidden">Filtrar por subcategoría</span>
+						<select
+							className="admin-toolbar__control"
+							value={subcategoriaId}
+							onChange={(event) => setSubcategoriaId(event.target.value)}
+						>
+							<option value="">Todas las subcategorías</option>
+							{subcategoriaOptions.map((item) => (
+								<option key={item.id} value={item.id}>
+									{categoriaId ? item.nombre : `${item.categoria_nombre} · ${item.nombre}`}
+								</option>
+							))}
+						</select>
+					</label>
+					<label className="admin-toolbar__search">
+						<IconSearch className="admin-toolbar__search-icon" />
+						<span className="visually-hidden">Buscar producto</span>
+						<input
+							className="admin-toolbar__control"
+							type="search"
+							placeholder="Buscar…"
+							value={query}
+							onChange={(event) => setQuery(event.target.value)}
+						/>
+					</label>
+				</div>
 			</div>
 
 			{items.length === 0 ? (
 				<div className="admin-empty">
 					<p className="admin-empty__title">Aún no hay productos</p>
 					<p className="admin-empty__text">
-						{hasActiveCategoria
+						{hasActiveSubcategoria
 							? 'Crea el primero para mostrar el catálogo.'
-							: 'Primero crea una categoría activa.'}
+							: 'Primero crea una subcategoría activa (por ejemplo Redes → Routers).'}
 					</p>
-					{hasActiveCategoria ? (
+					{hasActiveSubcategoria ? (
 						<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
 							<IconPlus />
 							Nuevo producto
 						</button>
 					) : (
-						<a className="admin-btn admin-btn--primary" href="/admin/catalogo/categorias">
-							Ir a categorías
+						<a className="admin-btn admin-btn--primary" href="/admin/catalogo/subcategorias">
+							Ir a subcategorías
 						</a>
 					)}
 				</div>
@@ -281,11 +328,15 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 				<div className="admin-empty">
 					<p className="admin-empty__title">Sin coincidencias</p>
 					<p className="admin-empty__text">
-						{categoriaId && query.trim()
-							? 'Ningún producto coincide con esa categoría y búsqueda.'
-							: categoriaId
-								? 'Ningún producto en esta categoría.'
-								: 'Ningún producto coincide con esa búsqueda.'}
+						{subcategoriaId && query.trim()
+							? 'Ningún producto coincide con esa subcategoría y búsqueda.'
+							: categoriaId && query.trim()
+								? 'Ningún producto coincide con esa categoría y búsqueda.'
+								: subcategoriaId
+									? 'Ningún producto en esta subcategoría.'
+									: categoriaId
+										? 'Ningún producto en esta categoría.'
+										: 'Ningún producto coincide con esa búsqueda.'}
 					</p>
 				</div>
 			) : (
@@ -295,6 +346,7 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 							<tr>
 								<th>Producto</th>
 								<th>Categoría</th>
+								<th>Subcategoría</th>
 								<th>Precio USD</th>
 								<th className="admin-table__th-actions">Acciones</th>
 							</tr>
@@ -329,6 +381,7 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 										</div>
 									</td>
 									<td data-label="Categoría">{item.categoria_nombre}</td>
+									<td data-label="Subcategoría">{item.subcategoria_nombre || '—'}</td>
 									<td data-label="Precio USD">
 										{oferta ? (
 											<span className="admin-price admin-price--offer">
@@ -403,6 +456,7 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 						key="create"
 						mode="create"
 						categorias={categorias}
+						subcategorias={subcategorias}
 						atributos={atributos}
 						onCancel={() => setModal(null)}
 						onSaved={handleCreated}
@@ -414,6 +468,7 @@ export default function ProductosCrud({ initialItems, categorias, atributos, sto
 						mode="edit"
 						productoId={modal.item.id}
 						categorias={categorias}
+						subcategorias={subcategorias}
 						atributos={atributos}
 						canDeactivate={modal.item.activo}
 						onCancel={() => setModal(null)}

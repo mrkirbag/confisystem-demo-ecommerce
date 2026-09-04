@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../db';
-import { getCategoriaById } from '../categorias';
 import { listAtributos } from '../atributos';
 import {
 	deleteImage,
@@ -10,6 +9,7 @@ import {
 	type ProductSlot,
 } from '../r2';
 import { isValidSlug } from '../categorias/shared';
+import { ensureSubcategoriaSchema, getSubcategoriaById } from '../subcategorias';
 import {
 	COMBINACION_UNICA,
 	MAX_COMBINACIONES,
@@ -66,7 +66,7 @@ export type ProductoDetalleInput = {
 };
 
 export type ProductoInput = {
-	categoria_id: string;
+	subcategoria_id: string;
 	nombre: string;
 	slug: string;
 	descripcion: string;
@@ -132,6 +132,7 @@ async function ensureProductoSchema() {
 	if (!schemaReady) {
 		schemaReady = (async () => {
 			const db = getDb();
+			await ensureSubcategoriaSchema();
 
 			if (!(await tableHasColumn('producto_stock_variantes', 'precio'))) {
 				await addColumn(
@@ -265,6 +266,8 @@ function mapListado(row: Record<string, unknown>): ProductoListado {
 		id: String(row.id),
 		categoria_id: String(row.categoria_id),
 		categoria_nombre: asText(row.categoria_nombre),
+		subcategoria_id: row.subcategoria_id == null || row.subcategoria_id === '' ? null : String(row.subcategoria_id),
+		subcategoria_nombre: asText(row.subcategoria_nombre) || null,
 		nombre: asText(row.nombre),
 		slug: asText(row.slug),
 		imagen_url: row.imagen_url == null || row.imagen_url === '' ? null : String(row.imagen_url),
@@ -288,6 +291,7 @@ const SELECT_LIST = `
 	SELECT
 		p.id,
 		p.categoria_id,
+		p.subcategoria_id,
 		p.nombre,
 		p.slug,
 		p.precio_base,
@@ -297,6 +301,7 @@ const SELECT_LIST = `
 		p.precio_por_variante,
 		p.activo,
 		c.nombre AS categoria_nombre,
+		s.nombre AS subcategoria_nombre,
 		(
 			SELECT url FROM productos_imagenes
 			WHERE producto_id = p.id
@@ -322,6 +327,7 @@ const SELECT_LIST = `
 		) AS skus
 	FROM productos p
 	INNER JOIN categorias c ON c.id = p.categoria_id
+	LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
 `;
 
 export function sanitizeProductoInput(raw: Record<string, unknown>): ProductoInput {
@@ -376,7 +382,7 @@ export function sanitizeProductoInput(raw: Record<string, unknown>): ProductoInp
 	}
 
 	return {
-		categoria_id: asText(raw.categoria_id),
+		subcategoria_id: asText(raw.subcategoria_id),
 		nombre: asText(raw.nombre),
 		slug: asText(raw.slug).toLowerCase(),
 		descripcion: asText(raw.descripcion).slice(0, 4000),
@@ -395,7 +401,7 @@ export function sanitizeProductoInput(raw: Record<string, unknown>): ProductoInp
 }
 
 export function validateProductoInput(input: ProductoInput) {
-	if (!input.categoria_id) return 'Elige una categoría.';
+	if (!input.subcategoria_id) return 'Elige una subcategoría.';
 	if (!input.nombre || input.nombre.length < 2) return 'El nombre es obligatorio.';
 	if (input.nombre.length > 120) return 'El nombre es demasiado largo.';
 	if (!isValidSlug(input.slug)) return 'El slug no es válido. Usa minúsculas, números y guiones.';
@@ -532,6 +538,7 @@ export async function getProductoById(id: string): Promise<Producto | null> {
 			SELECT
 				p.id,
 				p.categoria_id,
+				p.subcategoria_id,
 				p.nombre,
 				p.slug,
 				p.descripcion,
@@ -543,6 +550,7 @@ export async function getProductoById(id: string): Promise<Producto | null> {
 				p.activo,
 				p.creado_en,
 				c.nombre AS categoria_nombre,
+				s.nombre AS subcategoria_nombre,
 				(
 					SELECT url FROM productos_imagenes
 					WHERE producto_id = p.id
@@ -555,6 +563,7 @@ export async function getProductoById(id: string): Promise<Producto | null> {
 				) AS stock_total
 			FROM productos p
 			INNER JOIN categorias c ON c.id = p.categoria_id
+			LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
 			WHERE p.id = ?
 			LIMIT 1
 		`,
@@ -593,10 +602,10 @@ export async function slugEnUso(slug: string, excludeId?: string) {
 	return result.rows.length > 0;
 }
 
-async function assertCategoria(categoriaId: string) {
-	const categoria = await getCategoriaById(categoriaId);
-	if (!categoria) throw new Error('CATEGORIA_NO_EXISTE');
-	return categoria;
+async function assertSubcategoria(subcategoriaId: string) {
+	const subcategoria = await getSubcategoriaById(subcategoriaId);
+	if (!subcategoria) throw new Error('SUBCATEGORIA_NO_EXISTE');
+	return subcategoria;
 }
 
 async function sanitizeDetallesAgainstAtributos(detalles: ProductoDetalleInput[]) {
@@ -777,7 +786,7 @@ async function syncDetalles(productoId: string, detalles: ProductoDetalleInput[]
 
 export async function createProducto(input: ProductoInput) {
 	await ensureProductoSchema();
-	await assertCategoria(input.categoria_id);
+	const subcategoria = await assertSubcategoria(input.subcategoria_id);
 	const detalles = await sanitizeDetallesAgainstAtributos(input.detalles);
 	const db = getDb();
 	const id = randomUUID();
@@ -785,13 +794,14 @@ export async function createProducto(input: ProductoInput) {
 	await db.execute({
 		sql: `
 			INSERT INTO productos (
-				id, categoria_id, nombre, slug, descripcion, precio_base,
+				id, categoria_id, subcategoria_id, nombre, slug, descripcion, precio_base,
 				es_tendencia, en_oferta, precio_oferta, precio_por_variante, activo
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`,
 		args: [
 			id,
-			input.categoria_id,
+			subcategoria.categoria_id,
+			subcategoria.id,
 			input.nombre,
 			input.slug,
 			input.descripcion || null,
@@ -815,7 +825,7 @@ export async function updateProducto(id: string, input: ProductoInput) {
 	const current = await getProductoById(id);
 	if (!current) return null;
 
-	await assertCategoria(input.categoria_id);
+	const subcategoria = await assertSubcategoria(input.subcategoria_id);
 	const detalles = await sanitizeDetallesAgainstAtributos(input.detalles);
 	const activo = input.activo == null ? current.activo : input.activo;
 	const db = getDb();
@@ -823,12 +833,13 @@ export async function updateProducto(id: string, input: ProductoInput) {
 	await db.execute({
 		sql: `
 			UPDATE productos
-			SET categoria_id = ?, nombre = ?, slug = ?, descripcion = ?, precio_base = ?,
+			SET categoria_id = ?, subcategoria_id = ?, nombre = ?, slug = ?, descripcion = ?, precio_base = ?,
 				es_tendencia = ?, en_oferta = ?, precio_oferta = ?, precio_por_variante = ?, activo = ?
 			WHERE id = ?
 		`,
 		args: [
-			input.categoria_id,
+			subcategoria.categoria_id,
+			subcategoria.id,
 			input.nombre,
 			input.slug,
 			input.descripcion || null,
@@ -864,6 +875,8 @@ export function snapshotProducto(item: Producto | ProductoListado) {
 		slug: item.slug,
 		categoria_id: item.categoria_id,
 		categoria_nombre: item.categoria_nombre,
+		subcategoria_id: item.subcategoria_id,
+		subcategoria_nombre: item.subcategoria_nombre,
 		precio_base: item.precio_base,
 		es_tendencia: item.es_tendencia,
 		en_oferta: item.en_oferta,
@@ -895,6 +908,7 @@ export function uniqueConstraintError(error: unknown) {
 export function knownProductoError(error: unknown) {
 	const message = error instanceof Error ? error.message : String(error);
 	if (message === 'CATEGORIA_NO_EXISTE') return 'La categoría no existe.';
+	if (message === 'SUBCATEGORIA_NO_EXISTE') return 'La subcategoría no existe.';
 	if (message === 'DETALLE_NUMERO') return 'Hay un dato numérico inválido en los detalles.';
 	return null;
 }

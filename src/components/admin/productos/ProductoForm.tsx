@@ -13,12 +13,14 @@ import {
 	type ProductoListado,
 	type ProductSlot,
 } from '@/lib/productos/shared';
+import type { Subcategoria } from '@/lib/subcategorias/shared';
 import ImageUpload from '../crud/ImageUpload';
 
 type Props = {
 	mode: 'create' | 'edit';
 	productoId?: string;
 	categorias: Categoria[];
+	subcategorias: Subcategoria[];
 	atributos: Atributo[];
 	canDeactivate?: boolean;
 	onCancel: () => void;
@@ -106,6 +108,7 @@ export default function ProductoForm({
 	mode,
 	productoId,
 	categorias,
+	subcategorias,
 	atributos,
 	canDeactivate = false,
 	onCancel,
@@ -113,12 +116,17 @@ export default function ProductoForm({
 	onDeactivate,
 }: Props) {
 	const activas = categorias.filter((item) => item.activo);
+	const subActivas = useMemo(
+		() => subcategorias.filter((item) => item.activo),
+		[subcategorias],
+	);
 	const unicas = atributos.filter((item) => item.tipo === 'seleccion_unica' && item.opciones.length > 0);
 	const extras = atributos.filter((item) => item.tipo !== 'seleccion_unica');
 
 	const [ready, setReady] = useState(mode === 'create');
 	const [loadError, setLoadError] = useState('');
 	const [categoriaId, setCategoriaId] = useState(activas[0]?.id ?? '');
+	const [subcategoriaId, setSubcategoriaId] = useState('');
 	const [nombre, setNombre] = useState('');
 	const [slug, setSlug] = useState('');
 	const [slugLocked, setSlugLocked] = useState(mode === 'edit');
@@ -151,6 +159,17 @@ export default function ProductoForm({
 		return activas;
 	}, [activas, categorias, categoriaId]);
 
+	const subcategoriaOptions = useMemo(() => {
+		const ofCategory = subActivas.filter((item) => item.categoria_id === categoriaId);
+		if (subcategoriaId && !ofCategory.some((item) => item.id === subcategoriaId)) {
+			const current = subcategorias.find((item) => item.id === subcategoriaId);
+			if (current && current.categoria_id === categoriaId) {
+				return [current, ...ofCategory];
+			}
+		}
+		return ofCategory;
+	}, [subActivas, subcategorias, categoriaId, subcategoriaId]);
+
 	const combinaciones = useMemo(() => {
 		const grupos = unicas
 			.filter((item) => varianteAttrs.includes(item.id))
@@ -179,6 +198,19 @@ export default function ProductoForm({
 	}, [nombre, slugLocked]);
 
 	useEffect(() => {
+		if (!categoriaId) {
+			setSubcategoriaId('');
+			return;
+		}
+		const belongs = subcategorias.some(
+			(item) => item.id === subcategoriaId && item.categoria_id === categoriaId,
+		);
+		if (belongs) return;
+		const first = subActivas.find((item) => item.categoria_id === categoriaId);
+		setSubcategoriaId(first?.id ?? '');
+	}, [categoriaId, subActivas, subcategorias, subcategoriaId]);
+
+	useEffect(() => {
 		if (!error) return;
 		alertRef.current?.scrollIntoView({ block: 'nearest' });
 	}, [error]);
@@ -202,6 +234,7 @@ export default function ProductoForm({
 				if (cancelled) return;
 
 				setCategoriaId(item.categoria_id);
+				setSubcategoriaId(item.subcategoria_id ?? '');
 				setNombre(item.nombre);
 				setSlug(item.slug);
 				setDescripcion(item.descripcion);
@@ -303,6 +336,10 @@ export default function ProductoForm({
 
 		if (!categoriaId) {
 			setError('Elige una categoría.');
+			return;
+		}
+		if (!subcategoriaId) {
+			setError('Elige una subcategoría.');
 			return;
 		}
 		if (nombreTrim.length < 2) {
@@ -418,7 +455,7 @@ export default function ProductoForm({
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					categoria_id: categoriaId,
+					subcategoria_id: subcategoriaId,
 					nombre: nombreTrim,
 					slug: slugTrim,
 					descripcion: descripcion.trim(),
@@ -466,15 +503,24 @@ export default function ProductoForm({
 		return <p className="admin-form__hint">Cargando producto…</p>;
 	}
 
-	if (categoriaOptions.length === 0) {
+	if (categoriaOptions.length === 0 || subActivas.length === 0) {
 		return (
 			<div className="admin-form admin-form--stack">
 				<p className="admin-form__hint admin-form__hint--box">
-					Primero crea una categoría activa. Sin ella no se puede publicar un producto.
+					{categoriaOptions.length === 0
+						? 'Primero crea una categoría activa. Sin ella no se puede publicar un producto.'
+						: 'El producto va a una subcategoría (por ejemplo Redes → Routers). Crea al menos una antes de publicar.'}
 				</p>
 				<div className="admin-form__actions">
-					<a className="admin-btn admin-btn--primary" href="/admin/catalogo/categorias">
-						Ir a categorías
+					<a
+						className="admin-btn admin-btn--primary"
+						href={
+							categoriaOptions.length === 0
+								? '/admin/catalogo/categorias'
+								: '/admin/catalogo/subcategorias'
+						}
+					>
+						{categoriaOptions.length === 0 ? 'Ir a categorías' : 'Ir a subcategorías'}
 					</a>
 					<button type="button" className="admin-btn admin-btn--ghost" onClick={onCancel}>
 						Cerrar
@@ -496,21 +542,50 @@ export default function ProductoForm({
 				<section className="admin-form__block">
 					<h3 className="admin-form__legend">Datos</h3>
 					<div className="admin-form__grid">
-						<label className="admin-form__field admin-form__field--full">
-							Categoría
-							<select
-								className="admin-form__input admin-form__select"
-								required
-								value={categoriaId}
-								onChange={(event) => setCategoriaId(event.target.value)}
-							>
-								{categoriaOptions.map((item) => (
-									<option key={item.id} value={item.id}>
-										{item.activo ? item.nombre : `${item.nombre} (inactiva)`}
-									</option>
-								))}
-							</select>
-						</label>
+						<div className="admin-form__row">
+							<label className="admin-form__field">
+								Categoría
+								<select
+									className="admin-form__input admin-form__select"
+									required
+									value={categoriaId}
+									onChange={(event) => setCategoriaId(event.target.value)}
+								>
+									{categoriaOptions.map((item) => (
+										<option key={item.id} value={item.id}>
+											{item.activo ? item.nombre : `${item.nombre} (inactiva)`}
+										</option>
+									))}
+								</select>
+							</label>
+
+							<label className="admin-form__field">
+								Subcategoría
+								<select
+									className="admin-form__input admin-form__select"
+									required
+									value={subcategoriaId}
+									onChange={(event) => setSubcategoriaId(event.target.value)}
+									disabled={subcategoriaOptions.length === 0}
+								>
+									{subcategoriaOptions.length === 0 ? (
+										<option value="">Sin subcategorías</option>
+									) : (
+										subcategoriaOptions.map((item) => (
+											<option key={item.id} value={item.id}>
+												{item.activo ? item.nombre : `${item.nombre} (inactiva)`}
+											</option>
+										))
+									)}
+								</select>
+								{subcategoriaOptions.length === 0 ? (
+									<span className="admin-form__hint">
+										Esta categoría no tiene subcategorías.{' '}
+										<a href="/admin/catalogo/subcategorias">Créalas aquí</a>.
+									</span>
+								) : null}
+							</label>
+						</div>
 
 						<label className="admin-form__field admin-form__field--full">
 							Nombre

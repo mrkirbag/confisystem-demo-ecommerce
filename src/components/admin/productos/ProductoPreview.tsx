@@ -166,7 +166,14 @@ export default function ProductoPreview({ productoId, atributos, storeName }: Pr
 			<div className="store-pdp__chrome" aria-hidden="true">
 				<span className="store-pdp__brand">{storeName}</span>
 				<span className="store-pdp__crumb">
-					Catálogo <span>/</span> {item.categoria_nombre} <span>/</span> {item.nombre}
+					Catálogo <span>/</span> {item.categoria_nombre}
+					{item.subcategoria_nombre ? (
+						<>
+							{' '}
+							<span>/</span> {item.subcategoria_nombre}
+						</>
+					) : null}{' '}
+					<span>/</span> {item.nombre}
 				</span>
 			</div>
 
@@ -205,7 +212,11 @@ export default function ProductoPreview({ productoId, atributos, storeName }: Pr
 				</div>
 
 				<div className="store-pdp__info">
-					<p className="store-pdp__category">{item.categoria_nombre}</p>
+					<p className="store-pdp__category">
+						{item.subcategoria_nombre
+							? `${item.categoria_nombre} · ${item.subcategoria_nombre}`
+							: item.categoria_nombre}
+					</p>
 					<h3 className="store-pdp__name">{item.nombre}</h3>
 
 					<div className={`store-pdp__price${offer ? ' is-offer' : ''}`}>

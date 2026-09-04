@@ -1,31 +1,36 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { isValidSlug, slugify, type Categoria } from '@/lib/categorias/shared';
+import type { Categoria } from '@/lib/categorias/shared';
+import { isValidSlug, slugify, type Subcategoria } from '@/lib/subcategorias/shared';
 import ImageUpload from '../crud/ImageUpload';
 
 type Props = {
 	mode: 'create' | 'edit';
-	values?: Pick<Categoria, 'nombre' | 'slug' | 'imagen_url'>;
-	categoriaId?: string;
+	values?: Pick<Subcategoria, 'categoria_id' | 'nombre' | 'slug' | 'imagen_url'>;
+	subcategoriaId?: string;
+	categorias: Categoria[];
 	canDeactivate?: boolean;
 	onCancel: () => void;
-	onSaved: (item: Categoria) => void;
+	onSaved: (item: Subcategoria) => void;
 	onDeactivate?: () => void;
 };
 
 type ApiResponse = {
 	error?: string;
-	item?: Categoria;
+	item?: Subcategoria;
 };
 
-export default function CategoriaForm({
+export default function SubcategoriaForm({
 	mode,
 	values,
-	categoriaId,
+	subcategoriaId,
+	categorias,
 	canDeactivate = false,
 	onCancel,
 	onSaved,
 	onDeactivate,
 }: Props) {
+	const activas = categorias.filter((item) => item.activo);
+	const [categoriaId, setCategoriaId] = useState(values?.categoria_id || activas[0]?.id || '');
 	const [nombre, setNombre] = useState(values?.nombre ?? '');
 	const [slug, setSlug] = useState(values?.slug ?? '');
 	const [slugLocked, setSlugLocked] = useState(mode === 'edit');
@@ -35,7 +40,21 @@ export default function CategoriaForm({
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
 
-	const submitLabel = mode === 'create' ? 'Crear categoría' : 'Guardar cambios';
+	const submitLabel = mode === 'create' ? 'Crear subcategoría' : 'Guardar cambios';
+
+	const categoriaOptions = (() => {
+		const ids = new Set(activas.map((item) => item.id));
+		if (categoriaId && !ids.has(categoriaId)) {
+			const current = categorias.find((item) => item.id === categoriaId);
+			return current ? [current, ...activas] : activas;
+		}
+		return activas;
+	})();
+
+	const categoriaSlug =
+		categorias.find((item) => item.id === categoriaId)?.slug ??
+		activas.find((item) => item.id === categoriaId)?.slug ??
+		'';
 
 	useEffect(() => {
 		if (slugLocked) return;
@@ -49,12 +68,20 @@ export default function CategoriaForm({
 		const nombreTrim = nombre.trim();
 		const slugTrim = slugify(slug.trim() || nombreTrim);
 
+		if (!categoriaId) {
+			setError('Elige una categoría.');
+			return;
+		}
 		if (nombreTrim.length < 2) {
 			setError('El nombre es obligatorio.');
 			return;
 		}
 		if (!isValidSlug(slugTrim)) {
 			setError('El slug no es válido. Usa minúsculas, números y guiones.');
+			return;
+		}
+		if (file && !categoriaSlug) {
+			setError('No se pudo resolver el slug de la categoría.');
 			return;
 		}
 
@@ -65,8 +92,9 @@ export default function CategoriaForm({
 
 			if (file) {
 				const uploadData = new FormData();
-				uploadData.append('kind', 'categoria');
+				uploadData.append('kind', 'subcategoria');
 				uploadData.append('slug', slugTrim);
+				uploadData.append('parent_slug', categoriaSlug);
 				uploadData.append('file', file);
 
 				const uploaded = await fetch('/api/admin/upload', {
@@ -85,7 +113,7 @@ export default function CategoriaForm({
 			}
 
 			const endpoint =
-				mode === 'create' ? '/api/admin/categorias' : `/api/admin/categorias/${categoriaId}`;
+				mode === 'create' ? '/api/admin/subcategorias' : `/api/admin/subcategorias/${subcategoriaId}`;
 			const response = await fetch(endpoint, {
 				method: mode === 'create' ? 'POST' : 'PUT',
 				headers: {
@@ -93,6 +121,7 @@ export default function CategoriaForm({
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
+					categoria_id: categoriaId,
 					nombre: nombreTrim,
 					slug: slugTrim,
 					imagen_url: nextImagen,
@@ -113,6 +142,24 @@ export default function CategoriaForm({
 		}
 	}
 
+	if (categoriaOptions.length === 0) {
+		return (
+			<div className="admin-form admin-form--stack">
+				<p className="admin-form__hint admin-form__hint--box">
+					Primero crea una categoría activa. La subcategoría se agrupa dentro de ella.
+				</p>
+				<div className="admin-form__actions">
+					<a className="admin-btn admin-btn--primary" href="/admin/catalogo/categorias">
+						Ir a categorías
+					</a>
+					<button type="button" className="admin-btn admin-btn--ghost" onClick={onCancel}>
+						Cerrar
+					</button>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<>
 			<form className="admin-form admin-form--stack" onSubmit={handleSubmit} noValidate>
@@ -124,6 +171,22 @@ export default function CategoriaForm({
 
 				<div className="admin-form__grid">
 					<label className="admin-form__field admin-form__field--full">
+						Categoría
+						<select
+							className="admin-form__input admin-form__select"
+							required
+							value={categoriaId}
+							onChange={(event) => setCategoriaId(event.target.value)}
+						>
+							{categoriaOptions.map((item) => (
+								<option key={item.id} value={item.id}>
+									{item.activo ? item.nombre : `${item.nombre} (inactiva)`}
+								</option>
+							))}
+						</select>
+					</label>
+
+					<label className="admin-form__field admin-form__field--full">
 						Nombre
 						<input
 							className="admin-form__input"
@@ -132,7 +195,7 @@ export default function CategoriaForm({
 							minLength={2}
 							maxLength={80}
 							autoFocus
-							placeholder="Redes"
+							placeholder="Routers"
 							value={nombre}
 							onChange={(event) => setNombre(event.target.value)}
 						/>
@@ -145,7 +208,7 @@ export default function CategoriaForm({
 							type="text"
 							required
 							maxLength={80}
-							placeholder="ropa-mujer"
+							placeholder="routers"
 							value={slug}
 							onChange={(event) => {
 								setSlugLocked(true);
@@ -177,7 +240,7 @@ export default function CategoriaForm({
 
 			{mode === 'edit' && canDeactivate && onDeactivate ? (
 				<div className="admin-danger">
-					<h3 className="admin-danger__title">Eliminar categoría</h3>
+					<h3 className="admin-danger__title">Eliminar subcategoría</h3>
 					<p className="admin-danger__text">
 						Sale del listado y de la tienda. Puedes verla en Eliminados y restaurarla.
 					</p>

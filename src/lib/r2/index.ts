@@ -18,6 +18,7 @@ export {
 	deleteImage,
 	rekeyCategoria,
 	rekeyProductoImages,
+	rekeySubcategoria,
 	uploadImage,
 	type UploadInput,
 	type UploadResult,

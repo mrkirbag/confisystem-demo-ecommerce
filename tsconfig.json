@@ -7,6 +7,7 @@
       "@/lib/tienda": ["./src/lib/tienda/index.ts"],
       "@/lib/usuarios": ["./src/lib/usuarios/index.ts"],
       "@/lib/categorias": ["./src/lib/categorias/index.ts"],
+      "@/lib/subcategorias": ["./src/lib/subcategorias/index.ts"],
       "@/lib/atributos": ["./src/lib/atributos/index.ts"],
       "@/lib/productos": ["./src/lib/productos/index.ts"],
       "@/lib/auditoria": ["./src/lib/auditoria/index.ts"],

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../db';
 import { deleteImage, rekeyCategoria } from '../r2';
+import { ensureSubcategoriaSchema, rekeyImagenesPorCambioCategoria } from '../subcategorias';
 import {
 	isValidSlug,
 	type Categoria,
@@ -44,6 +45,7 @@ function mapCategoria(row: Record<string, unknown>): Categoria {
 		orden: asOrden(row.orden),
 		activo: asBool(row.activo),
 		productos: Number(row.productos ?? 0),
+		subcategorias: Number(row.subcategorias ?? 0),
 	};
 }
 
@@ -75,11 +77,13 @@ export function validateCategoriaInput(input: CategoriaInput) {
 const SELECT_SAFE = `
 	SELECT
 		id, nombre, slug, imagen_url, orden, activo,
-		(SELECT COUNT(*) FROM productos WHERE categoria_id = categorias.id) AS productos
+		(SELECT COUNT(*) FROM productos WHERE categoria_id = categorias.id) AS productos,
+		(SELECT COUNT(*) FROM subcategorias WHERE categoria_id = categorias.id) AS subcategorias
 	FROM categorias
 `;
 
 export async function listCategorias() {
+	await ensureSubcategoriaSchema();
 	const db = getDb();
 	const result = await db.execute(
 		`${SELECT_SAFE} ORDER BY nombre COLLATE NOCASE`,
@@ -88,6 +92,7 @@ export async function listCategorias() {
 }
 
 export async function getCategoriaById(id: string) {
+	await ensureSubcategoriaSchema();
 	const db = getDb();
 	const result = await db.execute({
 		sql: `${SELECT_SAFE} WHERE id = ? LIMIT 1`,
@@ -166,6 +171,10 @@ export async function updateCategoria(id: string, input: CategoriaInput) {
 		`,
 		args: [input.nombre, input.slug, imagenUrl, activo ? 1 : 0, id],
 	});
+
+	if (slugChanged) {
+		await rekeyImagenesPorCambioCategoria(id, current.slug, input.slug);
+	}
 
 	return getCategoriaById(id);
 }

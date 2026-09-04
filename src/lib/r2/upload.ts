@@ -15,6 +15,12 @@ export type UploadInput =
 	| { kind: 'logo'; file: File | Blob | Buffer | Uint8Array }
 	| { kind: 'categoria'; slug: string; file: File | Blob | Buffer | Uint8Array }
 	| {
+			kind: 'subcategoria';
+			slug: string;
+			parentSlug: string;
+			file: File | Blob | Buffer | Uint8Array;
+	  }
+	| {
 			kind: 'producto';
 			slug: string;
 			slot: ProductSlot;
@@ -32,8 +38,9 @@ export type UploadResult = {
 
 export async function uploadImage(input: UploadInput): Promise<UploadResult> {
 	const slug = input.kind === 'logo' ? undefined : assertSlug(input.slug);
+	const parentSlug = input.kind === 'subcategoria' ? assertSlug(input.parentSlug) : undefined;
 	const slot = input.kind === 'producto' ? parseProductSlot(input.slot) : undefined;
-	const key = objectKey({ kind: input.kind, slug, slot });
+	const key = objectKey({ kind: input.kind, slug, parentSlug, slot });
 	const body = await optimizeImage(input.file, input.kind);
 
 	await putObject({
@@ -61,6 +68,21 @@ export async function deleteImage(keyOrUrl: string) {
 export async function rekeyCategoria(oldSlug: string, newSlug: string) {
 	const from = objectKey({ kind: 'categoria', slug: oldSlug });
 	const to = objectKey({ kind: 'categoria', slug: newSlug });
+	if (from === to) return publicUrlFor(to);
+
+	await copyObject(from, to);
+	await deleteObject(from);
+	return publicUrlFor(to);
+}
+
+export async function rekeySubcategoria(
+	oldParentSlug: string,
+	oldSlug: string,
+	newParentSlug: string,
+	newSlug: string,
+) {
+	const from = objectKey({ kind: 'subcategoria', slug: oldSlug, parentSlug: oldParentSlug });
+	const to = objectKey({ kind: 'subcategoria', slug: newSlug, parentSlug: newParentSlug });
 	if (from === to) return publicUrlFor(to);
 
 	await copyObject(from, to);

@@ -1,6 +1,6 @@
 import { R2Error, getR2Env } from './env';
 
-export type ImageKind = 'logo' | 'categoria' | 'producto';
+export type ImageKind = 'logo' | 'categoria' | 'subcategoria' | 'producto';
 export type ProductSlot = 1 | 2 | 3;
 
 export const MAX_PRODUCT_IMAGES = 3;
@@ -9,6 +9,7 @@ export const PRODUCT_SLOTS = [1, 2, 3] as const satisfies readonly ProductSlot[]
 export const IMAGE_LIMITS = {
 	logo: 1,
 	categoria: 1,
+	subcategoria: 1,
 	producto: MAX_PRODUCT_IMAGES,
 } as const;
 
@@ -28,8 +29,10 @@ export function parseProductSlot(raw: unknown): ProductSlot {
 }
 
 export function parseImageKind(raw: unknown): ImageKind {
-	if (raw === 'logo' || raw === 'categoria' || raw === 'producto') return raw;
-	throw new R2Error('Tipo de imagen inválido. Usa logo, categoria o producto.');
+	if (raw === 'logo' || raw === 'categoria' || raw === 'subcategoria' || raw === 'producto') {
+		return raw;
+	}
+	throw new R2Error('Tipo de imagen inválido. Usa logo, categoria, subcategoria o producto.');
 }
 
 export function assertSlug(slug: string): string {
@@ -43,6 +46,7 @@ export function assertSlug(slug: string): string {
 export function objectKey(input: {
 	kind: ImageKind;
 	slug?: string;
+	parentSlug?: string;
 	slot?: ProductSlot;
 }): string {
 	if (input.kind === 'logo') return 'logo/logo.webp';
@@ -50,6 +54,12 @@ export function objectKey(input: {
 	if (input.kind === 'categoria') {
 		const slug = assertSlug(input.slug ?? '');
 		return `categorias/${slug}.webp`;
+	}
+
+	if (input.kind === 'subcategoria') {
+		const parent = assertSlug(input.parentSlug ?? '');
+		const slug = assertSlug(input.slug ?? '');
+		return `subcategorias/${parent}/${slug}.webp`;
 	}
 
 	const slug = assertSlug(input.slug ?? '');

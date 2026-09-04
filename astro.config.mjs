@@ -22,6 +22,7 @@ export default defineConfig({
 				{ find: '@/lib/tienda', replacement: lib('tienda/index.ts') },
 				{ find: /^@\/lib\/usuarios$/, replacement: lib('usuarios/index.ts') },
 				{ find: /^@\/lib\/categorias$/, replacement: lib('categorias/index.ts') },
+				{ find: /^@\/lib\/subcategorias$/, replacement: lib('subcategorias/index.ts') },
 				{ find: /^@\/lib\/atributos$/, replacement: lib('atributos/index.ts') },
 				{ find: /^@\/lib\/productos$/, replacement: lib('productos/index.ts') },
 				{ find: '@/lib/auditoria', replacement: lib('auditoria/index.ts') },

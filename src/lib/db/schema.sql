@@ -65,9 +65,22 @@ CREATE TABLE IF NOT EXISTS categorias (
     activo BOOLEAN DEFAULT 1
 );
 
+CREATE TABLE IF NOT EXISTS subcategorias (
+    id TEXT PRIMARY KEY,
+    categoria_id TEXT NOT NULL,
+    nombre TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    imagen_url TEXT,
+    orden INTEGER DEFAULT 0,
+    activo BOOLEAN DEFAULT 1,
+    FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+    UNIQUE (categoria_id, slug)
+);
+
 CREATE TABLE IF NOT EXISTS productos (
     id TEXT PRIMARY KEY,
     categoria_id TEXT NOT NULL,
+    subcategoria_id TEXT,
     nombre TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     descripcion TEXT,
@@ -81,7 +94,8 @@ CREATE TABLE IF NOT EXISTS productos (
     activo BOOLEAN DEFAULT 1,
     creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (categoria_id) REFERENCES categorias(id)
+    FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+    FOREIGN KEY (subcategoria_id) REFERENCES subcategorias(id)
 );
 
 CREATE TABLE IF NOT EXISTS productos_imagenes (
@@ -200,7 +214,10 @@ CREATE TABLE IF NOT EXISTS bitacora_auditoria (
 -- ÍNDICES
 -- ==========================================
 
+CREATE INDEX IF NOT EXISTS idx_subcategorias_categoria ON subcategorias(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_subcategorias_activo ON subcategorias(activo);
 CREATE INDEX IF NOT EXISTS idx_productos_categoria ON productos(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_productos_subcategoria ON productos(subcategoria_id);
 CREATE INDEX IF NOT EXISTS idx_productos_activo ON productos(activo);
 CREATE INDEX IF NOT EXISTS idx_productos_imagenes_producto ON productos_imagenes(producto_id);
 CREATE INDEX IF NOT EXISTS idx_variantes_producto ON producto_stock_variantes(producto_id);

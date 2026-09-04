@@ -1,51 +1,78 @@
 import { useEffect, useMemo, useState } from 'react';
-import { initialsFromName, type Categoria } from '@/lib/categorias/shared';
+import type { Categoria } from '@/lib/categorias/shared';
+import { initialsFromName, type Subcategoria } from '@/lib/subcategorias/shared';
 import ConfirmDialog from '../crud/ConfirmDialog';
 import FormModal from '../crud/FormModal';
 import { IconPencil, IconPlus, IconSearch, IconTrash } from '../crud/icons';
-import CategoriaForm from './CategoriaForm';
+import SubcategoriaForm from './SubcategoriaForm';
 
 type Props = {
-	initialItems: Categoria[];
+	initialItems: Subcategoria[];
+	categorias: Categoria[];
 };
 
 type Vista = 'activos' | 'eliminados';
 
 type Modal =
 	| { kind: 'create' }
-	| { kind: 'edit'; item: Categoria };
+	| { kind: 'edit'; item: Subcategoria };
 
 type PendingOff = {
 	id: string;
 	nombre: string;
 	productos: number;
-	subcategorias: number;
 };
 
-export default function CategoriasCrud({ initialItems }: Props) {
+export default function SubcategoriasCrud({ initialItems, categorias }: Props) {
 	const [items, setItems] = useState(initialItems);
 	const [modal, setModal] = useState<Modal | null>(null);
 	const [query, setQuery] = useState('');
 	const [vista, setVista] = useState<Vista>('activos');
+	const [categoriaId, setCategoriaId] = useState('');
 	const [flash, setFlash] = useState('');
 	const [listError, setListError] = useState('');
 	const [pendingOff, setPendingOff] = useState<PendingOff | null>(null);
 	const [busy, setBusy] = useState(false);
 
 	const verEliminados = vista === 'eliminados';
+	const hasActiveCategoria = categorias.some((item) => item.activo);
+
+	const categoriaOptions = useMemo(
+		() =>
+			categorias
+				.filter((item) => item.activo)
+				.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+		[categorias],
+	);
+
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		const fromUrl = params.get('categoria') ?? '';
+		if (fromUrl) setCategoriaId(fromUrl);
+	}, []);
+
 	const pool = useMemo(
 		() => items.filter((item) => (verEliminados ? !item.activo : item.activo)),
 		[items, verEliminados],
 	);
 
+	const hasFilters = Boolean(categoriaId) || Boolean(query.trim());
+
 	const filtered = useMemo(() => {
 		const needle = query.trim().toLowerCase();
-		if (!needle) return pool;
 		return pool.filter((item) => {
-			const haystack = `${item.nombre} ${item.slug}`.toLowerCase();
+			if (categoriaId && item.categoria_id !== categoriaId) return false;
+			if (!needle) return true;
+			const haystack = `${item.nombre} ${item.slug} ${item.categoria_nombre}`.toLowerCase();
 			return haystack.includes(needle);
 		});
-	}, [pool, query]);
+	}, [pool, query, categoriaId]);
+
+	useEffect(() => {
+		if (categoriaId && !categorias.some((item) => item.id === categoriaId)) {
+			setCategoriaId('');
+		}
+	}, [categoriaId, categorias]);
 
 	useEffect(() => {
 		if (!flash) return;
@@ -58,37 +85,43 @@ export default function CategoriasCrud({ initialItems }: Props) {
 		setFlash(message);
 	}
 
-	function upsert(item: Categoria) {
+	function upsert(item: Subcategoria) {
 		setItems((current) => {
 			const exists = current.some((row) => row.id === item.id);
 			const next = exists
 				? current.map((row) => (row.id === item.id ? item : row))
 				: [item, ...current];
-			return [...next].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+			return [...next].sort((a, b) => {
+				const cat = a.categoria_nombre.localeCompare(b.categoria_nombre, 'es');
+				return cat !== 0 ? cat : a.nombre.localeCompare(b.nombre, 'es');
+			});
 		});
 	}
 
-	function handleCreated(item: Categoria) {
+	function handleCreated(item: Subcategoria) {
 		upsert(item);
 		setModal(null);
-		showFlash('Categoría creada.');
+		showFlash('Subcategoría creada.');
 	}
 
-	function handleUpdated(item: Categoria) {
+	function handleUpdated(item: Subcategoria) {
 		upsert(item);
 		setModal(null);
 		showFlash('Cambios guardados.');
 	}
 
-	function requestDeactivate(item: Pick<Categoria, 'id' | 'nombre' | 'productos' | 'subcategorias' | 'activo'>) {
+	function openCreate() {
+		if (!hasActiveCategoria) {
+			setListError('Crea una categoría activa antes de agregar subcategorías.');
+			return;
+		}
+		setModal({ kind: 'create' });
+	}
+
+	function requestDeactivate(item: Pick<Subcategoria, 'id' | 'nombre' | 'productos' | 'activo'>) {
 		if (!item.activo) return;
 		setModal(null);
-		setPendingOff({
-			id: item.id,
-			nombre: item.nombre,
-			productos: item.productos,
-			subcategorias: item.subcategorias,
-		});
+		setPendingOff({ id: item.id, nombre: item.nombre, productos: item.productos });
 	}
 
 	async function confirmDeactivate() {
@@ -97,13 +130,13 @@ export default function CategoriasCrud({ initialItems }: Props) {
 		setListError('');
 
 		try {
-			const response = await fetch(`/api/admin/categorias/${pendingOff.id}`, {
+			const response = await fetch(`/api/admin/subcategorias/${pendingOff.id}`, {
 				method: 'DELETE',
 				headers: { Accept: 'application/json' },
 			});
 			const payload = (await response.json().catch(() => ({}))) as {
 				error?: string;
-				item?: Categoria;
+				item?: Subcategoria;
 			};
 			if (!response.ok || !payload.item) {
 				setListError(payload.error || 'No se pudo eliminar.');
@@ -114,7 +147,7 @@ export default function CategoriasCrud({ initialItems }: Props) {
 			upsert(payload.item);
 			setPendingOff(null);
 			setBusy(false);
-			showFlash('Categoría eliminada.');
+			showFlash('Subcategoría eliminada.');
 		} catch {
 			setListError('No se pudo eliminar. Revisa la conexión.');
 			setBusy(false);
@@ -122,10 +155,10 @@ export default function CategoriasCrud({ initialItems }: Props) {
 		}
 	}
 
-	async function activate(item: Categoria) {
+	async function activate(item: Subcategoria) {
 		setListError('');
 		try {
-			const response = await fetch(`/api/admin/categorias/${item.id}`, {
+			const response = await fetch(`/api/admin/subcategorias/${item.id}`, {
 				method: 'PATCH',
 				headers: {
 					Accept: 'application/json',
@@ -135,14 +168,14 @@ export default function CategoriasCrud({ initialItems }: Props) {
 			});
 			const payload = (await response.json().catch(() => ({}))) as {
 				error?: string;
-				item?: Categoria;
+				item?: Subcategoria;
 			};
 			if (!response.ok || !payload.item) {
 				setListError(payload.error || 'No se pudo restaurar.');
 				return;
 			}
 			upsert(payload.item);
-			showFlash('Categoría restaurada.');
+			showFlash('Subcategoría restaurada.');
 		} catch {
 			setListError('No se pudo restaurar. Revisa la conexión.');
 		}
@@ -152,7 +185,7 @@ export default function CategoriasCrud({ initialItems }: Props) {
 		<section>
 			<header className="admin-section-header">
 				<p className="admin-section-header__kicker">Catálogo</p>
-				<h1 className="admin-section-header__title">Categorías</h1>
+				<h1 className="admin-section-header__title">Subcategorías</h1>
 			</header>
 
 			{flash ? <div className="admin-flash">{flash}</div> : null}
@@ -165,26 +198,22 @@ export default function CategoriasCrud({ initialItems }: Props) {
 			<div className="admin-toolbar">
 				<div className="admin-toolbar__bar">
 					<p className="admin-toolbar__count">
-						<strong>{query.trim() ? filtered.length : pool.length}</strong>
+						<strong>{hasFilters ? filtered.length : pool.length}</strong>
 						<span>
-							{query.trim()
-								? `de ${pool.length} ${verEliminados ? (pool.length === 1 ? 'eliminada' : 'eliminadas') : pool.length === 1 ? 'categoría' : 'categorías'}`
+							{hasFilters
+								? `de ${pool.length} ${verEliminados ? (pool.length === 1 ? 'eliminada' : 'eliminadas') : pool.length === 1 ? 'subcategoría' : 'subcategorías'}`
 								: verEliminados
 									? pool.length === 1
 										? 'eliminada'
 										: 'eliminadas'
 									: pool.length === 1
-										? 'categoría'
-										: 'categorías'}
+										? 'subcategoría'
+										: 'subcategorías'}
 						</span>
 					</p>
-					<button
-						type="button"
-						className="admin-btn admin-btn--primary"
-						onClick={() => setModal({ kind: 'create' })}
-					>
+					<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
 						<IconPlus />
-						Nueva categoría
+						Nueva subcategoría
 					</button>
 				</div>
 				<div className="admin-toolbar__filters">
@@ -206,9 +235,24 @@ export default function CategoriasCrud({ initialItems }: Props) {
 							Eliminados
 						</button>
 					</div>
+					<label className={`admin-toolbar__select${categoriaId ? ' is-on' : ''}`}>
+						<span className="visually-hidden">Filtrar por categoría</span>
+						<select
+							className="admin-toolbar__control"
+							value={categoriaId}
+							onChange={(event) => setCategoriaId(event.target.value)}
+						>
+							<option value="">Todas las categorías</option>
+							{categoriaOptions.map((item) => (
+								<option key={item.id} value={item.id}>
+									{item.nombre}
+								</option>
+							))}
+						</select>
+					</label>
 					<label className="admin-toolbar__search">
 						<IconSearch className="admin-toolbar__search-icon" />
-						<span className="visually-hidden">Buscar categoría</span>
+						<span className="visually-hidden">Buscar subcategoría</span>
 						<input
 							className="admin-toolbar__control"
 							type="search"
@@ -222,40 +266,51 @@ export default function CategoriasCrud({ initialItems }: Props) {
 
 			{items.length === 0 ? (
 				<div className="admin-empty">
-					<p className="admin-empty__title">Aún no hay categorías</p>
+					<p className="admin-empty__title">Aún no hay subcategorías</p>
 					<p className="admin-empty__text">
-						Crea la primera (por ejemplo Redes). Luego agrégale subcategorías como Módems o Routers.
+						{hasActiveCategoria
+							? 'Ejemplo: en Redes crea Módems, Routers, Decos o Extensores. Los productos se asignan a la subcategoría.'
+							: 'Primero crea una categoría activa.'}
 					</p>
-					<button
-						type="button"
-						className="admin-btn admin-btn--primary"
-						onClick={() => setModal({ kind: 'create' })}
-					>
-						<IconPlus />
-						Nueva categoría
-					</button>
+					{hasActiveCategoria ? (
+						<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
+							<IconPlus />
+							Nueva subcategoría
+						</button>
+					) : (
+						<a className="admin-btn admin-btn--primary" href="/admin/catalogo/categorias">
+							Ir a categorías
+						</a>
+					)}
 				</div>
 			) : pool.length === 0 ? (
 				<div className="admin-empty">
 					<p className="admin-empty__title">
-						{verEliminados ? 'No hay eliminadas' : 'No hay categorías'}
+						{verEliminados ? 'No hay eliminadas' : 'No hay subcategorías'}
 					</p>
 					<p className="admin-empty__text">
 						{verEliminados
-							? 'Las categorías que elimines aparecerán aquí para restaurarlas.'
+							? 'Las subcategorías que elimines aparecerán aquí para restaurarlas.'
 							: 'Todas están en Eliminados. Restaura una para volver a usarla.'}
 					</p>
 				</div>
 			) : filtered.length === 0 ? (
 				<div className="admin-empty">
 					<p className="admin-empty__title">Sin coincidencias</p>
-					<p className="admin-empty__text">Ninguna categoría coincide con esa búsqueda.</p>
+					<p className="admin-empty__text">
+						{categoriaId && query.trim()
+							? 'Ninguna subcategoría coincide con esa categoría y búsqueda.'
+							: categoriaId
+								? 'Ninguna subcategoría en esta categoría.'
+								: 'Ninguna subcategoría coincide con esa búsqueda.'}
+					</p>
 				</div>
 			) : (
 				<div className="admin-table-wrap">
 					<table className="admin-table admin-table--simple">
 						<thead>
 							<tr>
+								<th>Subcategoría</th>
 								<th>Categoría</th>
 								<th className="admin-table__th-actions">Acciones</th>
 							</tr>
@@ -274,23 +329,11 @@ export default function CategoriasCrud({ initialItems }: Props) {
 											)}
 											<span className="admin-table__identity">
 												<span className="admin-table__name">{item.nombre}</span>
-												<span className="admin-table__meta">
-													{item.slug}
-													{item.subcategorias > 0 ? (
-														<>
-															{' · '}
-															<a href={`/admin/catalogo/subcategorias?categoria=${item.id}`}>
-																{item.subcategorias}{' '}
-																{item.subcategorias === 1 ? 'subcategoría' : 'subcategorías'}
-															</a>
-														</>
-													) : (
-														' · sin subcategorías'
-													)}
-												</span>
+												<span className="admin-table__meta">{item.slug}</span>
 											</span>
 										</div>
 									</td>
+									<td data-label="Categoría">{item.categoria_nombre}</td>
 									<td className="admin-table__td-actions" data-label="Acciones">
 										<div className="admin-table__actions">
 											<button
@@ -330,24 +373,28 @@ export default function CategoriasCrud({ initialItems }: Props) {
 
 			<FormModal
 				open={Boolean(modal)}
-				title={modal?.kind === 'edit' ? 'Editar categoría' : 'Nueva categoría'}
+				title={modal?.kind === 'edit' ? 'Editar subcategoría' : 'Nueva subcategoría'}
 				size="form"
 				onClose={() => setModal(null)}
 			>
 				{modal?.kind === 'create' ? (
-					<CategoriaForm
+					<SubcategoriaForm
 						key="create"
 						mode="create"
+						categorias={categorias}
+						values={categoriaId ? { categoria_id: categoriaId, nombre: '', slug: '', imagen_url: null } : undefined}
 						onCancel={() => setModal(null)}
 						onSaved={handleCreated}
 					/>
 				) : null}
 				{modal?.kind === 'edit' ? (
-					<CategoriaForm
+					<SubcategoriaForm
 						key={modal.item.id}
 						mode="edit"
-						categoriaId={modal.item.id}
+						subcategoriaId={modal.item.id}
+						categorias={categorias}
 						values={{
+							categoria_id: modal.item.categoria_id,
 							nombre: modal.item.nombre,
 							slug: modal.item.slug,
 							imagen_url: modal.item.imagen_url,
@@ -362,11 +409,11 @@ export default function CategoriasCrud({ initialItems }: Props) {
 
 			<ConfirmDialog
 				open={Boolean(pendingOff)}
-				title="Eliminar categoría"
+				title="Eliminar subcategoría"
 				text={
 					pendingOff
-						? pendingOff.productos > 0 || pendingOff.subcategorias > 0
-							? `¿Eliminar ${pendingOff.nombre}? Tiene ${pendingOff.subcategorias} ${pendingOff.subcategorias === 1 ? 'subcategoría' : 'subcategorías'} y ${pendingOff.productos} ${pendingOff.productos === 1 ? 'producto' : 'productos'}. Saldrá del listado y de la tienda. Puedes restaurarla en Eliminados.`
+						? pendingOff.productos > 0
+							? `¿Eliminar ${pendingOff.nombre}? Tiene ${pendingOff.productos} ${pendingOff.productos === 1 ? 'producto' : 'productos'}. Saldrá del listado y de la tienda. Puedes restaurarla en Eliminados.`
 							: `¿Eliminar ${pendingOff.nombre}? Saldrá del listado y de la tienda. Puedes restaurarla en Eliminados.`
 						: ''
 				}

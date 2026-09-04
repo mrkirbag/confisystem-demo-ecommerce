@@ -1,0 +1,14 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import SubcategoriasCrud from '@/components/admin/subcategorias/SubcategoriasCrud';
+import { listCategorias } from '@/lib/categorias';
+import { listSubcategorias } from '@/lib/subcategorias';
+
+export const prerender = false;
+
+const [items, categorias] = await Promise.all([listSubcategorias(), listCategorias()]);
+---
+
+<AdminLayout title="Subcategorías">
+	<SubcategoriasCrud client:load initialItems={items} categorias={categorias} />
+</AdminLayout>

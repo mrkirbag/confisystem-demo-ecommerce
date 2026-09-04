@@ -30,6 +30,8 @@ export type ProductoListado = {
 	id: string;
 	categoria_id: string;
 	categoria_nombre: string;
+	subcategoria_id: string | null;
+	subcategoria_nombre: string | null;
 	nombre: string;
 	slug: string;
 	imagen_url: string | null;
@@ -153,6 +155,8 @@ export function toListado(item: Producto): ProductoListado {
 		id: item.id,
 		categoria_id: item.categoria_id,
 		categoria_nombre: item.categoria_nombre,
+		subcategoria_id: item.subcategoria_id,
+		subcategoria_nombre: item.subcategoria_nombre,
 		nombre: item.nombre,
 		slug: item.slug,
 		imagen_url: item.imagenes[0]?.url ?? item.imagen_url,

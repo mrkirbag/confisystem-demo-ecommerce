@@ -1,6 +1,7 @@
 export type AdminNavIcon =
 	| 'catalogo'
 	| 'categorias'
+	| 'subcategorias'
 	| 'atributos'
 	| 'productos'
 	| 'pedidos'
@@ -41,6 +42,13 @@ export const ADMIN_NAV: AdminNavEntry[] = [
 				label: 'Categorías',
 				kicker: 'Organización',
 				icon: 'categorias',
+			},
+			{
+				type: 'link',
+				href: '/admin/catalogo/subcategorias',
+				label: 'Subcategorías',
+				kicker: 'Agrupación',
+				icon: 'subcategorias',
 			},
 			{
 				type: 'link',

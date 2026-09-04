@@ -39,12 +39,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
 				? await uploadImage({ kind, file })
 				: kind === 'categoria'
 					? await uploadImage({ kind, slug, file })
-					: await uploadImage({
-							kind,
-							slug,
-							slot: parseProductSlot(form.get('slot') ?? 1),
-							file,
-						});
+					: kind === 'subcategoria'
+						? await uploadImage({
+								kind,
+								slug,
+								parentSlug: String(form.get('parent_slug') ?? ''),
+								file,
+							})
+						: await uploadImage({
+								kind,
+								slug,
+								slot: parseProductSlot(form.get('slot') ?? 1),
+								file,
+							});
 
 		return json({ ok: true, ...result });
 	} catch (error) {
