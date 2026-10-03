@@ -201,7 +201,7 @@ export default function AtributosCrud({ initialItems }: Props) {
 										<div className="admin-table__actions">
 											<button
 												type="button"
-												className="admin-btn admin-btn--ghost admin-btn--icon-label"
+												className="admin-btn admin-btn--info admin-btn--icon-label"
 												onClick={() => setModal({ kind: 'edit', item })}
 											>
 												<IconPencil />

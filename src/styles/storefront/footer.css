@@ -1,0 +1,257 @@
+/* FOOTER PROFESIONAL, BONITO Y CORTO */
+.sfoot {
+	margin-top: 3rem;
+	background: var(--color-fondo, var(--bg, #484747)) !important;
+	border-top: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+	color: #e2e8f0 !important;
+	font-family: inherit;
+}
+
+.sfoot__container {
+	max-width: 78rem;
+	margin: 0 auto;
+	padding: 1.75rem clamp(1rem, 3.5vw, 2.5rem) 1.25rem;
+}
+
+.sfoot__grid {
+	display: grid;
+	grid-template-columns: 1.2fr 1.2fr 1.4fr;
+	gap: 2.25rem;
+	align-items: start;
+	padding-bottom: 1.25rem;
+}
+
+/* Columna 1: Marca */
+.sfoot__col--brand {
+	display: flex;
+	flex-direction: column;
+	gap: 0.65rem;
+}
+
+.sfoot__brand-header {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.sfoot__logo {
+	width: 2.6rem;
+	height: 2.6rem;
+	border-radius: 0.65rem;
+	object-fit: cover;
+	border: 1.5px solid #334155;
+	background: #1e293b;
+	flex-shrink: 0;
+}
+
+.sfoot__fallback {
+	display: grid;
+	place-items: center;
+	width: 2.6rem;
+	height: 2.6rem;
+	border-radius: 0.65rem;
+	background: var(--color-primario, #fff700);
+	color: #090901;
+	font-family: var(--font-titulos, sans-serif);
+	font-size: 1.25rem;
+	font-weight: 900;
+	flex-shrink: 0;
+}
+
+.sfoot__brand-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.sfoot__brand-title {
+	margin: 0;
+	font-size: 1.15rem;
+	font-weight: 850;
+	color: #ffffff !important;
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+}
+
+.sfoot__brand-rif {
+	font-size: 0.72rem;
+	font-weight: 750;
+	color: #94a3b8 !important;
+}
+
+.sfoot__tagline {
+	margin: 0;
+	font-size: 0.8rem;
+	color: #94a3b8 !important;
+	line-height: 1.45;
+	max-width: 20rem;
+}
+
+/* Encabezados */
+.sfoot__heading {
+	margin: 0 0 0.65rem;
+	font-size: 0.78rem;
+	font-weight: 850;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--color-primario, #fff700) !important;
+}
+
+.sfoot__heading-sub {
+	margin: 0.85rem 0 0.5rem;
+	font-size: 0.74rem;
+	font-weight: 800;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: #94a3b8 !important;
+}
+
+/* Columna 2: Lista de Atención */
+.sfoot__list {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.sfoot__list-item {
+	display: flex !important;
+	align-items: center;
+	gap: 0.55rem;
+	font-size: 0.8rem;
+	color: #cbd5e1 !important;
+	line-height: 1.35;
+}
+
+.sfoot__icon {
+	color: var(--color-primario, #fff700) !important;
+	flex-shrink: 0;
+}
+
+.sfoot__link {
+	color: #cbd5e1 !important;
+	text-decoration: none;
+	transition: color 0.15s ease;
+}
+
+.sfoot__link:hover {
+	color: var(--color-primario, #fff700) !important;
+	text-decoration: underline;
+}
+
+/* Columna 3: Redes y Pagos */
+.sfoot__social-section {
+	display: flex;
+	flex-direction: column;
+}
+
+.sfoot__social-btns {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.sfoot__social-btn {
+	display: inline-flex !important;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.38rem 0.8rem;
+	border-radius: 9999px;
+	font-size: 0.78rem;
+	font-weight: 750;
+	text-decoration: none !important;
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sfoot__social-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.sfoot__social-btn--wa {
+	background: #16a34a !important;
+	color: #ffffff !important;
+	border: 1px solid #22c55e !important;
+}
+
+.sfoot__social-btn--ig {
+	background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045) !important;
+	color: #ffffff !important;
+	border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.sfoot__social-btn--tt {
+	background: #000000 !important;
+	color: #ffffff !important;
+	border: 1px solid #334155 !important;
+}
+
+/* Formas de Pago */
+.sfoot__pay-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+
+.sfoot__pay-badge {
+	display: inline-block;
+	padding: 0.25rem 0.6rem;
+	border-radius: 0.45rem;
+	background: rgba(0, 0, 0, 0.25) !important;
+	border: 1px solid rgba(255, 255, 255, 0.16) !important;
+	font-size: 0.74rem;
+	font-weight: 700;
+	color: #ffffff !important;
+	letter-spacing: 0.01em;
+}
+
+/* Barra Inferior */
+.sfoot__bottom {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding-top: 1rem;
+	border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+	font-size: 0.76rem;
+	color: #cbd5e1 !important;
+}
+
+.sfoot__copy {
+	margin: 0;
+}
+
+.sfoot__copy strong {
+	color: #ffffff !important;
+}
+
+.sfoot__status {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.45rem;
+	font-weight: 750;
+	color: #22c55e !important;
+}
+
+.sfoot__status-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #22c55e;
+	box-shadow: 0 0 8px #22c55e;
+	display: inline-block;
+}
+
+@media (max-width: 860px) {
+	.sfoot__grid {
+		grid-template-columns: 1fr;
+		gap: 1.35rem;
+	}
+
+	.sfoot__tagline {
+		max-width: 100%;
+	}
+}

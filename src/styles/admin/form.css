@@ -238,6 +238,26 @@
 	filter: brightness(0.98);
 }
 
+.admin-btn--info {
+	background: var(--info-bg);
+	border-color: var(--info-line);
+	color: var(--info-ink);
+}
+
+.admin-btn--info:hover:not(:disabled) {
+	filter: brightness(0.99);
+}
+
+.admin-btn--success {
+	background: var(--success-bg);
+	border-color: var(--success-line);
+	color: var(--success-ink);
+}
+
+.admin-btn--success:hover:not(:disabled) {
+	filter: brightness(0.99);
+}
+
 .admin-btn--icon {
 	min-height: 2.2rem;
 	padding: 0.4rem 0.55rem;

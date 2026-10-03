@@ -2,3 +2,5 @@
 @import '../tokens.css';
 @import '../base.css';
 @import './product.css';
+@import './cart.css';
+@import './footer.css';

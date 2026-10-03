@@ -1,24 +1,53 @@
 ---
 import '../styles/storefront/index.css';
+import FloatingCart from '../components/landing/FloatingCart.astro';
 
 interface Props {
 	title?: string;
+	storeName?: string;
+	logoUrl?: string | null;
+	whatsapp?: string | null;
+	storeAddress?: string | null;
+	themeVars?: string;
+	fontsHref?: string;
 }
 
-const { title = 'Demo Ecommerce' } = Astro.props;
+const {
+	title,
+	storeName = 'Demo Tienda',
+	logoUrl = null,
+	whatsapp = null,
+	storeAddress = null,
+	themeVars = '',
+	fontsHref = '',
+} = Astro.props;
+
+const docTitle = title ? `${title} · ${storeName}` : storeName;
+const faviconUrl = logoUrl || '/favicon.ico';
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="es" style={themeVars}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
+		<link rel="icon" type="image/webp" href={logoUrl || '/favicon.webp'} />
+		<link rel="icon" type="image/png" href="/favicon.png" />
+		<link rel="icon" href={faviconUrl} />
+		<link rel="apple-touch-icon" href={logoUrl || '/favicon.png'} />
+		{fontsHref ? (
+			<>
+				<link rel="preconnect" href="https://fonts.googleapis.com" />
+				<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+				<link href={fontsHref} rel="stylesheet" />
+			</>
+		) : null}
 		<meta name="generator" content={Astro.generator} />
-		<title>{title}</title>
+		<title>{docTitle}</title>
 	</head>
 	<body class="storefront">
 		<slot />
+		<FloatingCart storeName={storeName} whatsapp={whatsapp} storeAddress={storeAddress} />
 	</body>
 </html>

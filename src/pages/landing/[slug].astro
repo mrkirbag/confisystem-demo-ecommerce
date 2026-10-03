@@ -1,0 +1,1555 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StoreNav from "../../components/landing/StoreNav.astro";
+import { listCategorias } from "@/lib/categorias";
+import { listSubcategorias } from "@/lib/subcategorias";
+import { getProductoBySlug } from "@/lib/productos";
+import { listAtributos } from "@/lib/atributos";
+import {
+	COMBINACION_UNICA,
+	descuentoPorcentaje,
+	formatCombinacion,
+	formatPrecio,
+	formatStock,
+	inferVarianteSeleccion,
+	initialsFromName,
+	parseCombinacion,
+} from "@/lib/productos/shared";
+import {
+	getTiendaConfig,
+	getTiendaConfiguracion,
+	getTiendaPersonalizacion,
+	googleFontsHref,
+	themeStyleVars,
+} from "@/lib/tienda";
+
+export const prerender = false;
+
+const slug = Astro.params.slug as string;
+
+const [
+	config,
+	configuracion,
+	theme,
+	categorias,
+	subcategorias,
+	atributos,
+	producto,
+] = await Promise.all([
+	getTiendaConfig(),
+	getTiendaConfiguracion(),
+	getTiendaPersonalizacion(),
+	listCategorias(),
+	listSubcategorias(),
+	listAtributos(),
+	getProductoBySlug(slug),
+]);
+
+if (!producto || !producto.activo) {
+	return Astro.redirect("/");
+}
+
+const storeName =
+	configuracion?.nombre_tienda || config.nombre_tienda || "Demo Tienda";
+const themeVars = themeStyleVars(theme);
+const fontsHref = googleFontsHref(theme.fuente_titulos, theme.fuente_cuerpo);
+
+const brand = {
+	nombre: storeName,
+	logoUrl: configuracion?.logo_url || config.logo_url || null,
+	whatsapp: configuracion?.whatsapp || config.whatsapp || null,
+	instagram: configuracion?.instagram || null,
+	tiktok: configuracion?.tiktok || null,
+	telefono: configuracion?.telefono || null,
+	direccion: configuracion?.direccion || null,
+	horario: configuracion?.horario || null,
+	correo: configuracion?.correo || null,
+};
+
+const storeInitial = storeName.trim().charAt(0).toUpperCase() || "D";
+
+const navCategorias = categorias
+	.filter((cat) => cat.activo)
+	.map((cat) => ({
+		id: cat.id,
+		nombre: cat.nombre,
+		slug: cat.slug,
+		subcategorias: subcategorias
+			.filter((sub) => sub.activo && sub.categoria_id === cat.id)
+			.map((sub) => ({ id: sub.id, nombre: sub.nombre, slug: sub.slug })),
+	}));
+
+const inferred = inferVarianteSeleccion(producto.variantes, atributos);
+const grupos = inferred.atributoIds
+	.map((attrId) => {
+		const atributo = atributos.find((row) => row.id === attrId);
+		if (!atributo) return null;
+		return {
+			id: attrId,
+			nombre: atributo.nombre,
+			valores: inferred.opciones[attrId] ?? [],
+		};
+	})
+	.filter(
+		(group): group is { id: string; nombre: string; valores: string[] } =>
+			Boolean(group),
+	);
+
+const preferred =
+	producto.variantes.find((variante) => variante.stock > 0) ??
+	producto.variantes[0];
+const preferredParts = preferred ? parseCombinacion(preferred.combinacion) : [];
+
+const picked: Record<string, string> = {};
+for (const group of grupos) {
+	const fromVariant = preferredParts.find(
+		(part) => part.nombre === group.nombre,
+	)?.valor;
+	picked[group.id] = fromVariant || group.valores[0] || "";
+}
+
+const combinacion =
+	grupos.length === 0
+		? COMBINACION_UNICA
+		: formatCombinacion(
+				grupos.map((group) => ({
+					nombre: group.nombre,
+					valor: picked[group.id] || "",
+				})),
+			);
+
+const parseParts = (comb: string) => {
+	const map: Record<string, string> = {};
+	if (!comb || comb === COMBINACION_UNICA) return map;
+	comb.split(" / ").forEach((part) => {
+		const idx = part.indexOf(": ");
+		if (idx !== -1) {
+			map[part.slice(0, idx).trim().toLowerCase()] = part
+				.slice(idx + 2)
+				.trim()
+				.toLowerCase();
+		}
+	});
+	return map;
+};
+
+const variante =
+	grupos.length === 0
+		? (producto.variantes[0] ?? null)
+		: (producto.variantes.find((row) => {
+				const vMap = parseParts(row.combinacion);
+				return grupos.every((g) => {
+					const targetVal = (picked[g.id] || "").trim().toLowerCase();
+					const vVal = (vMap[g.nombre.trim().toLowerCase()] || "")
+						.trim()
+						.toLowerCase();
+					return targetVal === vVal;
+				});
+			}) ??
+			producto.variantes.find((row) => row.combinacion === combinacion) ??
+			producto.variantes[0] ??
+			null);
+
+// LÓGICA COHERENTE DE PRECIOS (PRODUCTO, VARIANTES Y OFERTA)
+const basePrice = Number(producto.precio_base) || 0;
+const isByVariant = Boolean(producto.precio_por_variante);
+const variantPrice =
+	variante && isByVariant && Number(variante.precio) > 0
+		? Number(variante.precio)
+		: basePrice;
+
+const offerActive = Boolean(producto.en_oferta);
+const offerPrice = Number(producto.precio_oferta) || 0;
+const hasOffer = offerActive && offerPrice > 0 && offerPrice < basePrice;
+
+let regularPrice = variantPrice;
+let salePrice = regularPrice;
+let descuento = 0;
+
+if (hasOffer) {
+	if (regularPrice === basePrice) {
+		salePrice = offerPrice;
+	} else {
+		const ratio = (basePrice - offerPrice) / basePrice;
+		salePrice = Math.round(regularPrice * (1 - ratio) * 100) / 100;
+	}
+	if (regularPrice > salePrice) {
+		descuento = Math.round((1 - salePrice / regularPrice) * 100);
+	}
+}
+
+const esOferta = hasOffer && descuento > 0;
+const listPrice = regularPrice;
+const payPrice = salePrice;
+const stock = variante?.stock ?? 0;
+const disponible = stock > 0;
+const agotado = producto.variantes.every((row) => row.stock <= 0);
+const fotos = producto.imagenes ?? [];
+const initials = initialsFromName(producto.nombre);
+
+const extras = producto.detalles
+	.map((detalle) => {
+		const atributo = atributos.find(
+			(row) => row.id === detalle.atributo_id,
+		);
+		if (!atributo) return null;
+		return { nombre: atributo.nombre, valor: detalle.valor };
+	})
+	.filter((row): row is { nombre: string; valor: string } => Boolean(row));
+
+const catLabel = producto.subcategoria_nombre
+	? `${producto.categoria_nombre} / ${producto.subcategoria_nombre}`
+	: producto.categoria_nombre;
+
+const waNumber = brand.whatsapp;
+const buildWaText = (nombre: string, combo: string, cantidad: number) => {
+	const suffix = combo && combo !== COMBINACION_UNICA ? ` (${combo})` : "";
+	return `Hola, me interesa comprar: ${nombre}${suffix} x${cantidad}`;
+};
+const waHref = waNumber
+	? `https://wa.me/${waNumber}?text=${encodeURIComponent(buildWaText(producto.nombre, combinacion, 1))}`
+	: null;
+
+const waAskHref = waNumber
+	? `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hola, tengo una pregunta sobre: ${producto.nombre}`)}`
+	: null;
+
+const pdpData = {
+	nombre: producto.nombre,
+	slug: producto.slug,
+	whatsapp: waNumber,
+	precioBase: producto.precio_base,
+	enOferta: producto.en_oferta,
+	precioOferta: producto.precio_oferta,
+	precioPorVariante: producto.precio_por_variante,
+	combinacionUnica: COMBINACION_UNICA,
+	grupos,
+	variantes: producto.variantes.map((row) => ({
+		combinacion: row.combinacion,
+		stock: row.stock,
+		sku: row.sku,
+		precio: row.precio,
+	})),
+	fotos: fotos.map((img) => ({ url: img.url })),
+};
+const pdpDataJson = JSON.stringify(pdpData);
+---
+
+<Layout
+	title={producto.nombre}
+	storeName={storeName}
+	logoUrl={brand.logoUrl}
+	whatsapp={brand.whatsapp}
+	storeAddress={brand.direccion}
+	themeVars={themeVars}
+	fontsHref={fontsHref}
+>
+	<StoreNav
+		storeName={storeName}
+		logoUrl={brand.logoUrl}
+		categorias={navCategorias}
+	/>
+
+	<main class="page-pdp" id="top" data-pdp>
+		<!-- BARRA SUPERIOR DE NAVEGACIÓN Y COMPARTIR -->
+		<div class="pdp-nav-strip">
+			<a href="/" class="pdp-back-btn" aria-label="Volver al catálogo">
+				<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+					<path
+						fill-rule="evenodd"
+						d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+						clip-rule="evenodd"></path>
+				</svg>
+				<span>Volver al catálogo</span>
+			</a>
+
+			<nav class="pdp-breadcrumbs" aria-label="Ruta de navegación">
+				<a href="/">Inicio</a>
+				{
+					producto.categoria_nombre && (
+						<>
+							<span class="sep">/</span>
+							<a
+								href={`/?categoria=${producto.categoria_nombre}`}
+							>
+								{producto.categoria_nombre}
+							</a>
+						</>
+					)
+				}
+				{
+					producto.subcategoria_nombre && (
+						<>
+							<span class="sep">/</span>
+							<span class="current">
+								{producto.subcategoria_nombre}
+							</span>
+						</>
+					)
+				}
+			</nav>
+
+			<div class="pdp-share-wrap">
+				<button
+					type="button"
+					class="pdp-share-btn"
+					data-pdp-share
+					aria-label="Compartir este producto"
+				>
+					<svg
+						viewBox="0 0 20 20"
+						fill="currentColor"
+						width="15"
+						height="15"
+						aria-hidden="true"
+					>
+						<path
+							d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"
+						></path>
+					</svg>
+					<span>Compartir</span>
+				</button>
+				<span class="pdp-share-toast" data-pdp-share-toast
+					>¡Enlace copiado!</span
+				>
+			</div>
+		</div>
+
+		<!-- GRID PRINCIPAL DE PRODUCTO ESTILO MERCADO LIBRE -->
+		<div class="pdp-main-grid">
+			<!-- COLUMNA IZQUIERDA: SÓLO IMAGEN (FIJA EN PC, SCROLL NORMAL EN MÓVIL) -->
+			<div
+				class="pdp-box pdp-box-pad pdp-gallery-card"
+				data-pdp-gallery-card
+			>
+				<!-- GALERÍA DE IMÁGENES -->
+				<div class="pdp-gallery-wrap">
+					{
+						fotos.length > 1 && (
+							<div
+								class="pdp-thumbs-col"
+								role="list"
+								aria-label="Galería de fotos"
+							>
+								{fotos.map((img, index) => (
+									<button
+										type="button"
+										role="listitem"
+										class:list={[
+											"pdp-thumb-item",
+											{ "is-active": index === 0 },
+										]}
+										data-pdp-thumb
+										aria-label={`Ver foto ${index + 1}`}
+									>
+										<img
+											src={img.url}
+											alt={`${producto.nombre} - foto ${index + 1}`}
+											loading="lazy"
+										/>
+									</button>
+								))}
+							</div>
+						)
+					}
+
+					<div
+						class:list={[
+							"pdp-hero-container",
+							{ "is-sold-out": !disponible },
+						]}
+						data-pdp-hero
+					>
+						<div class="pdp-badge-stack">
+							{
+								producto.es_tendencia && (
+									<span class="pdp-badge pdp-badge--trend">
+										Más Vendido
+									</span>
+								)
+							}
+							{
+								esOferta && (
+									<span class="pdp-badge pdp-badge--sale">
+										-{descuento}% OFF
+									</span>
+								)
+							}
+						</div>
+
+						{
+							fotos.length > 0 ? (
+								<img
+									data-pdp-hero-img
+									class="pdp-hero-img"
+									src={fotos[0].url}
+									alt={producto.nombre}
+									loading="eager"
+								/>
+							) : (
+								<span class="pdp-hero-fallback">
+									{initials}
+								</span>
+							)
+						}
+
+						<div
+							class="pdp-hero-sold"
+							data-pdp-sold
+							hidden={disponible}
+						>
+							<span
+								>{
+									agotado ? "Agotado" : "Sin stock disponible"
+								}</span
+							>
+						</div>
+
+						{
+							fotos.length > 0 && (
+								<button
+									type="button"
+									class="pdp-zoom-trigger"
+									data-pdp-zoom
+									aria-label="Ampliar imagen completa"
+								>
+									<svg
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										width="18"
+										height="18"
+										aria-hidden="true"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+										/>
+									</svg>
+								</button>
+							)
+						}
+					</div>
+				</div>
+
+				{
+					fotos.length > 1 && (
+						<div class="pdp-hero-dots" aria-hidden="true">
+							{fotos.map((_, index) => (
+								<span
+									class:list={[
+										"pdp-hero-dot",
+										{ "is-active": index === 0 },
+									]}
+									data-pdp-dot
+								/>
+							))}
+						</div>
+					)
+				}
+			</div>
+
+			<!-- COLUMNA DERECHA: ASIDE (BUY BOX + DESCRIPCIÓN Y SPECS + REPUTACIÓN DE LA TIENDA) -->
+			<aside class="pdp-aside">
+				<!-- CAJA DE COMPRA (BUY CARD) -->
+				<div class="pdp-box pdp-buy-card">
+					<!-- FILA DE ESTADO Y CALIFICACIÓN -->
+					<div class="pdp-meta-row">
+						<div
+							class="pdp-rating"
+							aria-label="Calificación 4.9 de 5"
+						>
+							<span class="pdp-stars">
+								<svg viewBox="0 0 20 20" fill="currentColor"
+									><path
+										d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+									></path></svg
+								>
+								<svg viewBox="0 0 20 20" fill="currentColor"
+									><path
+										d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+									></path></svg
+								>
+								<svg viewBox="0 0 20 20" fill="currentColor"
+									><path
+										d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+									></path></svg
+								>
+								<svg viewBox="0 0 20 20" fill="currentColor"
+									><path
+										d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+									></path></svg
+								>
+								<svg viewBox="0 0 20 20" fill="currentColor"
+									><path
+										d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+									></path></svg
+								>
+							</span>
+							<span>5.0</span>
+						</div>
+					</div>
+
+					<!-- TÍTULO DEL PRODUCTO -->
+					<h1 class="pdp-title">{producto.nombre}</h1>
+
+					<!-- BLOQUE DE PRECIO -->
+					<div class="pdp-price-wrap" data-pdp-price>
+						<p
+							class="pdp-price-old"
+							data-pdp-price-old
+							hidden={!esOferta}
+						>
+							{formatPrecio(listPrice)}
+						</p>
+						<div class="pdp-price-current-row">
+							<span class="pdp-price-big" data-pdp-price-now>
+								{formatPrecio(payPrice)}
+							</span>
+							<span
+								class="pdp-save-badge"
+								data-pdp-save
+								hidden={!esOferta}
+							>
+								{descuento}% OFF
+							</span>
+						</div>
+					</div>
+
+					<!-- VARIANTES (COLOR, TALLA, MODELO, ETC.) -->
+					{
+						grupos.length > 0 && (
+							<div class="pdp-variants-wrap">
+								{grupos.map((group) => (
+									<div class="pdp-variant-group">
+										<div class="pdp-variant-label">
+											<strong>{group.nombre}:</strong>
+											<span data-pdp-selected={group.id}>
+												{picked[group.id] || ""}
+											</span>
+										</div>
+										<div
+											class="pdp-variant-pills"
+											role="group"
+										>
+											{group.valores.map((valor) => (
+												<button
+													type="button"
+													class:list={[
+														"pdp-variant-pill",
+														{
+															"is-active":
+																picked[
+																	group.id
+																] === valor,
+														},
+													]}
+													data-pdp-pick
+													data-group-id={group.id}
+													data-valor={valor}
+												>
+													{valor}
+												</button>
+											))}
+										</div>
+									</div>
+								))}
+							</div>
+						)
+					}
+
+					<!-- STOCK Y CANTIDAD ESTILO MERCADO LIBRE -->
+					<div class="pdp-stock-block">
+						<div class="pdp-stock-header">
+							<p class="pdp-stock-title">
+								<span
+									class:list={[
+										"pdp-stock-dot",
+										{ "is-out": !disponible },
+									]}
+									data-pdp-stock-dot></span>
+								<span data-pdp-stock-title>
+									{
+										disponible
+											? "Stock disponible"
+											: "Sin stock disponible"
+									}
+								</span>
+							</p>
+						</div>
+
+						<div
+							class="pdp-stock-row"
+							data-pdp-buy
+							hidden={!disponible}
+						>
+							<div class="pdp-qty-line">
+								<span class="pdp-qty-label">Cantidad:</span>
+								<div class="pdp-qty-stepper">
+									<button
+										type="button"
+										class="pdp-qty-btn"
+										data-pdp-qty-minus
+										aria-label="Restar una unidad"
+										disabled
+									>
+										−
+									</button>
+									<span class="pdp-qty-number" data-pdp-qty
+										>1</span
+									>
+									<button
+										type="button"
+										class="pdp-qty-btn"
+										data-pdp-qty-plus
+										aria-label="Sumar una unidad"
+										disabled={stock <= 1}
+									>
+										+
+									</button>
+								</div>
+								<span
+									class="pdp-stock-count"
+									data-pdp-stock-count
+								>
+									{
+										disponible
+											? stock === 1
+												? "(¡Última disponible!)"
+												: `(${formatStock(stock)} disponibles)`
+											: ""
+									}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<!-- BOTONES DE COMPRA Y ACCIÓN -->
+					<div
+						class="pdp-actions-area"
+						data-pdp-buy
+						hidden={!disponible}
+					>
+						<button
+							type="button"
+							class="pdp-btn-cart"
+							data-pdp-add-cart
+							aria-label="Agregar al carrito y continuar comprando"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.2"
+								aria-hidden="true"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+								/>
+							</svg>
+							<span>Agregar al carrito</span>
+						</button>
+
+						{
+							waAskHref && (
+								<a
+									class="pdp-btn-ask"
+									href={waAskHref}
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									<svg
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										width="16"
+										height="16"
+										aria-hidden="true"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+										/>
+									</svg>
+									<span>Preguntar a la tienda</span>
+								</a>
+							)
+						}
+					</div>
+
+					<!-- AVISO DE SIN STOCK -->
+					<div
+						class="pdp-sold-alert"
+						data-pdp-sold-box
+						hidden={disponible}
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="12" y1="8" x2="12" y2="12"></line>
+							<line x1="12" y1="16" x2="12.01" y2="16"></line>
+						</svg>
+						<div>
+							<strong>Sin inventario disponible</strong>
+							<p>
+								Prueba seleccionando otra combinación o consulta
+								por WhatsApp si habrá reposición pronto.
+							</p>
+						</div>
+					</div>
+
+					<!-- BENEFICIOS MERCADO LIBRE -->
+					<div class="pdp-trust-list">
+						<div class="pdp-trust-item">
+							<svg
+								class="pdp-trust-icon"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+							>
+								<rect x="1" y="3" width="15" height="13"></rect>
+								<polygon
+									points="16 8 20 8 23 11 23 16 16 16 16 8"
+								></polygon>
+								<circle cx="5.5" cy="18.5" r="2.5"></circle>
+								<circle cx="18.5" cy="18.5" r="2.5"></circle>
+							</svg>
+							<div class="pdp-trust-content">
+								<strong>Envíos y entregas</strong>
+							</div>
+						</div>
+
+						<div class="pdp-trust-item">
+							<svg
+								class="pdp-trust-icon"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+							>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+								></path>
+							</svg>
+							<div class="pdp-trust-content">
+								<strong>Compra Protegida</strong>
+							</div>
+						</div>
+
+						<div class="pdp-trust-item">
+							<svg
+								class="pdp-trust-icon"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+							>
+								<circle cx="12" cy="12" r="10"></circle>
+								<polyline points="12 6 12 12 14 14"
+								></polyline>
+							</svg>
+							<div class="pdp-trust-content">
+								<strong>Garantía del vendedor</strong>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- SECCIÓN: DESCRIPCIÓN Y CARACTERÍSTICAS (DEBAJO DE LA BOX DE PRECIO, ANTES DE LA TIENDA) -->
+				{
+					(producto.descripcion || extras.length > 0) && (
+						<div class="pdp-box pdp-box-pad pdp-details-box">
+							{producto.descripcion && (
+								<details class="pdp-accordion pdp-description-accordion" open>
+									<summary class="pdp-accordion-summary">
+										<h2 class="pdp-section-title">
+											Descripción
+										</h2>
+										<span
+											class="pdp-accordion-chevron-wrap"
+											aria-hidden="true"
+										>
+											<svg
+												class="pdp-accordion-chevron"
+												viewBox="0 0 20 20"
+												fill="currentColor"
+											>
+												<path
+													fill-rule="evenodd"
+													d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+													clip-rule="evenodd"
+												/>
+											</svg>
+										</span>
+									</summary>
+									<div class="pdp-accordion-content">
+										<div class="pdp-description-body">
+											<p>{producto.descripcion}</p>
+										</div>
+									</div>
+								</details>
+							)}
+
+							{producto.descripcion && extras.length > 0 && (
+								<hr class="pdp-section-divider" />
+							)}
+
+							{extras.length > 0 && (
+								<section class="pdp-specs-section">
+									<h2 class="pdp-section-title">
+										Características principales
+									</h2>
+									<dl class="pdp-specs-grid">
+										{extras.map((row) => (
+											<div class="pdp-spec-row">
+												<dt class="pdp-spec-term">
+													{row.nombre}
+												</dt>
+												<dd class="pdp-spec-desc">
+													{row.valor}
+												</dd>
+											</div>
+										))}
+									</dl>
+								</section>
+							)}
+						</div>
+					)
+				}
+
+				<!-- CAJA DE INFORMACIÓN DEL VENDEDOR / TIENDA -->
+				<div class="pdp-box pdp-seller-box">
+					<p class="pdp-reputation-title">Información de la tienda</p>
+					<div class="pdp-seller-header">
+						<div class="pdp-seller-avatar">
+							{
+								brand.logoUrl ? (
+									<img src={brand.logoUrl} alt={storeName} />
+								) : (
+									<span>{storeInitial}</span>
+								)
+							}
+						</div>
+						<div>
+							<h3 class="pdp-seller-name">{storeName}</h3>
+							<span class="pdp-seller-badge">
+								Tienda Oficial Verificada
+							</span>
+						</div>
+					</div>
+
+					<!-- TERMÓMETRO DE REPUTACIÓN MERCADO LIBRE -->
+					<div
+						class="pdp-thermometer"
+						aria-label="Nivel de reputación 5 de 5"
+					>
+						<span class="pdp-thermo-bar lvl-1"></span>
+						<span class="pdp-thermo-bar lvl-2"></span>
+						<span class="pdp-thermo-bar lvl-3"></span>
+						<span class="pdp-thermo-bar lvl-4"></span>
+						<span class="pdp-thermo-bar lvl-5"></span>
+					</div>
+
+					<div class="pdp-seller-metrics">
+						<div>
+							<p class="pdp-metric-val">+500</p>
+							<p class="pdp-metric-lbl">Ventas concretadas</p>
+						</div>
+						<div>
+							<p class="pdp-metric-val">Excelente</p>
+							<p class="pdp-metric-lbl">Buena atención</p>
+						</div>
+						<div>
+							<p class="pdp-metric-val">A tiempo</p>
+							<p class="pdp-metric-lbl">Despacha rápido</p>
+						</div>
+					</div>
+				</div>
+			</aside>
+		</div>
+
+		<!-- BARRA INFERIOR FLOTANTE MÓVIL (ESTILO MERCADO LIBRE) -->
+		<div class="pdp-mobile-sticky-bar" data-pdp-mob-bar>
+			<div class="pdp-mob-info">
+				{
+					fotos.length > 0 ? (
+						<img
+							src={fotos[0].url}
+							alt=""
+							class="pdp-mob-thumb"
+							data-pdp-mob-thumb
+						/>
+					) : null
+				}
+				<div class="pdp-mob-meta">
+					<p class="pdp-mob-title">{producto.nombre}</p>
+					<p class="pdp-mob-price" data-pdp-mob-price>
+						{formatPrecio(payPrice)}
+					</p>
+				</div>
+			</div>
+			<div class="pdp-mob-actions" hidden={!disponible}>
+				<button
+					type="button"
+					class="pdp-mob-cart-btn"
+					data-pdp-mob-add-cart
+					aria-label="Agregar al carrito"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.2"
+						aria-hidden="true"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+						/>
+					</svg>
+					<span>Agregar al carrito</span>
+				</button>
+			</div>
+		</div>
+	</main>
+
+	<!-- LIGHTBOX MODAL FULLSCREEN -->
+	<div
+		class="pdp-modal"
+		data-pdp-lightbox
+		aria-modal="true"
+		role="dialog"
+		hidden
+	>
+		<div class="pdp-modal-bg" data-pdp-lightbox-close></div>
+		<button
+			class="pdp-modal-close"
+			data-pdp-lightbox-close
+			aria-label="Cerrar imagen"
+		>
+			<svg
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				width="24"
+				height="24"
+				aria-hidden="true"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M6 18L18 6M6 6l12 12"></path>
+			</svg>
+		</button>
+		<div class="pdp-modal-inner">
+			<img class="pdp-modal-img" data-pdp-lightbox-img src="" alt="" />
+		</div>
+		{
+			fotos.length > 1 && (
+				<>
+					<button
+						class="pdp-modal-nav prev"
+						data-pdp-lightbox-prev
+						aria-label="Foto anterior"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							width="24"
+							height="24"
+							aria-hidden="true"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M15 19l-7-7 7-7"
+							/>
+						</svg>
+					</button>
+					<button
+						class="pdp-modal-nav next"
+						data-pdp-lightbox-next
+						aria-label="Foto siguiente"
+					>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							width="24"
+							height="24"
+							aria-hidden="true"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M9 5l7 7-7 7"
+							/>
+						</svg>
+					</button>
+				</>
+			)
+		}
+	</div>
+</Layout>
+
+<script define:vars={{ pdpDataJson }}>
+	const state = {
+		data: JSON.parse(pdpDataJson),
+		picked: {},
+		qty: 1,
+		activePhotoIndex: 0,
+	};
+	const qs = (sel, ctx = document) => ctx.querySelector(sel);
+	const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+
+	const formatMoney = (val) =>
+		new Intl.NumberFormat("es-VE", {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits: 2,
+		}).format(val);
+
+	function getCombo() {
+		return state.data.grupos.length === 0
+			? state.data.combinacionUnica
+			: state.data.grupos
+					.map((g) => g.nombre + ": " + (state.picked[g.id] || ""))
+					.join(" / ");
+	}
+
+	function parseCombo(comb) {
+		const res = {};
+		if (!comb || comb === state.data.combinacionUnica) return res;
+		const parts = comb.split(" / ");
+		for (const part of parts) {
+			const idx = part.indexOf(": ");
+			if (idx !== -1) {
+				const k = part.slice(0, idx).trim().toLowerCase();
+				const v = part
+					.slice(idx + 2)
+					.trim()
+					.toLowerCase();
+				res[k] = v;
+			}
+		}
+		return res;
+	}
+
+	function findVariantForPicked(pickedMap) {
+		if (state.data.grupos.length === 0) {
+			return state.data.variantes[0] || null;
+		}
+		return (
+			state.data.variantes.find((v) => {
+				const vMap = parseCombo(v.combinacion);
+				return state.data.grupos.every((g) => {
+					const targetVal = (pickedMap[g.id] || "")
+						.trim()
+						.toLowerCase();
+					const vVal = (vMap[g.nombre.trim().toLowerCase()] || "")
+						.trim()
+						.toLowerCase();
+					return targetVal === vVal;
+				});
+			}) ||
+			state.data.variantes.find((v) => {
+				const c1 = (v.combinacion || "").normalize("NFC").toLowerCase();
+				const c2 = getCombo().normalize("NFC").toLowerCase();
+				return c1 === c2;
+			}) ||
+			state.data.variantes[0] ||
+			null
+		);
+	}
+
+	function getCurrentVariant() {
+		return findVariantForPicked(state.picked);
+	}
+
+	function calculatePrice(v) {
+		const basePrice = Number(state.data.precioBase) || 0;
+		const isByVariant = Boolean(state.data.precioPorVariante);
+		const variantPrice =
+			v && isByVariant && Number(v.precio) > 0
+				? Number(v.precio)
+				: basePrice;
+
+		const offerActive = Boolean(state.data.enOferta);
+		const offerPrice = Number(state.data.precioOferta) || 0;
+		const hasOffer =
+			offerActive && offerPrice > 0 && offerPrice < basePrice;
+
+		let regularPrice = variantPrice;
+		let salePrice = regularPrice;
+		let discount = 0;
+
+		if (hasOffer) {
+			if (regularPrice === basePrice) {
+				salePrice = offerPrice;
+			} else {
+				const ratio = (basePrice - offerPrice) / basePrice;
+				salePrice = Math.round(regularPrice * (1 - ratio) * 100) / 100;
+			}
+			if (regularPrice > salePrice) {
+				discount = Math.round((1 - salePrice / regularPrice) * 100);
+			}
+		}
+
+		return {
+			regularPrice,
+			salePrice,
+			hasOffer: hasOffer && discount > 0,
+			discount,
+		};
+	}
+
+	function getWaLink(nombre, combo, qty) {
+		if (!state.data.whatsapp) return null;
+		const suffix =
+			combo && combo !== state.data.combinacionUnica
+				? " (" + combo + ")"
+				: "";
+		const text =
+			"Hola, me interesa comprar: " + nombre + suffix + " x" + qty;
+		return (
+			"https://wa.me/" +
+			state.data.whatsapp +
+			"?text=" +
+			encodeURIComponent(text)
+		);
+	}
+
+	function init() {
+		const container = qs("[data-pdp]");
+		if (!container) return;
+
+		state.data.grupos.forEach((group) => {
+			const activeBtn = qs(
+				'[data-pdp-pick][data-group-id="' + group.id + '"].is-active',
+				container,
+			);
+			if (activeBtn) {
+				state.picked[group.id] = activeBtn.getAttribute("data-valor");
+			} else if (group.valores.length > 0) {
+				state.picked[group.id] = group.valores[0];
+			}
+		});
+
+		const qtyMinus = qs("[data-pdp-qty-minus]", container);
+		const qtyPlus = qs("[data-pdp-qty-plus]", container);
+		const qtyVal = qs("[data-pdp-qty]", container);
+		const picks = qsa("[data-pdp-pick]", container);
+		const cta = qs("[data-pdp-cta]", container);
+		const mobCta = qs("[data-pdp-mob-cta]", container);
+		const addCartBtn = qs("[data-pdp-add-cart]", container);
+		const mobAddCartBtn = qs("[data-pdp-mob-add-cart]", container);
+
+		picks.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const gid = btn.getAttribute("data-group-id");
+				const val = btn.getAttribute("data-valor");
+				if (state.picked[gid] === val) return;
+				state.picked[gid] = val;
+				qsa(
+					'[data-pdp-pick][data-group-id="' + gid + '"]',
+					container,
+				).forEach((b) => {
+					b.classList.remove("is-active");
+				});
+				btn.classList.add("is-active");
+				const lbl = qs(`[data-pdp-selected="${gid}"]`, container);
+				if (lbl) lbl.textContent = val;
+				updateVariant();
+			});
+		});
+
+		if (qtyMinus && qtyPlus && qtyVal) {
+			qtyMinus.addEventListener("click", () => {
+				if (state.qty > 1) {
+					state.qty--;
+					qtyVal.textContent = state.qty;
+					qtyMinus.disabled = state.qty <= 1;
+					qtyPlus.disabled = false;
+					updateWaLink();
+				}
+			});
+			qtyPlus.addEventListener("click", () => {
+				const v = getCurrentVariant();
+				const max = v ? Number(v.stock || 0) : 0;
+				if (state.qty < max) {
+					state.qty++;
+					qtyVal.textContent = state.qty;
+					qtyMinus.disabled = false;
+					qtyPlus.disabled = state.qty >= max;
+					updateWaLink();
+				}
+			});
+		}
+
+		function updateVariant() {
+			const v = getCurrentVariant();
+			const stock = v ? Number(v.stock || 0) : 0;
+			const available = stock > 0;
+
+			state.qty = Math.min(Math.max(1, state.qty), Math.max(1, stock));
+			if (qtyVal) qtyVal.textContent = state.qty;
+			if (qtyMinus) qtyMinus.disabled = state.qty <= 1;
+			if (qtyPlus) qtyPlus.disabled = state.qty >= stock;
+
+			const priceBlock = qs("[data-pdp-price]", container);
+			if (priceBlock) {
+				const info = calculatePrice(v);
+				const nowEl = qs("[data-pdp-price-now]", priceBlock);
+				const oldEl = qs("[data-pdp-price-old]", priceBlock);
+				const saveEl = qs("[data-pdp-save]", priceBlock);
+				const mobPrice = qs("[data-pdp-mob-price]", container);
+
+				if (nowEl) nowEl.textContent = formatMoney(info.salePrice);
+				if (mobPrice)
+					mobPrice.textContent = formatMoney(info.salePrice);
+
+				if (info.hasOffer) {
+					if (oldEl) {
+						oldEl.textContent = formatMoney(info.regularPrice);
+						oldEl.hidden = false;
+					}
+					if (saveEl) {
+						saveEl.textContent = info.discount + "% OFF";
+						saveEl.hidden = false;
+					}
+				} else {
+					if (oldEl) oldEl.hidden = true;
+					if (saveEl) saveEl.hidden = true;
+				}
+			}
+
+			const stockTitle = qs("[data-pdp-stock-title]", container);
+			const stockDot = qs("[data-pdp-stock-dot]", container);
+			const stockCount = qs("[data-pdp-stock-count]", container);
+
+			if (stockTitle) {
+				stockTitle.textContent = available
+					? "Stock disponible"
+					: "Sin stock disponible";
+			}
+			if (stockDot) {
+				stockDot.classList.toggle("is-out", !available);
+			}
+			if (stockCount) {
+				if (!available) {
+					stockCount.textContent = "";
+				} else if (stock === 1) {
+					stockCount.textContent = "(¡Última disponible!)";
+				} else {
+					stockCount.textContent = `(${stock} disponibles)`;
+				}
+			}
+
+			const buyEls = qsa("[data-pdp-buy]", container);
+			const soldBox = qs("[data-pdp-sold-box]", container);
+			const hero = qs("[data-pdp-hero]", container);
+			const soldBadge = qs("[data-pdp-sold]", hero);
+
+			buyEls.forEach((el) => {
+				el.hidden = !available;
+			});
+			if (soldBox) soldBox.hidden = available;
+			if (hero) hero.classList.toggle("is-sold-out", !available);
+			if (soldBadge) soldBadge.hidden = available;
+			if (mobCta) mobCta.hidden = !available;
+			if (addCartBtn) addCartBtn.classList.toggle("is-disabled", !available);
+			if (mobAddCartBtn) mobAddCartBtn.hidden = !available;
+
+			updateWaLink();
+			updatePickAvailability();
+		}
+
+		function handleAddToCart() {
+			const v = getCurrentVariant();
+			const stock = v ? Number(v.stock || 0) : 0;
+			if (stock <= 0) {
+				const toast = document.querySelector<HTMLElement>('[data-confi-toast]');
+				const toastText = document.querySelector<HTMLElement>('[data-confi-toast-text]');
+				if (toast && toastText) {
+					toastText.textContent = "⚠️ Sin stock disponible para esta selección.";
+					toast.classList.add("is-shown");
+					setTimeout(() => toast.classList.remove("is-shown"), 3000);
+				}
+				return;
+			}
+
+			const priceInfo = calculatePrice(v);
+			const comboLabel =
+				v &&
+				v.combinacion &&
+				v.combinacion !== state.data.combinacionUnica
+					? v.combinacion
+					: getCombo();
+
+			const variantKey = v ? (v.sku || v.combinacion || "base") : "base";
+			const itemId = `${state.data.slug}__${variantKey}`;
+			const firstPhoto = state.data.fotos.length > 0 ? state.data.fotos[0].url : null;
+
+			window.dispatchEvent(
+				new CustomEvent("confi-cart:add", {
+					detail: {
+						product: {
+							id: itemId,
+							productId: state.data.slug,
+							slug: state.data.slug,
+							nombre: state.data.nombre,
+							combinacion: comboLabel,
+							precio: priceInfo.salePrice,
+							imagenUrl: firstPhoto,
+							maxStock: stock,
+						},
+						quantity: state.qty,
+						redirectToCatalog: true,
+					},
+				})
+			);
+		}
+
+		if (addCartBtn) addCartBtn.addEventListener("click", handleAddToCart);
+		if (mobAddCartBtn) mobAddCartBtn.addEventListener("click", handleAddToCart);
+
+		function updateWaLink() {
+			const v = getCurrentVariant();
+			const comboLabel =
+				v &&
+				v.combinacion &&
+				v.combinacion !== state.data.combinacionUnica
+					? v.combinacion
+					: getCombo();
+			const href = getWaLink(state.data.nombre, comboLabel, state.qty);
+			if (cta && cta.tagName === "A" && href) {
+				cta.href = href;
+			}
+			if (mobCta && mobCta.tagName === "A" && href) {
+				mobCta.href = href;
+			}
+		}
+
+		function updatePickAvailability() {
+			picks.forEach((btn) => {
+				const gid = btn.getAttribute("data-group-id");
+				const val = btn.getAttribute("data-valor");
+				const testPicked = { ...state.picked, [gid]: val };
+				const testV = findVariantForPicked(testPicked);
+				if (!testV || testV.stock <= 0) {
+					btn.classList.add("is-disabled");
+				} else {
+					btn.classList.remove("is-disabled");
+				}
+			});
+		}
+
+		const thumbs = qsa("[data-pdp-thumb]", container);
+		const dots = qsa("[data-pdp-dot]", container);
+		const heroImg = qs("[data-pdp-hero-img]", container);
+		const mobThumb = qs("[data-pdp-mob-thumb]", container);
+
+		function setPhoto(idx) {
+			if (idx < 0 || idx >= state.data.fotos.length) return;
+			state.activePhotoIndex = idx;
+			const photoUrl = state.data.fotos[idx].url;
+
+			if (heroImg) {
+				heroImg.style.opacity = "0.4";
+				setTimeout(() => {
+					heroImg.src = photoUrl;
+					heroImg.style.opacity = "1";
+				}, 120);
+			}
+			if (mobThumb) {
+				mobThumb.src = photoUrl;
+			}
+
+			thumbs.forEach((t, i) => {
+				t.classList.toggle("is-active", i === idx);
+				if (i === idx) {
+					t.scrollIntoView({
+						behavior: "smooth",
+						block: "nearest",
+						inline: "center",
+					});
+				}
+			});
+			dots.forEach((d, i) => d.classList.toggle("is-active", i === idx));
+		}
+
+		thumbs.forEach((t, i) => {
+			t.addEventListener("click", () => setPhoto(i));
+			t.addEventListener("mouseenter", () => setPhoto(i));
+		});
+		dots.forEach((d, i) => d.addEventListener("click", () => setPhoto(i)));
+
+		// Lightbox
+		const zoomBtn = qs("[data-pdp-zoom]", container);
+		const lightbox = qs("[data-pdp-lightbox]");
+		if (lightbox && heroImg) {
+			const lbImg = qs("[data-pdp-lightbox-img]", lightbox);
+			const closeLbs = qsa("[data-pdp-lightbox-close]", lightbox);
+			const prevLb = qs("[data-pdp-lightbox-prev]", lightbox);
+			const nextLb = qs("[data-pdp-lightbox-next]", lightbox);
+
+			const openLb = () => {
+				if (!lbImg || state.data.fotos.length === 0) return;
+				lbImg.src = state.data.fotos[state.activePhotoIndex].url;
+				lightbox.hidden = false;
+				document.body.style.overflow = "hidden";
+			};
+
+			const closeLbFn = () => {
+				lightbox.hidden = true;
+				document.body.style.overflow = "";
+			};
+
+			if (zoomBtn) zoomBtn.addEventListener("click", openLb);
+			heroImg.addEventListener("click", openLb);
+			closeLbs.forEach((btn) => btn.addEventListener("click", closeLbFn));
+
+			document.addEventListener("keydown", (e) => {
+				if (lightbox.hidden) return;
+				if (e.key === "Escape") closeLbFn();
+				if (e.key === "ArrowLeft" && prevLb) prevLb.click();
+				if (e.key === "ArrowRight" && nextLb) nextLb.click();
+			});
+
+			if (prevLb && nextLb) {
+				prevLb.addEventListener("click", (e) => {
+					e.stopPropagation();
+					setPhoto(
+						(state.activePhotoIndex - 1 + state.data.fotos.length) %
+							state.data.fotos.length,
+					);
+					lbImg.src = state.data.fotos[state.activePhotoIndex].url;
+				});
+				nextLb.addEventListener("click", (e) => {
+					e.stopPropagation();
+					setPhoto(
+						(state.activePhotoIndex + 1) % state.data.fotos.length,
+					);
+					lbImg.src = state.data.fotos[state.activePhotoIndex].url;
+				});
+			}
+		}
+
+		// Botón de Compartir
+		const shareBtn = qs("[data-pdp-share]", container);
+		const shareToast = qs("[data-pdp-share-toast]", container);
+		if (shareBtn && shareToast) {
+			shareBtn.addEventListener("click", async () => {
+				try {
+					if (navigator.clipboard) {
+						await navigator.clipboard.writeText(
+							window.location.href,
+						);
+					} else {
+						const input = document.createElement("input");
+						input.value = window.location.href;
+						document.body.appendChild(input);
+						input.select();
+						document.execCommand("copy");
+						document.body.removeChild(input);
+					}
+					shareToast.classList.add("is-shown");
+					setTimeout(
+						() => shareToast.classList.remove("is-shown"),
+						2500,
+					);
+				} catch (err) {
+					console.error("No se pudo copiar el enlace:", err);
+				}
+			});
+		}
+
+		// Mantener la imagen fija en PC incluso al final del scroll
+		const galleryCard = qs("[data-pdp-gallery-card]", container);
+		const mainGrid = qs(".pdp-main-grid", container);
+
+		let cardLeft = 0;
+		let cardWidth = 0;
+
+		function updateCardDims() {
+			if (!galleryCard || window.innerWidth <= 860) return;
+			if (galleryCard.style.position !== "fixed") {
+				const rect = galleryCard.getBoundingClientRect();
+				cardLeft = rect.left;
+				cardWidth = rect.width;
+			} else if (mainGrid) {
+				cardLeft = mainGrid.getBoundingClientRect().left;
+			}
+		}
+
+		function syncStickyGallery() {
+			if (!galleryCard || !mainGrid) return;
+
+			if (window.innerWidth <= 860) {
+				galleryCard.style.position = "";
+				galleryCard.style.top = "";
+				galleryCard.style.left = "";
+				galleryCard.style.width = "";
+				return;
+			}
+
+			const gridRect = mainGrid.getBoundingClientRect();
+			const cardHeight = galleryCard.offsetHeight;
+			const stickyTop = 24; // 1.5rem
+
+			// Si el final del grid empujaría la imagen hacia arriba, fijarla permanentemente en pantalla
+			if (gridRect.bottom <= stickyTop + cardHeight) {
+				if (!cardLeft || !cardWidth) updateCardDims();
+				galleryCard.style.position = "fixed";
+				galleryCard.style.top = stickyTop + "px";
+				galleryCard.style.left = cardLeft + "px";
+				galleryCard.style.width = cardWidth + "px";
+			} else {
+				galleryCard.style.position = "";
+				galleryCard.style.top = "";
+				galleryCard.style.left = "";
+				galleryCard.style.width = "";
+				updateCardDims();
+			}
+		}
+
+		window.addEventListener("scroll", syncStickyGallery, { passive: true });
+		window.addEventListener("resize", () => {
+			updateCardDims();
+			syncStickyGallery();
+		}, { passive: true });
+		updateCardDims();
+		syncStickyGallery();
+
+		// Sincronizar estado inicial
+		updateVariant();
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init);
+	} else {
+		init();
+	}
+</script>

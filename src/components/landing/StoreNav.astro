@@ -1,0 +1,461 @@
+---
+interface SubcatItem {
+	id: string;
+	nombre: string;
+	slug: string;
+}
+
+interface CategoriaItem {
+	id: string;
+	nombre: string;
+	slug: string;
+	subcategorias: SubcatItem[];
+}
+
+interface Props {
+	storeName: string;
+	logoUrl?: string | null;
+	categorias: CategoriaItem[];
+	ofertasCount?: number;
+}
+
+const { storeName, logoUrl = null, categorias = [], ofertasCount = 0 } = Astro.props;
+const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
+---
+
+<header class="snav__bar" data-nav-bar>
+	<a class="snav__bar-brand" href="#top" aria-label="Ir al inicio">
+		{logoUrl ? (
+			<img class="snav__bar-logo" src={logoUrl} alt="" />
+		) : (
+			<span class="snav__bar-fallback">{initial}</span>
+		)}
+		<span class="snav__bar-name">{storeName}</span>
+	</a>
+	<button
+		type="button"
+		class="snav__burger"
+		aria-label="Abrir menú"
+		aria-expanded="false"
+		aria-controls="snav"
+		data-nav-burger
+	>
+		<span class="snav__burger-box" aria-hidden="true">
+			<span></span>
+			<span></span>
+			<span></span>
+		</span>
+	</button>
+</header>
+
+<button type="button" class="snav__overlay" aria-label="Cerrar menú" data-nav-overlay hidden></button>
+
+<aside class="snav" id="snav" data-nav-aside>
+	<div class="snav__head">
+		<a class="snav__brand" href="#top" aria-label="Ir al inicio">
+			{logoUrl ? (
+				<img class="snav__logo" src={logoUrl} alt={storeName} />
+			) : (
+				<span class="snav__fallback">{initial}</span>
+			)}
+			<span class="snav__name">{storeName}</span>
+		</a>
+	</div>
+
+	<nav class="snav__nav" aria-label="Catálogo">
+		<ul class="snav__list">
+			<li>
+				<a class="snav__link is-active" href="/#todos" data-nav-filter="all" data-nav-target="todos" data-nav-label="Todos los productos">
+					<svg class="snav__ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="3" y="3" width="7" height="7"></rect>
+						<rect x="14" y="3" width="7" height="7"></rect>
+						<rect x="14" y="14" width="7" height="7"></rect>
+						<rect x="3" y="14" width="7" height="7"></rect>
+					</svg>
+					<span>Todos</span>
+				</a>
+			</li>
+			<li>
+				<a class="snav__link" href="/#tendencias" data-nav-filter="tendencias" data-nav-target="tendencias" data-nav-label="Tendencias">
+					<svg class="snav__ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+					</svg>
+					<span>Tendencias</span>
+				</a>
+			</li>
+			<li>
+				<a class="snav__link snav__link--ofertas" href="/#ofertas" data-nav-filter="ofertas" data-nav-target="todos" data-nav-label="Ofertas Especiales">
+					<svg class="snav__ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+						<line x1="7" y1="7" x2="7.01" y2="7"></line>
+					</svg>
+					<span>Ofertas</span>
+					{ofertasCount > 0 ? <span class="snav__badge">{ofertasCount}</span> : null}
+				</a>
+			</li>
+		</ul>
+
+		<p class="snav__group-title">Categorías</p>
+
+		<ul class="snav__list">
+			{categorias.map((cat) => (
+				<li class="snav__group">
+					<details class="snav__details">
+						<summary class="snav__summary">
+							<span>{cat.nombre}</span>
+							<svg class="snav__chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</summary>
+						<ul class="snav__sublist">
+							<li>
+								<a
+									class="snav__sublink"
+									href={`/#cat-${cat.slug}`}
+									data-nav-filter={`categoria:${cat.id}`}
+									data-nav-target="todos"
+									data-nav-label={cat.nombre}
+								>
+									Toda la categoría
+								</a>
+							</li>
+							{cat.subcategorias.map((sub) => (
+								<li>
+									<a
+										class="snav__sublink"
+										href={`/#sub-${sub.slug}`}
+										data-nav-filter={`subcategoria:${sub.id}`}
+										data-nav-target="todos"
+										data-nav-label={sub.nombre}
+									>
+										{sub.nombre}
+									</a>
+								</li>
+							))}
+						</ul>
+					</details>
+				</li>
+			))}
+		</ul>
+	</nav>
+</aside>
+
+<script>
+	const burger = document.querySelector('[data-nav-burger]');
+	const overlay = document.querySelector('[data-nav-overlay]');
+	const aside = document.querySelector('[data-nav-aside]');
+
+	function setOpen(open: boolean) {
+		document.body.classList.toggle('is-nav-open', open);
+		document.body.style.overflow = open ? 'hidden' : '';
+		if (burger) {
+			burger.setAttribute('aria-expanded', String(open));
+			burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+		}
+		if (overlay instanceof HTMLElement) overlay.hidden = !open;
+	}
+
+	burger?.addEventListener('click', () => {
+		setOpen(!document.body.classList.contains('is-nav-open'));
+	});
+
+	overlay?.addEventListener('click', () => setOpen(false));
+
+	aside?.addEventListener('click', (event) => {
+		const clicked = event.target;
+		if (clicked instanceof Element && clicked.closest('a')) setOpen(false);
+	});
+
+	document.addEventListener('keydown', (event) => {
+		if (event.key === 'Escape') setOpen(false);
+	});
+</script>
+
+<style>
+	:global(:root) {
+		--store-nav-w: 16.5rem;
+		--store-bar-h: 3.75rem;
+	}
+
+	.snav {
+		position: fixed;
+		inset: 0 auto 0 0;
+		width: var(--store-nav-w);
+		z-index: 40;
+		display: flex;
+		flex-direction: column;
+		background: var(--panel);
+		border-right: 1px solid var(--line-on-panel, var(--line));
+	}
+
+	.snav__head {
+		padding: 1.15rem 1.25rem;
+		border-bottom: 1px solid var(--line-on-panel, var(--line));
+	}
+
+	.snav__brand {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		font-family: var(--font-titulos);
+		font-weight: 800;
+		color: var(--ink-on-panel, var(--ink));
+	}
+
+	.snav__logo {
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 0.7rem;
+		object-fit: cover;
+	}
+
+	.snav__fallback {
+		display: grid;
+		place-items: center;
+		width: 2.4rem;
+		height: 2.4rem;
+		border-radius: 0.7rem;
+		background: var(--accent);
+		color: var(--accent-ink);
+		font-weight: 800;
+	}
+
+	.snav__name {
+		font-size: 1.02rem;
+		letter-spacing: -0.02em;
+	}
+
+	.snav__nav {
+		overflow-y: auto;
+		padding: 0.75rem;
+	}
+
+	.snav__list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.snav__link {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		padding: 0.62rem 0.7rem;
+		border-radius: 0.7rem;
+		font-weight: 600;
+		font-size: 0.93rem;
+		color: var(--ink-on-panel, var(--ink));
+	}
+
+	.snav__link:hover {
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+	}
+
+	.snav__link.is-active {
+		background: var(--accent);
+		color: var(--accent-ink);
+	}
+
+	.snav__ico {
+		opacity: 0.85;
+	}
+
+	.snav__badge {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.3rem;
+		height: 1.3rem;
+		padding: 0 0.4rem;
+		border-radius: 9999px;
+		background: #ea580c;
+		color: #ffffff;
+		font-size: 0.7rem;
+		font-weight: 800;
+		line-height: 1;
+	}
+
+	.snav__link.is-active .snav__badge {
+		background: #ffffff;
+		color: #ea580c;
+	}
+
+	.snav__group-title {
+		margin: 1rem 0.6rem 0.35rem;
+		font-size: 0.7rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 55%, transparent);
+	}
+
+	.snav__details {
+		border-radius: 0.7rem;
+	}
+
+	.snav__summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		padding: 0.62rem 0.7rem;
+		border-radius: 0.7rem;
+		font-weight: 600;
+		font-size: 0.93rem;
+		cursor: pointer;
+		list-style: none;
+		color: var(--ink-on-panel, var(--ink));
+	}
+
+	.snav__summary::-webkit-details-marker {
+		display: none;
+	}
+
+	.snav__summary::marker {
+		content: '';
+	}
+
+	.snav__summary:hover {
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+	}
+
+	.snav__details[open] .snav__summary {
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+	}
+
+	.snav__chevron {
+		transition: transform 0.18s ease;
+		font-size: 0.7rem;
+	}
+
+	.snav__details[open] .snav__chevron {
+		transform: rotate(180deg);
+	}
+
+	.snav__sublist {
+		list-style: none;
+		margin: 0.25rem 0 0 0.85rem;
+		padding: 0 0 0 0.55rem;
+		border-left: 1px solid var(--line-on-panel, var(--line));
+		display: grid;
+		gap: 0.15rem;
+	}
+
+	.snav__sublink {
+		display: block;
+		padding: 0.5rem 0.7rem;
+		border-radius: 0.6rem;
+		font-size: 0.88rem;
+		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 82%, transparent);
+	}
+
+	.snav__sublink:hover {
+		background: color-mix(in srgb, var(--accent) 10%, transparent);
+		color: var(--ink-on-panel, var(--ink));
+	}
+
+	.snav__sublink.is-active {
+		background: var(--accent);
+		color: var(--accent-ink);
+	}
+
+	.snav__overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 39;
+		border: 0;
+		background: color-mix(in srgb, var(--ink) 34%, transparent);
+	}
+
+	.snav__bar {
+		display: none;
+	}
+
+	@media (max-width: 900px) {
+		.snav {
+			width: min(84vw, 18rem);
+			transform: translateX(-100%);
+			transition: transform 0.22s ease;
+		}
+
+		:global(body.is-nav-open) .snav {
+			transform: translateX(0);
+		}
+
+		.snav__bar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: var(--store-bar-h);
+			z-index: 41;
+			padding: 0 1rem;
+			background: var(--panel);
+			border-bottom: 1px solid var(--line-on-panel, var(--line));
+		}
+
+		.snav__bar-brand {
+			display: flex;
+			align-items: center;
+			gap: 0.6rem;
+			font-family: var(--font-titulos);
+			font-weight: 800;
+			color: var(--ink-on-panel, var(--ink));
+		}
+
+		.snav__bar-logo {
+			width: 2rem;
+			height: 2rem;
+			border-radius: 0.55rem;
+			object-fit: cover;
+		}
+
+		.snav__bar-fallback {
+			display: grid;
+			place-items: center;
+			width: 2rem;
+			height: 2rem;
+			border-radius: 0.55rem;
+			background: var(--accent);
+			color: var(--accent-ink);
+			font-weight: 800;
+			font-size: 0.9rem;
+		}
+
+		.snav__bar-name {
+			font-size: 0.95rem;
+		}
+
+		.snav__burger {
+			display: grid;
+			place-items: center;
+			width: 2.5rem;
+			height: 2.5rem;
+			border: 0;
+			border-radius: 0.6rem;
+			background: transparent;
+			color: var(--ink-on-panel, var(--ink));
+			cursor: pointer;
+		}
+
+		.snav__burger-box {
+			display: grid;
+			gap: 0.25rem;
+		}
+
+		.snav__burger-box span {
+			display: block;
+			width: 1.3rem;
+			height: 2px;
+			border-radius: 2px;
+			background: currentColor;
+		}
+	}
+</style>

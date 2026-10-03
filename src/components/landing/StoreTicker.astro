@@ -1,0 +1,292 @@
+---
+interface Props {
+	horario?: string | null;
+	storeName?: string;
+}
+
+const { horario = null, storeName = 'Nuestra tienda' } = Astro.props;
+
+const horarioText = horario?.trim() || 'Lunes a Sábado: 8:30 AM a 5:30 PM';
+---
+
+<aside class="sticker" aria-label="Horario y avisos importantes de la tienda">
+	<div class="sticker__viewport">
+		<div class="sticker__track">
+			<!-- Track 1 -->
+			<div class="sticker__group">
+				<!-- Item 1: Horario de atención (Letras OSCURAS) -->
+				<div class="sticker__item sticker__item--schedule">
+					<svg class="sticker__svg sticker__svg--schedule" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="12" cy="12" r="10"></circle>
+						<polyline points="12 6 12 12 16 14"></polyline>
+					</svg>
+					<strong class="sticker__label sticker__label--schedule">Horario de Atención:</strong>
+					<span class="sticker__text sticker__text--schedule">{horarioText}</span>
+					<span class="sticker__sep" aria-hidden="true">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<!-- Item 2: Envíos garantizados -->
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="1" y="3" width="15" height="13"></rect>
+						<polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+						<circle cx="5.5" cy="18.5" r="2.5"></circle>
+						<circle cx="18.5" cy="18.5" r="2.5"></circle>
+					</svg>
+					<strong class="sticker__label">Envíos Seguros:</strong>
+					<span class="sticker__text">Entregas locales y envíos nacionales garantizados</span>
+					<span class="sticker__sep" aria-hidden="true">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<!-- Item 3: Atención directa -->
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+					</svg>
+					<strong class="sticker__label">Atención Directa:</strong>
+					<span class="sticker__text">Asesoría personalizada y pedidos en línea vía WhatsApp</span>
+					<span class="sticker__sep" aria-hidden="true">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<!-- Item 4: Garantía y calidad -->
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+					</svg>
+					<strong class="sticker__label">Garantía Certificada:</strong>
+					<span class="sticker__text">{storeName} ofrece productos originales con respaldo</span>
+					<span class="sticker__sep" aria-hidden="true">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<!-- Item 5: Métodos de pago -->
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<rect x="2" y="5" width="20" height="14" rx="2"></rect>
+						<line x1="2" y1="10" x2="22" y2="10"></line>
+					</svg>
+					<strong class="sticker__label">Métodos de Pago:</strong>
+					<span class="sticker__text">Pago Móvil, Transferencias Bancarias, Divisas y Zelle</span>
+					<span class="sticker__sep" aria-hidden="true">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+			</div>
+
+			<!-- Track 2 (Duplicado para loop continuo sin cortes) -->
+			<div class="sticker__group" aria-hidden="true">
+				<div class="sticker__item sticker__item--schedule">
+					<svg class="sticker__svg sticker__svg--schedule" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="10"></circle>
+						<polyline points="12 6 12 12 16 14"></polyline>
+					</svg>
+					<strong class="sticker__label sticker__label--schedule">Horario de Atención:</strong>
+					<span class="sticker__text sticker__text--schedule">{horarioText}</span>
+					<span class="sticker__sep">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="1" y="3" width="15" height="13"></rect>
+						<polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+						<circle cx="5.5" cy="18.5" r="2.5"></circle>
+						<circle cx="18.5" cy="18.5" r="2.5"></circle>
+					</svg>
+					<strong class="sticker__label">Envíos Seguros:</strong>
+					<span class="sticker__text">Entregas locales y envíos nacionales garantizados</span>
+					<span class="sticker__sep">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+					</svg>
+					<strong class="sticker__label">Atención Directa:</strong>
+					<span class="sticker__text">Asesoría personalizada y pedidos en línea vía WhatsApp</span>
+					<span class="sticker__sep">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+					</svg>
+					<strong class="sticker__label">Garantía Certificada:</strong>
+					<span class="sticker__text">{storeName} ofrece productos originales con respaldo</span>
+					<span class="sticker__sep">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+
+				<div class="sticker__item">
+					<svg class="sticker__svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="2" y="5" width="20" height="14" rx="2"></rect>
+						<line x1="2" y1="10" x2="22" y2="10"></line>
+					</svg>
+					<strong class="sticker__label">Métodos de Pago:</strong>
+					<span class="sticker__text">Pago Móvil, Transferencias Bancarias, Divisas y Zelle</span>
+					<span class="sticker__sep">
+						<svg viewBox="0 0 8 8" width="6" height="6" fill="currentColor"><circle cx="4" cy="4" r="2.5"></circle></svg>
+					</span>
+				</div>
+			</div>
+		</div>
+	</div>
+</aside>
+
+<style>
+	/* Banda en color primario institucional con tipografía y vectores OSCUROS */
+	.sticker {
+		position: relative;
+		overflow: hidden;
+		width: 100%;
+		background: var(--color-primario, #fff700) !important;
+		color: #090901 !important;
+		padding: 0.62rem 0;
+		user-select: none;
+		box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+	}
+
+	.sticker__viewport {
+		display: flex;
+		width: 100%;
+		overflow: hidden;
+		mask-image: linear-gradient(
+			to right,
+			transparent 0%,
+			black 2.5%,
+			black 97.5%,
+			transparent 100%
+		);
+		-webkit-mask-image: linear-gradient(
+			to right,
+			transparent 0%,
+			black 2.5%,
+			black 97.5%,
+			transparent 100%
+		);
+	}
+
+	.sticker__track {
+		display: flex;
+		width: max-content;
+		will-change: transform;
+		animation: tickerMarquee 34s linear infinite;
+	}
+
+	.sticker:hover .sticker__track {
+		animation-play-state: paused;
+	}
+
+	.sticker__group {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+
+	.sticker__item {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0 1.25rem;
+		font-size: 0.85rem;
+		white-space: nowrap;
+		letter-spacing: 0.01em;
+		color: #090901 !important;
+	}
+
+	.sticker__svg {
+		flex-shrink: 0;
+		color: #090901 !important;
+		opacity: 1;
+	}
+
+	.sticker__label {
+		font-weight: 800;
+		color: #000000 !important;
+		letter-spacing: 0.02em;
+	}
+
+	.sticker__text {
+		color: #090901 !important;
+		font-weight: 650;
+	}
+
+	/* Resaltado del Horario con cápsula delimitada y LETRAS TOTALMENTE OSCURAS */
+	.sticker__item--schedule {
+		background: rgba(0, 0, 0, 0.09) !important;
+		padding: 0.24rem 0.95rem;
+		margin: 0 0.45rem;
+		border-radius: 9999px;
+		border: 1.5px solid rgba(0, 0, 0, 0.35) !important;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	}
+
+	.sticker__item--schedule .sticker__label,
+	.sticker__label--schedule {
+		color: #000000 !important;
+		font-weight: 900 !important;
+	}
+
+	.sticker__item--schedule .sticker__text,
+	.sticker__text--schedule {
+		color: #000000 !important;
+		font-weight: 800 !important;
+	}
+
+	.sticker__item--schedule .sticker__svg,
+	.sticker__svg--schedule {
+		color: #000000 !important;
+		stroke-width: 2.5;
+	}
+
+	.sticker__sep {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 1.15rem;
+		color: #000000 !important;
+		opacity: 0.45;
+	}
+
+	@keyframes tickerMarquee {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-50%);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.sticker {
+			padding: 0.52rem 0;
+		}
+
+		.sticker__item {
+			font-size: 0.76rem;
+			padding: 0 0.85rem;
+			gap: 0.4rem;
+		}
+
+		.sticker__svg {
+			width: 14px;
+			height: 14px;
+		}
+
+		.sticker__track {
+			animation-duration: 26s;
+		}
+	}
+</style>

@@ -591,6 +591,68 @@ export async function getProductoById(id: string): Promise<Producto | null> {
 	return { ...producto, ...toListado(producto) };
 }
 
+export async function getProductoBySlug(slug: string): Promise<Producto | null> {
+	await ensureProductoSchema();
+	const db = getDb();
+	const result = await db.execute({
+		sql: `
+			SELECT
+				p.id,
+				p.categoria_id,
+				p.subcategoria_id,
+				p.nombre,
+				p.slug,
+				p.descripcion,
+				p.precio_base,
+				p.es_tendencia,
+				p.en_oferta,
+				p.precio_oferta,
+				p.precio_por_variante,
+				p.activo,
+				p.creado_en,
+				c.nombre AS categoria_nombre,
+				s.nombre AS subcategoria_nombre,
+				(
+					SELECT url FROM productos_imagenes
+					WHERE producto_id = p.id
+					ORDER BY orden ASC
+					LIMIT 1
+				) AS imagen_url,
+				(
+					SELECT COALESCE(SUM(stock), 0) FROM producto_stock_variantes
+					WHERE producto_id = p.id
+				) AS stock_total
+			FROM productos p
+			INNER JOIN categorias c ON c.id = p.categoria_id
+			LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
+			WHERE p.slug = ?
+			LIMIT 1
+		`,
+		args: [slug],
+	});
+	const row = result.rows[0] as Record<string, unknown> | undefined;
+	if (!row) return null;
+
+	const id = String(row.id);
+	const [imagenes, variantes, detalles] = await Promise.all([
+		loadImagenes([id]),
+		loadVariantes([id]),
+		loadDetalles([id]),
+	]);
+
+	const listado = mapListado(row);
+	const producto: Producto = {
+		...listado,
+		descripcion: asText(row.descripcion),
+		creado_en: String(row.creado_en ?? ''),
+		imagenes: imagenes.get(id) ?? [],
+		variantes: variantes.get(id) ?? [],
+		detalles: detalles.get(id) ?? [],
+	};
+
+	return { ...producto, ...toListado(producto) };
+}
+
 export async function slugEnUso(slug: string, excludeId?: string) {
 	const db = getDb();
 	const result = await db.execute({

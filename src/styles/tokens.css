@@ -28,6 +28,12 @@
 	--danger-ink-on-panel: #991b1b;
 	--success-from: #15803d;
 	--success-to: #166534;
+	--info-bg: #eff6ff;
+	--info-ink: #1d4ed8;
+	--info-line: #bfdbfe;
+	--success-bg: #f0fdf4;
+	--success-ink: #15803d;
+	--success-line: #bbf7d0;
 
 	--radius-sm: 0.5rem;
 	--radius-md: 0.75rem;

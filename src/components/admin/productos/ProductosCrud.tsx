@@ -396,7 +396,7 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 										<div className="admin-table__actions">
 											<button
 												type="button"
-												className="admin-btn admin-btn--ghost admin-btn--icon-label"
+												className="admin-btn admin-btn--success admin-btn--icon-label"
 												onClick={() => setModal({ kind: 'preview', item })}
 											>
 												<IconEye />
@@ -404,7 +404,7 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 											</button>
 											<button
 												type="button"
-												className="admin-btn admin-btn--ghost admin-btn--icon-label"
+												className="admin-btn admin-btn--info admin-btn--icon-label"
 												onClick={() => setModal({ kind: 'edit', item })}
 											>
 												<IconPencil />

@@ -202,15 +202,15 @@ export default function UsuariosCrud({ initialUsers, currentUserId }: Props) {
 										</td>
 										<td data-label="Alta">{formatFechaUsuario(user.creado_en)}</td>
 										<td className="admin-table__td-actions" data-label="Acciones">
-											<div className="admin-table__actions">
-												<button
-													type="button"
-													className="admin-btn admin-btn--ghost admin-btn--icon-label"
-													onClick={() => setModal({ kind: 'edit', user })}
-												>
-													<IconPencil />
-													Editar
-												</button>
+										<div className="admin-table__actions">
+											<button
+												type="button"
+												className="admin-btn admin-btn--info admin-btn--icon-label"
+												onClick={() => setModal({ kind: 'edit', user })}
+											>
+												<IconPencil />
+												Editar
+											</button>
 												{rowIsSelf ? null : (
 													<button
 														type="button"

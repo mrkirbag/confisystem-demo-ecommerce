@@ -1,0 +1,271 @@
+---
+import {
+	descuentoPorcentaje,
+	formatPrecio,
+	formatPrecioRango,
+	initialsFromName,
+	type ProductoListado,
+} from '@/lib/productos/shared';
+
+interface Props {
+	producto: ProductoListado;
+}
+
+const { producto } = Astro.props;
+
+const esOferta = producto.en_oferta && producto.precio_oferta > 0;
+const normal = producto.precio_por_variante
+	? formatPrecioRango(producto.precio_min, producto.precio_max)
+	: formatPrecio(producto.precio_base);
+const oferta = esOferta ? formatPrecio(producto.precio_oferta) : '';
+const referencia = producto.precio_por_variante ? producto.precio_min : producto.precio_base;
+const descuento = esOferta ? descuentoPorcentaje(referencia, producto.precio_oferta) : 0;
+const agotado = producto.stock_total <= 0;
+const catLabel = producto.subcategoria_nombre
+	? `${producto.categoria_nombre} · ${producto.subcategoria_nombre}`
+	: producto.categoria_nombre;
+const initials = initialsFromName(producto.nombre);
+const effectivePrice = esOferta
+	? producto.precio_oferta
+	: producto.precio_por_variante
+		? producto.precio_min
+		: producto.precio_base;
+const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion || ''}`.toLowerCase();
+---
+
+<article
+	class="scard"
+	data-store-card
+	data-id={producto.id}
+	data-cat={producto.categoria_id}
+	data-sub={producto.subcategoria_id ?? ''}
+	data-search={searchKeywords}
+	data-price={effectivePrice}
+	data-offer={esOferta ? 'true' : 'false'}
+	data-trending={producto.es_tendencia ? 'true' : 'false'}
+>
+	<a class="scard__link" href={`/landing/${producto.slug}`} aria-label={`Ver ${producto.nombre}`}></a>
+	<div class:list={['scard__media', { 'is-sold': agotado }]}>
+		{producto.imagen_url ? (
+			<img class="scard__img" src={producto.imagen_url} alt={producto.nombre} loading="lazy" />
+		) : (
+			<span class="scard__fallback">{initials}</span>
+		)}
+
+		<div class="scard__flags">
+			{producto.es_tendencia ? <span class="scard__flag">Tendencia</span> : null}
+			{esOferta ? <span class="scard__flag scard__flag--offer">−{descuento}%</span> : null}
+		</div>
+
+		{agotado ? <span class="scard__sold">Agotado</span> : null}
+	</div>
+
+	<div class="scard__body">
+		<p class="scard__cat">{catLabel}</p>
+		<h3 class="scard__name">{producto.nombre}</h3>
+		<div class="scard__foot">
+			<div class:list={['scard__price', { 'is-offer': esOferta }]}>
+				{esOferta ? <s class="scard__price-old">{normal}</s> : null}
+				<strong class="scard__price-now">{esOferta ? oferta : normal}</strong>
+			</div>
+			{
+				!agotado && !producto.precio_por_variante ? (
+					<button
+						type="button"
+						class="scard__quick-add-btn"
+						data-card-add
+						data-id={producto.id}
+						data-slug={producto.slug}
+						data-name={producto.nombre}
+						data-price={esOferta ? producto.precio_oferta : producto.precio_base}
+						data-stock={producto.stock_total}
+						data-img={producto.imagen_url || ''}
+						aria-label={`Agregar ${producto.nombre} al carrito`}
+					>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+						</svg>
+						<span>Agregar</span>
+					</button>
+				) : null
+			}
+		</div>
+	</div>
+</article>
+
+<style>
+	.scard {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		border-radius: var(--radius-lg);
+		transition: transform 0.18s ease, box-shadow 0.18s ease;
+		background: var(--panel);
+		border: 1px solid var(--line-on-panel, var(--line));
+		box-shadow: var(--shadow-soft);
+		color: var(--ink-on-panel, var(--ink));
+	}
+
+	.scard:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 20px 45px rgba(28, 25, 23, 0.12);
+	}
+
+	.scard__link {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		border-radius: inherit;
+	}
+
+	.scard__link:focus-visible {
+		outline: 3px solid var(--accent);
+		outline-offset: 2px;
+	}
+
+	.scard__media {
+		position: relative;
+		aspect-ratio: 1 / 1;
+		display: grid;
+		place-items: center;
+		background: color-mix(in srgb, var(--bg) 55%, var(--panel));
+		overflow: hidden;
+	}
+
+	.scard__img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.scard__media.is-sold .scard__img,
+	.scard__media.is-sold .scard__fallback {
+		filter: grayscale(0.5) brightness(0.85);
+	}
+
+	.scard__fallback {
+		font-family: var(--font-titulos);
+		font-size: 2.2rem;
+		font-weight: 800;
+		color: var(--ink);
+	}
+
+	.scard__flags {
+		position: absolute;
+		top: 0.65rem;
+		left: 0.65rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+
+	.scard__flag {
+		padding: 0.26rem 0.5rem;
+		border-radius: 999px;
+		background: var(--accent);
+		color: var(--accent-ink);
+		font-size: 0.64rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+
+	.scard__flag--offer {
+		background: #b45309;
+		color: #fff7ed;
+	}
+
+	.scard__sold {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		padding: 0.5rem 0.6rem;
+		background: linear-gradient(transparent, color-mix(in srgb, #1c1917 72%, transparent));
+		color: #fff;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		text-align: center;
+	}
+
+	.scard__body {
+		display: grid;
+		gap: 0.3rem;
+		padding: 0.85rem 0.95rem 1rem;
+	}
+
+	.scard__cat {
+		margin: 0;
+		font-size: 0.72rem;
+		font-weight: 650;
+		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 55%, transparent);
+	}
+
+	.scard__name {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 700;
+		line-height: 1.25;
+	}
+
+	.scard__price {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.scard__price-now {
+		font-size: 1.05rem;
+		font-weight: 800;
+		color: var(--bg);
+	}
+
+	.scard__price-old {
+		font-size: 0.82rem;
+		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 55%, transparent);
+	}
+
+	.scard__price.is-offer .scard__price-now {
+		color: var(--bg);
+	}
+
+	.scard__foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-top: 0.25rem;
+	}
+
+	.scard__quick-add-btn {
+		position: relative;
+		z-index: 3;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.42rem 0.8rem;
+		border-radius: 9999px;
+		background: var(--color-primario, #0f766e);
+		color: var(--accent-ink, #ffffff);
+		font-size: 0.78rem;
+		font-weight: 700;
+		border: 0;
+		cursor: pointer;
+		box-shadow: 0 3px 8px color-mix(in srgb, var(--color-primario, #0f766e) 35%, transparent);
+		transition: transform 0.15s ease, filter 0.15s ease;
+		flex-shrink: 0;
+	}
+
+	.scard__quick-add-btn:hover {
+		transform: scale(1.05);
+		filter: brightness(1.1);
+	}
+
+	.scard__quick-add-btn:active {
+		transform: scale(0.96);
+	}
+</style>

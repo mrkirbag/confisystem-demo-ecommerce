@@ -1,7 +1,1422 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import StoreNav from '../components/landing/StoreNav.astro';
+import StoreHeader from '../components/landing/StoreHeader.astro';
+import StoreTicker from '../components/landing/StoreTicker.astro';
+import StoreFooter from '../components/landing/StoreFooter.astro';
+import ProductCard from '../components/landing/ProductCard.astro';
+import { listCategorias } from '@/lib/categorias';
+import { listSubcategorias } from '@/lib/subcategorias';
+import { listProductos } from '@/lib/productos';
+import {
+	getTiendaConfig,
+	getTiendaConfiguracion,
+	getTiendaPersonalizacion,
+	googleFontsHref,
+	themeStyleVars,
+} from '@/lib/tienda';
+
+export const prerender = false;
+
+const [config, configuracion, theme, categorias, subcategorias, productos] = await Promise.all([
+	getTiendaConfig(),
+	getTiendaConfiguracion(),
+	getTiendaPersonalizacion(),
+	listCategorias(),
+	listSubcategorias(),
+	listProductos(),
+]);
+
+const storeName = configuracion?.nombre_tienda || config.nombre_tienda || 'Demo Tienda';
+const themeVars = themeStyleVars(theme);
+const fontsHref = googleFontsHref(theme.fuente_titulos, theme.fuente_cuerpo);
+
+const brand = {
+	nombre: storeName,
+	logoUrl: configuracion?.logo_url || config.logo_url || null,
+	whatsapp: configuracion?.whatsapp || config.whatsapp || null,
+	instagram: configuracion?.instagram || null,
+	tiktok: configuracion?.tiktok || null,
+	telefono: configuracion?.telefono || null,
+	direccion: configuracion?.direccion || null,
+	horario: configuracion?.horario || null,
+	correo: configuracion?.correo || null,
+	rif: configuracion?.rif || null,
+};
+
+const navCategorias = categorias
+	.filter((cat) => cat.activo)
+	.map((cat) => ({
+		id: cat.id,
+		nombre: cat.nombre,
+		slug: cat.slug,
+		subcategorias: subcategorias
+			.filter((sub) => sub.activo && sub.categoria_id === cat.id)
+			.map((sub) => ({ id: sub.id, nombre: sub.nombre, slug: sub.slug })),
+	}));
+
+const activos = productos.filter((producto) => producto.activo);
+const tendencias = activos.filter((producto) => producto.es_tendencia);
+const ofertas = activos.filter((producto) => producto.en_oferta && producto.precio_oferta > 0);
+
+// Si no hay productos marcados explícitamente en tendencia, mostramos los primeros como destacados
+const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0, 4);
 ---
 
-<Layout>
+<Layout
+	title="Inicio"
+	storeName={storeName}
+	logoUrl={brand.logoUrl}
+	whatsapp={brand.whatsapp}
+	storeAddress={brand.direccion}
+	themeVars={themeVars}
+	fontsHref={fontsHref}
+>
+	<StoreNav
+		storeName={storeName}
+		logoUrl={brand.logoUrl}
+		categorias={navCategorias}
+		ofertasCount={ofertas.length}
+	/>
 
+	<main class="smain">
+		<!-- Encabezado Llamativo con Datos de la Empresa y Botones Sociales Condicionales -->
+		<StoreHeader brand={brand} />
+
+		<!-- Banda en Movimiento (Carrusel Infinito) con Horario y Avisos de la Tienda -->
+		<StoreTicker horario={brand.horario} storeName={storeName} />
+
+		<!-- Sección de Productos en Tendencia (Llamativa y Atractiva al Cargar /) -->
+		{productosTendencia.length > 0 ? (
+			<section class="strending" id="tendencias">
+				<div class="strending__glow" aria-hidden="true"></div>
+				<div class="strending__inner">
+					<div class="strending__head">
+						<div class="strending__title-box">
+							<span class="strending__badge">
+								<svg class="strending__badge-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+									<polyline points="17 6 23 6 23 12"></polyline>
+								</svg>
+								Más Vendido
+							</span>
+							<h2 class="strending__title">Productos en Tendencia</h2>
+							<p class="strending__subtitle">
+								Los favoritos de nuestros clientes con la mejor calidad y disponibilidad inmediata.
+							</p>
+						</div>
+						<div class="strending__tag">
+							<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+							</svg>
+							<span>Top Selección</span>
+						</div>
+					</div>
+
+					<div class="sgrid sgrid--trending">
+						{productosTendencia.map((producto) => (
+							<ProductCard producto={producto} />
+						))}
+					</div>
+				</div>
+			</section>
+		) : null}
+
+		<!-- Catálogo Completo con Filtros de Búsqueda Normal y por Precio -->
+		<section class="ssec" id="todos">
+			<div class="ssec__head">
+				<div>
+					<p class="ssec__kicker">Explora Nuestro Catálogo</p>
+					<h2 class="ssec__title" data-store-title>Todos los productos</h2>
+				</div>
+				<span class="ssec__count" data-store-count>{activos.length}</span>
+			</div>
+
+			<!-- BARRA DE FILTROS: Búsqueda Normal + Rango de Precios en Acordeón Sticky -->
+			<div class="sfilter-bar" id="filtros">
+				<div class="sfilter-bar__top">
+					<!-- Campo de Búsqueda Normal -->
+					<div class="sfilter-search">
+						<svg class="sfilter-search__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="11" cy="11" r="8"></circle>
+							<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+						</svg>
+						<input
+							type="search"
+							id="search-input"
+							class="sfilter-search__input"
+							placeholder="Buscar por nombre, modelo o categoría..."
+							autocomplete="off"
+							aria-label="Buscar productos"
+						/>
+						<button
+							type="button"
+							id="search-clear-btn"
+							class="sfilter-search__clear"
+							aria-label="Borrar búsqueda"
+							hidden
+						>
+							✕
+						</button>
+					</div>
+
+					<!-- Acciones: Selector de Ordenación y Botón Acordeón de Filtros -->
+					<div class="sfilter-bar__actions">
+						<div class="sfilter-sort">
+							<label for="sort-select" class="sfilter-sort__label">Ordenar:</label>
+							<select id="sort-select" class="sfilter-sort__select" aria-label="Ordenar productos">
+								<option value="default">Destacados</option>
+								<option value="price-asc">Precio: Menor a Mayor</option>
+								<option value="price-desc">Precio: Mayor a Menor</option>
+								<option value="offers">Solo Ofertas</option>
+							</select>
+						</div>
+
+						<button
+							type="button"
+							id="filter-accordion-toggle"
+							class="sfilter-accordion-btn"
+							aria-expanded="true"
+							aria-controls="filter-accordion-content"
+							title="Mostrar u ocultar filtros de precio"
+						>
+							<svg class="sfilter-accordion-btn__icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<line x1="4" y1="21" x2="4" y2="14"></line>
+								<line x1="4" y1="10" x2="4" y2="3"></line>
+								<line x1="12" y1="21" x2="12" y2="12"></line>
+								<line x1="12" y1="8" x2="12" y2="3"></line>
+								<line x1="20" y1="21" x2="20" y2="16"></line>
+								<line x1="20" y1="12" x2="20" y2="3"></line>
+								<line x1="1" y1="14" x2="7" y2="14"></line>
+								<line x1="9" y1="8" x2="15" y2="8"></line>
+								<line x1="17" y1="16" x2="23" y2="16"></line>
+							</svg>
+							<span>Filtros</span>
+							<span id="filter-active-badge" class="sfilter-accordion-badge" hidden>1</span>
+							<svg class="sfilter-accordion-btn__chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<polyline points="6 9 12 15 18 9"></polyline>
+							</svg>
+						</button>
+					</div>
+				</div>
+
+				<!-- Contenido del Acordeón (Colapsable / Expandible) -->
+				<div id="filter-accordion-content" class="sfilter-accordion" data-open="true">
+					<div class="sfilter-accordion__inner">
+						<!-- Filtros por Rango de Precios -->
+						<div class="sfilter-price">
+							<span class="sfilter-price__title">Filtrar por Precio:</span>
+							<div class="sfilter-price__chips">
+								<button type="button" class="sfilter-chip is-active" data-price-bracket="all">Todos</button>
+								<button type="button" class="sfilter-chip" data-price-bracket="0-50">Hasta $50</button>
+								<button type="button" class="sfilter-chip" data-price-bracket="50-150">$50 a $150</button>
+								<button type="button" class="sfilter-chip" data-price-bracket="150-300">$150 a $300</button>
+								<button type="button" class="sfilter-chip" data-price-bracket="300+">Más de $300</button>
+							</div>
+
+							<!-- Rango personalizado Mín / Máx -->
+							<div class="sfilter-custom-price">
+								<div class="sfilter-input-group">
+									<span class="sfilter-input-prefix">$</span>
+									<input
+										type="number"
+										id="price-min"
+										class="sfilter-price-input"
+										placeholder="Mín"
+										min="0"
+										step="1"
+										aria-label="Precio mínimo"
+									/>
+								</div>
+								<span class="sfilter-range-sep">—</span>
+								<div class="sfilter-input-group">
+									<span class="sfilter-input-prefix">$</span>
+									<input
+										type="number"
+										id="price-max"
+										class="sfilter-price-input"
+										placeholder="Máx"
+										min="0"
+										step="1"
+										aria-label="Precio máximo"
+									/>
+								</div>
+								<button type="button" id="btn-reset-filters" class="sfilter-reset-btn" hidden>
+									Limpiar filtros
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Grid del Catálogo de Productos -->
+			<div class="sgrid" data-store-grid id="catalogo-grid">
+				{activos.map((producto) => <ProductCard producto={producto} />)}
+			</div>
+
+			<!-- Estado Vacío Cuando no Coinciden los Filtros -->
+			<div class="ssec__empty" data-store-empty hidden>
+				<svg class="ssec__empty-svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+				<h3 class="ssec__empty-title">No encontramos productos que coincidan</h3>
+				<p class="ssec__empty-text">Prueba ajustando los términos de búsqueda o el rango de precios.</p>
+				<button type="button" class="ssec__empty-btn" id="btn-empty-reset">
+					Restablecer filtros y ver todo
+				</button>
+			</div>
+		</section>
+
+		<!-- Footer Completo, Decente y Profesional -->
+		<StoreFooter brand={brand} categorias={navCategorias} />
+	</main>
 </Layout>
+
+<script>
+	// Elementos del DOM
+	const cards = Array.from(document.querySelectorAll('#catalogo-grid [data-store-card]')).filter(
+		(el): el is HTMLElement => el instanceof HTMLElement,
+	);
+	const empty = document.querySelector('[data-store-empty]');
+	const count = document.querySelector('[data-store-count]');
+	const title = document.querySelector('[data-store-title]');
+	const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+	const searchClearBtn = document.getElementById('search-clear-btn');
+	const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
+	const priceChips = Array.from(document.querySelectorAll('[data-price-bracket]')).filter(
+		(el): el is HTMLButtonElement => el instanceof HTMLButtonElement,
+	);
+	const priceMinInput = document.getElementById('price-min') as HTMLInputElement | null;
+	const priceMaxInput = document.getElementById('price-max') as HTMLInputElement | null;
+	const resetBtn = document.getElementById('btn-reset-filters');
+	const emptyResetBtn = document.getElementById('btn-empty-reset');
+	const catalogGrid = document.getElementById('catalogo-grid');
+	const accordionToggle = document.getElementById('filter-accordion-toggle');
+	const accordionContent = document.getElementById('filter-accordion-content');
+	const filterBadge = document.getElementById('filter-active-badge');
+
+	// En dispositivos móviles (<=768px) colapsar el acordeón inicialmente para no ocupar pantalla
+	if (window.innerWidth <= 768) {
+		accordionContent?.setAttribute('data-open', 'false');
+		accordionToggle?.setAttribute('aria-expanded', 'false');
+	}
+
+	accordionToggle?.addEventListener('click', () => {
+		const isOpen = accordionContent?.getAttribute('data-open') === 'true';
+		const nextState = !isOpen;
+		accordionContent?.setAttribute('data-open', String(nextState));
+		accordionToggle?.setAttribute('aria-expanded', String(nextState));
+	});
+
+	// Estado actual de filtros
+	let currentFilter = 'all'; // 'all', 'ofertas', 'categoria:...', 'subcategoria:...'
+	let currentSearch = '';
+	let currentPriceBracket = 'all'; // 'all', '0-50', '50-150', '150-300', '300+'
+	let currentPriceMin: number | null = null;
+	let currentPriceMax: number | null = null;
+	let currentSort = 'default';
+
+	function updateFilterVisibility() {
+		let visibleCount = 0;
+		const query = currentSearch.toLowerCase().trim();
+
+		for (const card of cards) {
+			let matchCat = true;
+
+			// Filtro de Categoría / Ofertas / Tendencias
+			if (currentFilter === 'all') {
+				matchCat = true;
+			} else if (currentFilter === 'ofertas') {
+				matchCat = card.dataset.offer === 'true';
+			} else if (currentFilter === 'tendencias') {
+				matchCat = card.dataset.trending === 'true';
+			} else if (currentFilter.startsWith('categoria:')) {
+				matchCat = card.dataset.cat === currentFilter.slice('categoria:'.length);
+			} else if (currentFilter.startsWith('subcategoria:')) {
+				matchCat = card.dataset.sub === currentFilter.slice('subcategoria:'.length);
+			}
+
+			// Filtro de Búsqueda Normal por Texto
+			let matchSearch = true;
+			if (query.length > 0) {
+				const searchPool = (card.dataset.search || card.dataset.name || '').toLowerCase();
+				matchSearch = searchPool.includes(query);
+			}
+
+			// Filtro por Precio
+			let matchPrice = true;
+			const price = Number(card.dataset.price) || 0;
+
+			// Rango rápido de precios
+			if (currentPriceBracket === '0-50' && price > 50) matchPrice = false;
+			if (currentPriceBracket === '50-150' && (price < 50 || price > 150)) matchPrice = false;
+			if (currentPriceBracket === '150-300' && (price < 150 || price > 300)) matchPrice = false;
+			if (currentPriceBracket === '300+' && price < 300) matchPrice = false;
+
+			// Entradas manuales de precio mínimo y máximo
+			if (currentPriceMin !== null && price < currentPriceMin) matchPrice = false;
+			if (currentPriceMax !== null && price > currentPriceMax) matchPrice = false;
+
+			const isVisible = matchCat && matchSearch && matchPrice;
+			card.hidden = !isVisible;
+			if (isVisible) visibleCount += 1;
+		}
+
+		// Ordenación
+		sortCards();
+
+		// Actualización de contadores y estados vacíos
+		if (empty instanceof HTMLElement) empty.hidden = visibleCount > 0;
+		if (count instanceof HTMLElement) count.textContent = String(visibleCount);
+
+		// Mostrar / Ocultar badge de filtros de precio activos en el botón del acordeón
+		const hasPriceFilter =
+			currentPriceBracket !== 'all' ||
+			currentPriceMin !== null ||
+			currentPriceMax !== null;
+
+		if (filterBadge instanceof HTMLElement) {
+			filterBadge.hidden = !hasPriceFilter;
+		}
+
+		// Mostrar / Ocultar botón de Limpiar filtros si hay filtros activos
+		const hasActiveFilters =
+			currentSearch.length > 0 ||
+			hasPriceFilter ||
+			currentFilter !== 'all';
+
+		if (resetBtn instanceof HTMLElement) {
+			resetBtn.hidden = !hasActiveFilters;
+		}
+
+		if (searchClearBtn instanceof HTMLElement) {
+			searchClearBtn.hidden = query.length === 0;
+		}
+	}
+
+	function sortCards() {
+		if (!catalogGrid) return;
+		const visibleCards = cards.filter((c) => !c.hidden);
+
+		if (currentSort === 'price-asc') {
+			visibleCards.sort((a, b) => (Number(a.dataset.price) || 0) - (Number(b.dataset.price) || 0));
+		} else if (currentSort === 'price-desc') {
+			visibleCards.sort((a, b) => (Number(b.dataset.price) || 0) - (Number(a.dataset.price) || 0));
+		} else if (currentSort === 'offers') {
+			visibleCards.sort((a, b) => (b.dataset.offer === 'true' ? 1 : 0) - (a.dataset.offer === 'true' ? 1 : 0));
+		}
+
+		visibleCards.forEach((card, index) => {
+			card.style.order = String(index);
+		});
+	}
+
+	function resetAllFilters() {
+		currentSearch = '';
+		currentPriceBracket = 'all';
+		currentPriceMin = null;
+		currentPriceMax = null;
+		currentSort = 'default';
+
+		if (searchInput) searchInput.value = '';
+		if (priceMinInput) priceMinInput.value = '';
+		if (priceMaxInput) priceMaxInput.value = '';
+		if (sortSelect) sortSelect.value = 'default';
+
+		priceChips.forEach((chip) => {
+			chip.classList.toggle('is-active', chip.dataset.priceBracket === 'all');
+		});
+
+		updateFilterVisibility();
+	}
+
+	// 1. Eventos de Búsqueda Normal
+	searchInput?.addEventListener('input', () => {
+		currentSearch = searchInput.value;
+		updateFilterVisibility();
+	});
+
+	searchClearBtn?.addEventListener('click', () => {
+		if (searchInput) {
+			searchInput.value = '';
+			currentSearch = '';
+			searchInput.focus();
+			updateFilterVisibility();
+		}
+	});
+
+	// 2. Eventos de Rango de Precios Rápido (Chips)
+	priceChips.forEach((chip) => {
+		chip.addEventListener('click', () => {
+			priceChips.forEach((c) => c.classList.remove('is-active'));
+			chip.classList.add('is-active');
+			currentPriceBracket = chip.dataset.priceBracket || 'all';
+
+			// Si el usuario selecciona un chip, limpia los inputs personalizados
+			if (priceMinInput) priceMinInput.value = '';
+			if (priceMaxInput) priceMaxInput.value = '';
+			currentPriceMin = null;
+			currentPriceMax = null;
+
+			updateFilterVisibility();
+		});
+	});
+
+	// 3. Entradas Manuales de Precio Mínimo y Máximo
+	priceMinInput?.addEventListener('input', () => {
+		const val = priceMinInput.value.trim();
+		currentPriceMin = val === '' ? null : Number(val);
+		priceChips.forEach((c) => c.classList.remove('is-active'));
+		currentPriceBracket = 'all';
+		updateFilterVisibility();
+	});
+
+	priceMaxInput?.addEventListener('input', () => {
+		const val = priceMaxInput.value.trim();
+		currentPriceMax = val === '' ? null : Number(val);
+		priceChips.forEach((c) => c.classList.remove('is-active'));
+		currentPriceBracket = 'all';
+		updateFilterVisibility();
+	});
+
+	// 4. Selector de Ordenación
+	sortSelect?.addEventListener('change', () => {
+		currentSort = sortSelect.value;
+		updateFilterVisibility();
+	});
+
+	// 5. Botones de Limpiar Filtros
+	resetBtn?.addEventListener('click', resetAllFilters);
+	emptyResetBtn?.addEventListener('click', () => {
+		currentFilter = 'all';
+		document.querySelectorAll('[data-nav-filter]').forEach((el) => {
+			el.classList.toggle('is-active', el.getAttribute('data-nav-filter') === 'all');
+		});
+		if (title) title.textContent = 'Todos los productos';
+		resetAllFilters();
+	});
+
+	// 6. Manejador Global de Clics (Navegación y Botón de Carrito Rápido)
+	document.addEventListener('click', (event) => {
+		const clicked = event.target;
+		if (!(clicked instanceof Element)) return;
+
+		// Botón de agregar rápido al carrito
+		const addBtn = clicked.closest<HTMLButtonElement>('[data-card-add]');
+		if (addBtn) {
+			event.preventDefault();
+			event.stopPropagation();
+
+			const id = addBtn.dataset.id || '';
+			const slug = addBtn.dataset.slug || '';
+			const name = addBtn.dataset.name || '';
+			const price = Number(addBtn.dataset.price) || 0;
+			const stock = Number(addBtn.dataset.stock) || 1;
+			const img = addBtn.dataset.img || null;
+
+			window.dispatchEvent(
+				new CustomEvent('confi-cart:add', {
+					detail: {
+						product: {
+							id: `${id}__base`,
+							productId: id,
+							slug: slug,
+							nombre: name,
+							combinacion: 'Única',
+							precio: price,
+							imagenUrl: img,
+							maxStock: stock,
+						},
+						quantity: 1,
+						redirectToCatalog: false,
+					},
+				})
+			);
+
+			// Animación de feedback en el botón
+			const originalHtml = addBtn.innerHTML;
+			addBtn.innerHTML = '<span>✓ Listo</span>';
+			addBtn.style.background = '#16a34a';
+			setTimeout(() => {
+				addBtn.innerHTML = originalHtml;
+				addBtn.style.background = '';
+			}, 1200);
+
+			return;
+		}
+
+		// Enlaces de Filtro del Menú Lateral y Footer
+		const link = clicked.closest('[data-nav-filter]');
+		if (!(link instanceof HTMLElement)) return;
+
+		event.preventDefault();
+
+		const filter = link.dataset.navFilter || 'all';
+		const targetId = link.dataset.navTarget || 'todos';
+
+		document.querySelectorAll('[data-nav-filter]').forEach((el) => {
+			el.classList.toggle('is-active', el === link);
+		});
+
+		// Navegación hacia Tendencias
+		if (filter === 'tendencias') {
+			const trendingSec = document.getElementById('tendencias');
+			if (trendingSec) {
+				trendingSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				return;
+			}
+		}
+
+		currentFilter = filter;
+		if (title instanceof HTMLElement) {
+			title.textContent = link.dataset.navLabel || (filter === 'ofertas' ? 'Ofertas Especiales' : 'Todos los productos');
+		}
+
+		updateFilterVisibility();
+
+		const targetElement = document.getElementById(targetId);
+		if (targetElement) {
+			targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	});
+
+	// 7. Carga inicial mediante Hash en URL (#tendencias, #ofertas, #cat-..., etc.)
+	if (window.location.hash) {
+		const hash = window.location.hash;
+		if (hash === '#tendencias') {
+			const trendingLink = document.querySelector('[data-nav-filter="tendencias"]');
+			if (trendingLink instanceof HTMLElement) trendingLink.click();
+		} else if (hash === '#ofertas') {
+			const ofertasLink = document.querySelector('[data-nav-filter="ofertas"]');
+			if (ofertasLink instanceof HTMLElement) ofertasLink.click();
+		} else {
+			const hashLink =
+				document.querySelector(`[href="/${hash}"]`) ||
+				document.querySelector(`[href="${hash}"]`);
+			if (hashLink instanceof HTMLElement) {
+				hashLink.click();
+			}
+		}
+	}
+</script>
+
+<style>
+	:global([data-store-card][hidden]),
+	:global([data-store-empty][hidden]),
+	:global([hidden]) {
+		display: none !important;
+	}
+
+	.smain {
+		margin-left: var(--store-nav-w);
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* SECCIÓN TENDENCIAS */
+	.strending {
+		position: relative;
+		overflow: hidden;
+		padding: 2.25rem clamp(1rem, 3.5vw, 2.5rem) 2.5rem;
+		background:
+			radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 75%),
+			color-mix(in srgb, var(--panel) 40%, var(--bg));
+		border-bottom: 1px solid var(--line);
+		scroll-margin-top: calc(var(--store-bar-h) + 1rem);
+	}
+
+	.strending__glow {
+		position: absolute;
+		top: -10%;
+		left: 30%;
+		width: 400px;
+		height: 250px;
+		background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%);
+		filter: blur(50px);
+		pointer-events: none;
+	}
+
+	.strending__inner {
+		position: relative;
+		z-index: 1;
+		max-width: 78rem;
+		margin: 0 auto;
+	}
+
+	.strending__head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1.25rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.strending__title-box {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+
+	.strending__badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		align-self: flex-start;
+		padding: 0.25rem 0.65rem;
+		border-radius: 9999px;
+		background: #ea580c;
+		color: #ffffff;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+	}
+
+	.strending__badge-icon {
+		font-size: 0.85rem;
+	}
+
+	.strending__title {
+		margin: 0;
+		font-family: var(--font-titulos);
+		font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+		font-weight: 850;
+		letter-spacing: -0.025em;
+		color: var(--ink);
+	}
+
+	.strending__subtitle {
+		margin: 0;
+		font-size: 0.92rem;
+		color: color-mix(in srgb, var(--ink) 72%, transparent);
+	}
+
+	.strending__tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		padding: 0.4rem 0.85rem;
+		border-radius: 9999px;
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+		font-size: 0.8rem;
+		font-weight: 800;
+		border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+	}
+
+	.strending__tag svg {
+		flex-shrink: 0;
+	}
+
+	/* SECCIÓN CATÁLOGO */
+	.ssec {
+		padding: 2.25rem clamp(1rem, 3.5vw, 2.5rem) 1.5rem;
+		max-width: 78rem;
+		width: 100%;
+		margin: 0 auto;
+		scroll-margin-top: calc(var(--store-bar-h) + 1rem);
+	}
+
+	.ssec__head {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.ssec__kicker {
+		margin: 0 0 0.2rem;
+		font-size: 0.78rem;
+		font-weight: 900;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--color-primario, #fff700) !important;
+		text-shadow: 0 1px 8px color-mix(in srgb, var(--color-primario, #fff700) 25%, transparent);
+	}
+
+	.ssec__title {
+		margin: 0;
+		font-family: var(--font-titulos);
+		font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		color: var(--ink);
+	}
+
+	.ssec__count {
+		display: inline-grid;
+		place-items: center;
+		min-width: 2.2rem;
+		height: 2.2rem;
+		padding: 0 0.65rem;
+		border-radius: 9999px;
+		background: #0f172a !important;
+		color: #ffffff !important;
+		font-size: 0.88rem;
+		font-weight: 850;
+	}
+
+	/* BARRA DE FILTROS - Sticky, Acordeón y Alto Contraste */
+	.sfilter-bar {
+		position: sticky;
+		top: 0.75rem;
+		z-index: 35;
+		display: flex;
+		flex-direction: column;
+		padding: 1.1rem 1.35rem;
+		background: #ffffff !important;
+		border: 1.5px solid #cbd5e1 !important;
+		border-radius: var(--radius-lg);
+		box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+		margin-bottom: 1.75rem;
+		backdrop-filter: blur(10px);
+	}
+
+	.sfilter-bar__top {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.85rem;
+	}
+
+	.sfilter-search {
+		position: relative;
+		flex: 1;
+		min-width: min(100%, 18rem);
+	}
+
+	.sfilter-search__icon {
+		position: absolute;
+		left: 1rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: #0f172a !important;
+		z-index: 5;
+		pointer-events: none;
+	}
+
+	.sfilter-search__input {
+		width: 100%;
+		padding: 0.72rem 2.4rem 0.72rem 2.85rem;
+		border-radius: var(--radius-md);
+		border: 1.5px solid #cbd5e1 !important;
+		background: #f8fafc !important;
+		color: #0f172a !important;
+		font-size: 0.92rem;
+		font-weight: 550;
+		font-family: inherit;
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+		transition: all 0.15s ease;
+	}
+
+	.sfilter-search__input::placeholder {
+		color: #64748b !important;
+		opacity: 1;
+	}
+
+	.sfilter-search__input:focus {
+		outline: none;
+		border-color: #0f172a !important;
+		background: #ffffff !important;
+		box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.12);
+	}
+
+	.sfilter-search__clear {
+		position: absolute;
+		right: 0.85rem;
+		top: 50%;
+		transform: translateY(-50%);
+		border: 0;
+		background: #e2e8f0;
+		color: #0f172a;
+		width: 1.4rem;
+		height: 1.4rem;
+		border-radius: 50%;
+		display: grid;
+		place-items: center;
+		font-size: 0.75rem;
+		font-weight: 800;
+		cursor: pointer;
+		z-index: 5;
+		transition: background 0.15s ease;
+	}
+
+	.sfilter-search__clear:hover {
+		background: #cbd5e1;
+	}
+
+	.sfilter-bar__actions {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		flex-wrap: wrap;
+	}
+
+	.sfilter-sort {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.sfilter-sort__label {
+		font-size: 0.84rem;
+		font-weight: 750;
+		color: #0f172a !important;
+	}
+
+	.sfilter-sort__select {
+		padding: 0.62rem 1.05rem;
+		border-radius: var(--radius-md);
+		border: 1.5px solid #cbd5e1 !important;
+		background: #f8fafc !important;
+		color: #0f172a !important;
+		font-size: 0.86rem;
+		font-weight: 650;
+		font-family: inherit;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.sfilter-sort__select:focus {
+		outline: none;
+		border-color: #0f172a !important;
+		background: #ffffff !important;
+	}
+
+	.sfilter-accordion-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.62rem 0.95rem;
+		border-radius: var(--radius-md);
+		border: 1.5px solid #cbd5e1 !important;
+		background: #f8fafc !important;
+		color: #0f172a !important;
+		font-size: 0.86rem;
+		font-weight: 750;
+		cursor: pointer;
+		transition: all 0.18s ease;
+		font-family: inherit;
+		user-select: none;
+	}
+
+	.sfilter-accordion-btn:hover {
+		background: #e2e8f0 !important;
+		border-color: #0f172a !important;
+	}
+
+	.sfilter-accordion-btn[aria-expanded="true"] {
+		background: #0f172a !important;
+		color: #ffffff !important;
+		border-color: #0f172a !important;
+	}
+
+	.sfilter-accordion-btn__icon {
+		flex-shrink: 0;
+	}
+
+	.sfilter-accordion-btn__chevron {
+		flex-shrink: 0;
+		transition: transform 0.22s ease;
+	}
+
+	.sfilter-accordion-btn[aria-expanded="true"] .sfilter-accordion-btn__chevron {
+		transform: rotate(180deg);
+	}
+
+	.sfilter-accordion-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.25rem;
+		height: 1.25rem;
+		padding: 0 0.35rem;
+		border-radius: 9999px;
+		background: var(--color-primario, #fff700);
+		color: #090901;
+		font-size: 0.72rem;
+		font-weight: 900;
+		line-height: 1;
+	}
+
+	.sfilter-accordion-btn[aria-expanded="true"] .sfilter-accordion-badge {
+		box-shadow: 0 0 8px rgba(255, 247, 0, 0.6);
+	}
+
+	/* Acordeón mediante CSS Grid */
+	.sfilter-accordion {
+		display: grid;
+		grid-template-rows: 0fr;
+		transition: grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.sfilter-accordion[data-open="true"] {
+		grid-template-rows: 1fr;
+	}
+
+	.sfilter-accordion__inner {
+		overflow: hidden;
+	}
+
+	/* FILTROS DE PRECIO - Textos y Botones de Alto Contraste */
+	.sfilter-price {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.85rem;
+		padding-top: 1rem;
+		margin-top: 0.85rem;
+		border-top: 1px solid #e2e8f0;
+	}
+
+	.sfilter-price__title {
+		font-size: 0.82rem;
+		font-weight: 850;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #0f172a !important;
+	}
+
+	.sfilter-price__chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.sfilter-chip {
+		padding: 0.4rem 0.85rem;
+		border-radius: 9999px;
+		border: 1.5px solid #cbd5e1 !important;
+		background: #f8fafc !important;
+		color: #1e293b !important;
+		font-size: 0.82rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.sfilter-chip:hover {
+		border-color: #0f172a !important;
+		color: #000000 !important;
+		background: #e2e8f0 !important;
+	}
+
+	.sfilter-chip.is-active {
+		background: #0f172a !important;
+		color: var(--color-primario, #fff700) !important;
+		border-color: #0f172a !important;
+		font-weight: 900 !important;
+		box-shadow: 0 3px 12px rgba(15, 23, 42, 0.35);
+		text-shadow: 0 0 6px color-mix(in srgb, var(--color-primario, #fff700) 45%, transparent);
+	}
+
+	.sfilter-custom-price {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-left: auto;
+	}
+
+	.sfilter-input-group {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.sfilter-input-prefix {
+		position: absolute;
+		left: 0.65rem;
+		font-size: 0.85rem;
+		font-weight: 800;
+		color: #475569 !important;
+		pointer-events: none;
+		z-index: 3;
+	}
+
+	.sfilter-price-input {
+		width: 5.6rem;
+		padding: 0.45rem 0.5rem 0.45rem 1.45rem;
+		border-radius: var(--radius-sm);
+		border: 1.5px solid #cbd5e1 !important;
+		background: #f8fafc !important;
+		color: #0f172a !important;
+		font-size: 0.85rem;
+		font-weight: 700;
+		font-family: inherit;
+		transition: all 0.15s ease;
+	}
+
+	.sfilter-price-input:focus {
+		outline: none;
+		border-color: #0f172a !important;
+		background: #ffffff !important;
+	}
+
+	.sfilter-range-sep {
+		font-size: 0.85rem;
+		color: #475569 !important;
+		font-weight: 800;
+	}
+
+	.sfilter-reset-btn {
+		padding: 0.45rem 0.95rem;
+		border-radius: 9999px;
+		border: 1.5px solid #f87171 !important;
+		background: #fef2f2 !important;
+		color: #b91c1c !important;
+		font-size: 0.8rem;
+		font-weight: 750;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.sfilter-reset-btn:hover {
+		background: #fee2e2 !important;
+		border-color: #ef4444 !important;
+	}
+
+	/* GRIDS DE PRODUCTOS */
+	.sgrid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr));
+		gap: 1.35rem;
+	}
+
+	.sgrid--trending {
+		grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+	}
+
+	/* ESTADO VACÍO */
+	.ssec__empty {
+		padding: 3.5rem 1.5rem;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		background: var(--panel);
+		border: 1px dashed var(--line);
+		border-radius: var(--radius-lg);
+		color: var(--ink);
+	}
+
+	.ssec__empty-svg {
+		color: color-mix(in srgb, var(--ink) 40%, transparent);
+		margin-bottom: 0.25rem;
+	}
+
+	.ssec__empty-title {
+		margin: 0;
+		font-size: 1.2rem;
+		font-weight: 800;
+	}
+
+	.ssec__empty-text {
+		margin: 0;
+		font-size: 0.9rem;
+		color: color-mix(in srgb, var(--ink) 65%, transparent);
+		max-width: 25rem;
+	}
+
+	.ssec__empty-btn {
+		margin-top: 0.5rem;
+		padding: 0.65rem 1.25rem;
+		border-radius: 9999px;
+		border: 0;
+		background: var(--accent);
+		color: var(--accent-ink);
+		font-size: 0.85rem;
+		font-weight: 750;
+		cursor: pointer;
+		box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+		transition: transform 0.15s ease;
+	}
+
+	.ssec__empty-btn:hover {
+		transform: scale(1.03);
+	}
+
+	@media (max-width: 900px) {
+		.smain {
+			margin-left: 0;
+			padding-top: var(--store-bar-h);
+		}
+
+		.sfilter-bar {
+			top: calc(var(--store-bar-h) + 0.5rem);
+			padding: 0.85rem 1rem;
+		}
+
+		.sfilter-bar__actions {
+			width: 100%;
+			justify-content: space-between;
+		}
+
+		.sfilter-custom-price {
+			margin-left: 0;
+			width: 100%;
+		}
+
+		.sgrid {
+			grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+			gap: 0.85rem;
+		}
+
+		.sgrid--trending {
+			grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+		}
+	}
+
+	/* FOOTER PROFESIONAL Y CORTO EN INDEX */
+	:global(.sfoot) {
+		margin-top: 3rem !important;
+		background: var(--color-fondo, var(--bg, #484747)) !important;
+		border-top: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+		color: #e2e8f0 !important;
+	}
+
+	:global(.sfoot__container) {
+		max-width: 78rem !important;
+		margin: 0 auto !important;
+		padding: 1.75rem clamp(1rem, 3.5vw, 2.5rem) 1.25rem !important;
+	}
+
+	:global(.sfoot__grid) {
+		display: grid !important;
+		grid-template-columns: 1.2fr 1.2fr 1.4fr !important;
+		gap: 2.25rem !important;
+		align-items: start !important;
+		padding-bottom: 1.25rem !important;
+	}
+
+	:global(.sfoot__col--brand) {
+		display: flex !important;
+		flex-direction: column !important;
+		gap: 0.65rem !important;
+	}
+
+	:global(.sfoot__brand-header) {
+		display: flex !important;
+		align-items: center !important;
+		gap: 0.75rem !important;
+	}
+
+	:global(.sfoot__logo) {
+		width: 2.6rem !important;
+		height: 2.6rem !important;
+		border-radius: 0.65rem !important;
+		object-fit: cover !important;
+		border: 1.5px solid #334155 !important;
+		background: #1e293b !important;
+		flex-shrink: 0 !important;
+	}
+
+	:global(.sfoot__fallback) {
+		display: grid !important;
+		place-items: center !important;
+		width: 2.6rem !important;
+		height: 2.6rem !important;
+		border-radius: 0.65rem !important;
+		background: var(--color-primario, #fff700) !important;
+		color: #090901 !important;
+		font-family: var(--font-titulos, sans-serif) !important;
+		font-size: 1.25rem !important;
+		font-weight: 900 !important;
+		flex-shrink: 0 !important;
+	}
+
+	:global(.sfoot__brand-title) {
+		margin: 0 !important;
+		font-size: 1.15rem !important;
+		font-weight: 850 !important;
+		color: #ffffff !important;
+		letter-spacing: -0.01em !important;
+		line-height: 1.2 !important;
+	}
+
+	:global(.sfoot__brand-rif) {
+		font-size: 0.72rem !important;
+		font-weight: 750 !important;
+		color: #94a3b8 !important;
+	}
+
+	:global(.sfoot__tagline) {
+		margin: 0 !important;
+		font-size: 0.8rem !important;
+		color: #94a3b8 !important;
+		line-height: 1.45 !important;
+		max-width: 20rem !important;
+	}
+
+	:global(.sfoot__heading) {
+		margin: 0 0 0.65rem !important;
+		font-size: 0.78rem !important;
+		font-weight: 850 !important;
+		text-transform: uppercase !important;
+		letter-spacing: 0.08em !important;
+		color: var(--color-primario, #fff700) !important;
+	}
+
+	:global(.sfoot__heading-sub) {
+		margin: 0.85rem 0 0.5rem !important;
+		font-size: 0.74rem !important;
+		font-weight: 800 !important;
+		text-transform: uppercase !important;
+		letter-spacing: 0.06em !important;
+		color: #94a3b8 !important;
+	}
+
+	:global(.sfoot__list) {
+		list-style: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		gap: 0.5rem !important;
+	}
+
+	:global(.sfoot__list-item) {
+		display: flex !important;
+		align-items: center !important;
+		gap: 0.55rem !important;
+		font-size: 0.8rem !important;
+		color: #cbd5e1 !important;
+		line-height: 1.35 !important;
+	}
+
+	:global(.sfoot__icon) {
+		color: var(--color-primario, #fff700) !important;
+		flex-shrink: 0 !important;
+	}
+
+	:global(.sfoot__link) {
+		color: #cbd5e1 !important;
+		text-decoration: none !important;
+		transition: color 0.15s ease !important;
+	}
+
+	:global(.sfoot__link:hover) {
+		color: var(--color-primario, #fff700) !important;
+		text-decoration: underline !important;
+	}
+
+	:global(.sfoot__social-section) {
+		display: flex !important;
+		flex-direction: column !important;
+	}
+
+	:global(.sfoot__social-btns) {
+		display: flex !important;
+		flex-wrap: wrap !important;
+		gap: 0.5rem !important;
+	}
+
+	:global(.sfoot__social-btn) {
+		display: inline-flex !important;
+		align-items: center !important;
+		gap: 0.4rem !important;
+		padding: 0.38rem 0.8rem !important;
+		border-radius: 9999px !important;
+		font-size: 0.78rem !important;
+		font-weight: 750 !important;
+		text-decoration: none !important;
+		transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+	}
+
+	:global(.sfoot__social-btn:hover) {
+		transform: translateY(-2px) !important;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+	}
+
+	:global(.sfoot__social-btn--wa) {
+		background: #16a34a !important;
+		color: #ffffff !important;
+		border: 1px solid #22c55e !important;
+	}
+
+	:global(.sfoot__social-btn--ig) {
+		background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045) !important;
+		color: #ffffff !important;
+		border: 1px solid rgba(255, 255, 255, 0.2) !important;
+	}
+
+	:global(.sfoot__social-btn--tt) {
+		background: #000000 !important;
+		color: #ffffff !important;
+		border: 1px solid #334155 !important;
+	}
+
+	:global(.sfoot__pay-badges) {
+		display: flex !important;
+		flex-wrap: wrap !important;
+		gap: 0.4rem !important;
+	}
+
+	:global(.sfoot__pay-badge) {
+		display: inline-block !important;
+		padding: 0.25rem 0.6rem !important;
+		border-radius: 0.45rem !important;
+		background: rgba(0, 0, 0, 0.25) !important;
+		border: 1px solid rgba(255, 255, 255, 0.16) !important;
+		font-size: 0.74rem !important;
+		font-weight: 700 !important;
+		color: #ffffff !important;
+		letter-spacing: 0.01em !important;
+	}
+
+	:global(.sfoot__bottom) {
+		display: flex !important;
+		flex-wrap: wrap !important;
+		align-items: center !important;
+		justify-content: space-between !important;
+		gap: 0.75rem !important;
+		padding-top: 1rem !important;
+		border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+		font-size: 0.76rem !important;
+		color: #cbd5e1 !important;
+	}
+
+	:global(.sfoot__copy) {
+		margin: 0 !important;
+	}
+
+	:global(.sfoot__copy strong) {
+		color: #ffffff !important;
+	}
+
+	:global(.sfoot__status) {
+		display: inline-flex !important;
+		align-items: center !important;
+		gap: 0.45rem !important;
+		font-weight: 750 !important;
+		color: #22c55e !important;
+	}
+
+	:global(.sfoot__status-dot) {
+		width: 7px !important;
+		height: 7px !important;
+		border-radius: 50% !important;
+		background: #22c55e !important;
+		box-shadow: 0 0 8px #22c55e !important;
+		display: inline-block !important;
+	}
+
+	@media (max-width: 860px) {
+		:global(.sfoot__grid) {
+			grid-template-columns: 1fr !important;
+			gap: 1.35rem !important;
+		}
+
+		:global(.sfoot__tagline) {
+			max-width: 100% !important;
+		}
+	}
+</style>
