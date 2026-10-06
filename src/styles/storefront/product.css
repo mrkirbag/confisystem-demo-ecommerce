@@ -269,8 +269,8 @@
 	width: 4.5rem;
 	height: 4.5rem;
 	border-radius: 0.65rem;
-	border: 2px solid var(--line-on-panel);
-	background: #ffffff;
+	border: 2px solid transparent;
+	background: var(--color-secundario);
 	padding: 4px;
 	cursor: pointer;
 	overflow: hidden;
@@ -305,8 +305,8 @@
 	min-height: 380px;
 	max-height: 520px;
 	border-radius: 0.85rem;
-	border: 1px solid var(--line-on-panel);
-	background: #ffffff;
+	border: none;
+	background: var(--color-secundario);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -1260,8 +1260,8 @@
 	width: 2.75rem;
 	height: 2.75rem;
 	border-radius: 6px;
-	border: 1px solid var(--line-on-panel);
-	background: #ffffff;
+	border: none;
+	background: var(--color-secundario);
 	object-fit: contain;
 	flex-shrink: 0;
 }
@@ -1338,7 +1338,7 @@
 	object-fit: contain;
 	border-radius: 0.75rem;
 	box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-	background: #ffffff;
+	background: var(--color-secundario);
 	padding: 1rem;
 }
 

@@ -49,7 +49,6 @@ const tiktokHref = cleanTiktok
 const cleanDireccion = cleanString(brand.direccion);
 const cleanTelefono = cleanString(brand.telefono);
 const cleanCorreo = cleanString(brand.correo);
-const cleanRif = cleanString(brand.rif);
 ---
 
 <header class="shead" id="top">
@@ -67,16 +66,6 @@ const cleanRif = cleanString(brand.rif);
 			</div>
 
 			<div class="shead__text">
-				<div class="shead__kicker-row">
-					<span class="shead__badge">
-						<svg class="shead__badge-icon" viewBox="0 0 20 20" fill="currentColor" width="12" height="12" aria-hidden="true">
-							<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-						</svg>
-						Tienda Verificada
-					</span>
-					{cleanRif ? <span class="shead__rif">RIF: {cleanRif}</span> : null}
-				</div>
-
 				<h1 class="shead__name">{brand.nombre}</h1>
 
 				<div class="shead__meta">
@@ -245,44 +234,6 @@ const cleanRif = cleanString(brand.rif);
 		flex-direction: column;
 		gap: 0.35rem;
 		min-width: 0;
-	}
-
-	.shead__kicker-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.55rem;
-	}
-
-	.shead__badge {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		padding: 0.22rem 0.65rem;
-		border-radius: 9999px;
-		background: color-mix(in srgb, #ffffff 14%, transparent);
-		color: #ffffff;
-		font-size: 0.72rem;
-		font-weight: 750;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		border: 1px solid color-mix(in srgb, #ffffff 25%, transparent);
-	}
-
-	.shead__badge-icon {
-		color: #22c55e;
-	}
-
-	.shead__rif {
-		font-size: 0.73rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		color: #ffffff;
-		padding: 0.2rem 0.55rem;
-		border-radius: 0.4rem;
-		background: color-mix(in srgb, #ffffff 12%, transparent);
-		border: 1px solid color-mix(in srgb, #ffffff 18%, transparent);
-		letter-spacing: 0.02em;
 	}
 
 	.shead__name {

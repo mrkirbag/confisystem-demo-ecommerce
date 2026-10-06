@@ -105,12 +105,6 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 								Los favoritos de nuestros clientes con la mejor calidad y disponibilidad inmediata.
 							</p>
 						</div>
-						<div class="strending__tag">
-							<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-							</svg>
-							<span>Top Selección</span>
-						</div>
 					</div>
 
 					<div class="sgrid sgrid--trending">
@@ -132,8 +126,42 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 				<span class="ssec__count" data-store-count>{activos.length}</span>
 			</div>
 
+			<!-- Botón Sticky flotante para Móvil (Solo la Lupa) -->
+			<div class="sfilter-mobile-sticky-wrap">
+				<button
+					type="button"
+					id="mobile-filter-lupa-btn"
+					class="sfilter-mobile-lupa-btn"
+					aria-label="Abrir filtros y búsqueda"
+					title="Buscar y filtrar productos"
+				>
+					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<circle cx="11" cy="11" r="8"></circle>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					</svg>
+					<span id="mobile-filter-badge" class="sfilter-mobile-badge" hidden></span>
+				</button>
+			</div>
+
+			<!-- Backdrop para modal de filtros en móvil -->
+			<div class="sfilter-mobile-backdrop" id="mobile-filter-backdrop" hidden></div>
+
 			<!-- BARRA DE FILTROS: Búsqueda Normal + Rango de Precios en Acordeón Sticky -->
 			<div class="sfilter-bar" id="filtros">
+				<!-- Encabezado de filtros para móvil -->
+				<div class="sfilter-modal-head">
+					<div class="sfilter-modal-title-box">
+						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="11" cy="11" r="8"></circle>
+							<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+						</svg>
+						<span class="sfilter-modal-title">Filtros y Búsqueda</span>
+					</div>
+					<button type="button" id="mobile-filter-close-btn" class="sfilter-modal-close-btn" aria-label="Cerrar filtros">
+						✕
+					</button>
+				</div>
+
 				<div class="sfilter-bar__top">
 					<!-- Campo de Búsqueda Normal -->
 					<div class="sfilter-search">
@@ -248,6 +276,13 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 						</div>
 					</div>
 				</div>
+
+				<!-- Botón Aplicar en móvil -->
+				<div class="sfilter-modal-foot">
+					<button type="button" id="mobile-filter-apply-btn" class="sfilter-modal-apply-btn">
+						Ver productos (<span data-store-count-btn>{activos.length}</span>)
+					</button>
+				</div>
 			</div>
 
 			<!-- Grid del Catálogo de Productos -->
@@ -296,6 +331,38 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	const accordionToggle = document.getElementById('filter-accordion-toggle');
 	const accordionContent = document.getElementById('filter-accordion-content');
 	const filterBadge = document.getElementById('filter-active-badge');
+	const mobileLupaBtn = document.getElementById('mobile-filter-lupa-btn');
+	const mobileBackdrop = document.getElementById('mobile-filter-backdrop');
+	const mobileCloseBtn = document.getElementById('mobile-filter-close-btn');
+	const mobileApplyBtn = document.getElementById('mobile-filter-apply-btn');
+	const filtersContainer = document.getElementById('filtros');
+	const mobileBadge = document.getElementById('mobile-filter-badge');
+	const btnCount = document.querySelector('[data-store-count-btn]');
+
+	function toggleMobileFilters(open: boolean) {
+		if (!filtersContainer) return;
+		filtersContainer.classList.toggle('is-mobile-open', open);
+		if (mobileBackdrop) {
+			mobileBackdrop.hidden = !open;
+		}
+		if (open) {
+			document.body.style.overflow = 'hidden';
+			setTimeout(() => searchInput?.focus(), 150);
+		} else {
+			document.body.style.overflow = '';
+		}
+	}
+
+	mobileLupaBtn?.addEventListener('click', () => toggleMobileFilters(true));
+	mobileCloseBtn?.addEventListener('click', () => toggleMobileFilters(false));
+	mobileBackdrop?.addEventListener('click', () => toggleMobileFilters(false));
+	mobileApplyBtn?.addEventListener('click', () => toggleMobileFilters(false));
+
+	window.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && filtersContainer?.classList.contains('is-mobile-open')) {
+			toggleMobileFilters(false);
+		}
+	});
 
 	// En dispositivos móviles (<=768px) colapsar el acordeón inicialmente para no ocupar pantalla
 	if (window.innerWidth <= 768) {
@@ -370,6 +437,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		// Actualización de contadores y estados vacíos
 		if (empty instanceof HTMLElement) empty.hidden = visibleCount > 0;
 		if (count instanceof HTMLElement) count.textContent = String(visibleCount);
+		if (btnCount instanceof HTMLElement) btnCount.textContent = String(visibleCount);
 
 		// Mostrar / Ocultar badge de filtros de precio activos en el botón del acordeón
 		const hasPriceFilter =
@@ -389,6 +457,10 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 
 		if (resetBtn instanceof HTMLElement) {
 			resetBtn.hidden = !hasActiveFilters;
+		}
+
+		if (mobileBadge instanceof HTMLElement) {
+			mobileBadge.hidden = !hasActiveFilters;
 		}
 
 		if (searchClearBtn instanceof HTMLElement) {
@@ -696,23 +768,6 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		color: color-mix(in srgb, var(--ink) 72%, transparent);
 	}
 
-	.strending__tag {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		padding: 0.4rem 0.85rem;
-		border-radius: 9999px;
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
-		color: var(--accent);
-		font-size: 0.8rem;
-		font-weight: 800;
-		border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-	}
-
-	.strending__tag svg {
-		flex-shrink: 0;
-	}
-
 	/* SECCIÓN CATÁLOGO */
 	.ssec {
 		padding: 2.25rem clamp(1rem, 3.5vw, 2.5rem) 1.5rem;
@@ -760,6 +815,23 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		color: #ffffff !important;
 		font-size: 0.88rem;
 		font-weight: 850;
+	}
+
+	/* Elementos exclusivos para móvil (ocultos por defecto en desktop) */
+	.sfilter-mobile-sticky-wrap {
+		display: none;
+	}
+
+	.sfilter-mobile-backdrop {
+		display: none;
+	}
+
+	.sfilter-modal-head {
+		display: none;
+	}
+
+	.sfilter-modal-foot {
+		display: none;
 	}
 
 	/* BARRA DE FILTROS - Sticky, Acordeón y Alto Contraste */
@@ -1174,12 +1246,207 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		}
 	}
 
-	/* FOOTER PROFESIONAL Y CORTO EN INDEX */
+	/* RESPONSIVE MÓVIL: 2 Columnas y Lupa Sticky con Modal de Filtros */
+	@media (max-width: 768px) {
+		.ssec,
+		.strending {
+			padding: 1.5rem clamp(0.65rem, 3vw, 1.25rem) 1.5rem;
+		}
+
+		.ssec__head {
+			margin-bottom: 0.85rem;
+		}
+
+		.sgrid,
+		.sgrid--trending {
+			grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+			gap: 0.65rem;
+		}
+
+		/* Lupa flotante y Sticky en Móvil */
+		.sfilter-mobile-sticky-wrap {
+			display: flex;
+			justify-content: flex-end;
+			position: sticky;
+			top: calc(var(--store-bar-h) + 0.5rem);
+			z-index: 38;
+			pointer-events: none;
+			margin-bottom: 0.65rem;
+		}
+
+		.sfilter-mobile-lupa-btn {
+			pointer-events: auto;
+			position: relative;
+			width: 2.75rem;
+			height: 2.75rem;
+			border-radius: 50%;
+			background: #ffffff;
+			border: 1.5px solid #cbd5e1;
+			color: #0f172a;
+			display: grid;
+			place-items: center;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+			cursor: pointer;
+			transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+		}
+
+		.sfilter-mobile-lupa-btn:active {
+			transform: scale(0.92);
+		}
+
+		.sfilter-mobile-badge {
+			position: absolute;
+			top: 3px;
+			right: 3px;
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			background: #ea580c;
+			border: 2px solid #ffffff;
+			box-shadow: 0 0 6px rgba(234, 88, 12, 0.5);
+		}
+
+		/* Fondo oscuro al abrir filtros */
+		.sfilter-mobile-backdrop {
+			display: block;
+			position: fixed;
+			inset: 0;
+			background: rgba(15, 23, 42, 0.55);
+			backdrop-filter: blur(4px);
+			z-index: 48;
+			animation: fadeInBackdrop 0.2s ease;
+		}
+
+		.sfilter-mobile-backdrop[hidden] {
+			display: none !important;
+		}
+
+		/* Modal de Filtros en Móvil */
+		.sfilter-bar {
+			display: none !important;
+		}
+
+		.sfilter-bar.is-mobile-open {
+			display: flex !important;
+			position: fixed !important;
+			inset: auto 0 0 0 !important;
+			max-height: 85vh;
+			border-radius: 1.25rem 1.25rem 0 0 !important;
+			z-index: 50 !important;
+			background: #ffffff !important;
+			border: 0 !important;
+			border-top: 1.5px solid #cbd5e1 !important;
+			box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3) !important;
+			overflow-y: auto;
+			-webkit-overflow-scrolling: touch;
+			padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+			margin-bottom: 0 !important;
+			animation: slideUpMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		.sfilter-modal-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-bottom: 1rem;
+			padding-bottom: 0.75rem;
+			border-bottom: 1px solid #e2e8f0;
+		}
+
+		.sfilter-modal-title-box {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			color: #0f172a;
+			font-family: var(--font-titulos);
+			font-size: 1.05rem;
+			font-weight: 800;
+		}
+
+		.sfilter-modal-close-btn {
+			border: 0;
+			background: #f1f5f9;
+			color: #0f172a;
+			width: 2rem;
+			height: 2rem;
+			border-radius: 50%;
+			display: grid;
+			place-items: center;
+			font-size: 0.85rem;
+			font-weight: 800;
+			cursor: pointer;
+			transition: background 0.15s ease;
+		}
+
+		.sfilter-modal-close-btn:active {
+			background: #e2e8f0;
+		}
+
+		.sfilter-modal-foot {
+			display: block;
+			margin-top: 1.25rem;
+			padding-top: 0.85rem;
+			border-top: 1px solid #e2e8f0;
+		}
+
+		.sfilter-modal-apply-btn {
+			width: 100%;
+			padding: 0.85rem 1.25rem;
+			border-radius: 9999px;
+			border: 0;
+			background: #0f172a;
+			color: #ffffff;
+			font-size: 0.92rem;
+			font-weight: 800;
+			cursor: pointer;
+			box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+			text-align: center;
+			transition: transform 0.15s ease, background 0.15s ease;
+		}
+
+		.sfilter-modal-apply-btn:active {
+			transform: scale(0.98);
+		}
+	}
+
+	@media (max-width: 360px) {
+		.ssec,
+		.strending {
+			padding-left: 0.5rem;
+			padding-right: 0.5rem;
+		}
+
+		.sgrid,
+		.sgrid--trending {
+			gap: 0.5rem;
+		}
+	}
+
+	@keyframes fadeInBackdrop {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes slideUpMobile {
+		from {
+			transform: translateY(100%);
+		}
+		to {
+			transform: translateY(0);
+		}
+	}
+
+	/* FOOTER PROFESIONAL Y CORTO EN INDEX - FONDO CLARO */
 	:global(.sfoot) {
 		margin-top: 3rem !important;
-		background: var(--color-fondo, var(--bg, #484747)) !important;
-		border-top: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-		color: #e2e8f0 !important;
+		background: #ffffff !important;
+		border-top: 1.5px solid #e2e8f0 !important;
+		color: #334155 !important;
+		box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03) !important;
 	}
 
 	:global(.sfoot__container) {
@@ -1213,8 +1480,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		height: 2.6rem !important;
 		border-radius: 0.65rem !important;
 		object-fit: cover !important;
-		border: 1.5px solid #334155 !important;
-		background: #1e293b !important;
+		border: 1.5px solid #e2e8f0 !important;
+		background: #f8fafc !important;
 		flex-shrink: 0 !important;
 	}
 
@@ -1224,8 +1491,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		width: 2.6rem !important;
 		height: 2.6rem !important;
 		border-radius: 0.65rem !important;
-		background: var(--color-primario, #fff700) !important;
-		color: #090901 !important;
+		background: var(--color-primario, #0f766e) !important;
+		color: var(--accent-ink, #ffffff) !important;
 		font-family: var(--font-titulos, sans-serif) !important;
 		font-size: 1.25rem !important;
 		font-weight: 900 !important;
@@ -1236,7 +1503,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		margin: 0 !important;
 		font-size: 1.15rem !important;
 		font-weight: 850 !important;
-		color: #ffffff !important;
+		color: #0f172a !important;
 		letter-spacing: -0.01em !important;
 		line-height: 1.2 !important;
 	}
@@ -1244,13 +1511,13 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	:global(.sfoot__brand-rif) {
 		font-size: 0.72rem !important;
 		font-weight: 750 !important;
-		color: #94a3b8 !important;
+		color: #64748b !important;
 	}
 
 	:global(.sfoot__tagline) {
 		margin: 0 !important;
 		font-size: 0.8rem !important;
-		color: #94a3b8 !important;
+		color: #64748b !important;
 		line-height: 1.45 !important;
 		max-width: 20rem !important;
 	}
@@ -1261,7 +1528,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		font-weight: 850 !important;
 		text-transform: uppercase !important;
 		letter-spacing: 0.08em !important;
-		color: var(--color-primario, #fff700) !important;
+		color: #0f172a !important;
 	}
 
 	:global(.sfoot__heading-sub) {
@@ -1270,7 +1537,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		font-weight: 800 !important;
 		text-transform: uppercase !important;
 		letter-spacing: 0.06em !important;
-		color: #94a3b8 !important;
+		color: #64748b !important;
 	}
 
 	:global(.sfoot__list) {
@@ -1287,23 +1554,28 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		align-items: center !important;
 		gap: 0.55rem !important;
 		font-size: 0.8rem !important;
-		color: #cbd5e1 !important;
+		color: #334155 !important;
 		line-height: 1.35 !important;
 	}
 
+	:global(.sfoot__list-item strong) {
+		color: #0f172a !important;
+	}
+
 	:global(.sfoot__icon) {
-		color: var(--color-primario, #fff700) !important;
+		color: #475569 !important;
 		flex-shrink: 0 !important;
 	}
 
 	:global(.sfoot__link) {
-		color: #cbd5e1 !important;
+		color: #1e293b !important;
 		text-decoration: none !important;
+		font-weight: 550 !important;
 		transition: color 0.15s ease !important;
 	}
 
 	:global(.sfoot__link:hover) {
-		color: var(--color-primario, #fff700) !important;
+		color: var(--color-primario, #0f766e) !important;
 		text-decoration: underline !important;
 	}
 
@@ -1328,30 +1600,30 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		font-weight: 750 !important;
 		text-decoration: none !important;
 		transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
 	}
 
 	:global(.sfoot__social-btn:hover) {
 		transform: translateY(-2px) !important;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18) !important;
 	}
 
 	:global(.sfoot__social-btn--wa) {
 		background: #16a34a !important;
 		color: #ffffff !important;
-		border: 1px solid #22c55e !important;
+		border: 1px solid #15803d !important;
 	}
 
 	:global(.sfoot__social-btn--ig) {
 		background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045) !important;
 		color: #ffffff !important;
-		border: 1px solid rgba(255, 255, 255, 0.2) !important;
+		border: 1px solid rgba(0, 0, 0, 0.08) !important;
 	}
 
 	:global(.sfoot__social-btn--tt) {
-		background: #000000 !important;
+		background: #0f172a !important;
 		color: #ffffff !important;
-		border: 1px solid #334155 !important;
+		border: 1px solid #0f172a !important;
 	}
 
 	:global(.sfoot__pay-badges) {
@@ -1364,12 +1636,13 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		display: inline-block !important;
 		padding: 0.25rem 0.6rem !important;
 		border-radius: 0.45rem !important;
-		background: rgba(0, 0, 0, 0.25) !important;
-		border: 1px solid rgba(255, 255, 255, 0.16) !important;
+		background: #f1f5f9 !important;
+		border: 1px solid #cbd5e1 !important;
 		font-size: 0.74rem !important;
 		font-weight: 700 !important;
-		color: #ffffff !important;
+		color: #1e293b !important;
 		letter-spacing: 0.01em !important;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
 	}
 
 	:global(.sfoot__bottom) {
@@ -1379,17 +1652,18 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		justify-content: space-between !important;
 		gap: 0.75rem !important;
 		padding-top: 1rem !important;
-		border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+		border-top: 1px solid #e2e8f0 !important;
 		font-size: 0.76rem !important;
-		color: #cbd5e1 !important;
+		color: #64748b !important;
 	}
 
 	:global(.sfoot__copy) {
 		margin: 0 !important;
+		color: #64748b !important;
 	}
 
 	:global(.sfoot__copy strong) {
-		color: #ffffff !important;
+		color: #0f172a !important;
 	}
 
 	:global(.sfoot__status) {
@@ -1397,14 +1671,14 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		align-items: center !important;
 		gap: 0.45rem !important;
 		font-weight: 750 !important;
-		color: #22c55e !important;
+		color: #16a34a !important;
 	}
 
 	:global(.sfoot__status-dot) {
 		width: 7px !important;
 		height: 7px !important;
 		border-radius: 50% !important;
-		background: #22c55e !important;
+		background: #16a34a !important;
 		box-shadow: 0 0 8px #22c55e !important;
 		display: inline-block !important;
 	}

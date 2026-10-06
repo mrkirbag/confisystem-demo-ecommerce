@@ -1,10 +1,11 @@
-/* FOOTER PROFESIONAL, BONITO Y CORTO */
+/* FOOTER PROFESIONAL, BONITO Y CORTO CON FONDO CLARO */
 .sfoot {
 	margin-top: 3rem;
-	background: var(--color-fondo, var(--bg, #484747)) !important;
-	border-top: 1.5px solid rgba(255, 255, 255, 0.15) !important;
-	color: #e2e8f0 !important;
+	background: #ffffff !important;
+	border-top: 1.5px solid #e2e8f0 !important;
+	color: #334155 !important;
 	font-family: inherit;
+	box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .sfoot__container {
@@ -39,8 +40,8 @@
 	height: 2.6rem;
 	border-radius: 0.65rem;
 	object-fit: cover;
-	border: 1.5px solid #334155;
-	background: #1e293b;
+	border: 1.5px solid #e2e8f0;
+	background: #f8fafc;
 	flex-shrink: 0;
 }
 
@@ -50,8 +51,8 @@
 	width: 2.6rem;
 	height: 2.6rem;
 	border-radius: 0.65rem;
-	background: var(--color-primario, #fff700);
-	color: #090901;
+	background: var(--color-primario, #0f766e);
+	color: var(--accent-ink, #ffffff);
 	font-family: var(--font-titulos, sans-serif);
 	font-size: 1.25rem;
 	font-weight: 900;
@@ -67,7 +68,7 @@
 	margin: 0;
 	font-size: 1.15rem;
 	font-weight: 850;
-	color: #ffffff !important;
+	color: #0f172a !important;
 	letter-spacing: -0.01em;
 	line-height: 1.2;
 }
@@ -75,13 +76,13 @@
 .sfoot__brand-rif {
 	font-size: 0.72rem;
 	font-weight: 750;
-	color: #94a3b8 !important;
+	color: #64748b !important;
 }
 
 .sfoot__tagline {
 	margin: 0;
 	font-size: 0.8rem;
-	color: #94a3b8 !important;
+	color: #64748b !important;
 	line-height: 1.45;
 	max-width: 20rem;
 }
@@ -93,7 +94,7 @@
 	font-weight: 850;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
-	color: var(--color-primario, #fff700) !important;
+	color: #0f172a !important;
 }
 
 .sfoot__heading-sub {
@@ -102,7 +103,7 @@
 	font-weight: 800;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: #94a3b8 !important;
+	color: #64748b !important;
 }
 
 /* Columna 2: Lista de Atención */
@@ -120,23 +121,28 @@
 	align-items: center;
 	gap: 0.55rem;
 	font-size: 0.8rem;
-	color: #cbd5e1 !important;
+	color: #334155 !important;
 	line-height: 1.35;
 }
 
+.sfoot__list-item strong {
+	color: #0f172a !important;
+}
+
 .sfoot__icon {
-	color: var(--color-primario, #fff700) !important;
+	color: #475569 !important;
 	flex-shrink: 0;
 }
 
 .sfoot__link {
-	color: #cbd5e1 !important;
+	color: #1e293b !important;
 	text-decoration: none;
+	font-weight: 550;
 	transition: color 0.15s ease;
 }
 
 .sfoot__link:hover {
-	color: var(--color-primario, #fff700) !important;
+	color: var(--color-primario, #0f766e) !important;
 	text-decoration: underline;
 }
 
@@ -162,30 +168,30 @@
 	font-weight: 750;
 	text-decoration: none !important;
 	transition: transform 0.15s ease, box-shadow 0.15s ease;
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .sfoot__social-btn:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .sfoot__social-btn--wa {
 	background: #16a34a !important;
 	color: #ffffff !important;
-	border: 1px solid #22c55e !important;
+	border: 1px solid #15803d !important;
 }
 
 .sfoot__social-btn--ig {
 	background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045) !important;
 	color: #ffffff !important;
-	border: 1px solid rgba(255, 255, 255, 0.2) !important;
+	border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 .sfoot__social-btn--tt {
-	background: #000000 !important;
+	background: #0f172a !important;
 	color: #ffffff !important;
-	border: 1px solid #334155 !important;
+	border: 1px solid #0f172a !important;
 }
 
 /* Formas de Pago */
@@ -199,12 +205,13 @@
 	display: inline-block;
 	padding: 0.25rem 0.6rem;
 	border-radius: 0.45rem;
-	background: rgba(0, 0, 0, 0.25) !important;
-	border: 1px solid rgba(255, 255, 255, 0.16) !important;
+	background: #f1f5f9 !important;
+	border: 1px solid #cbd5e1 !important;
 	font-size: 0.74rem;
 	font-weight: 700;
-	color: #ffffff !important;
+	color: #1e293b !important;
 	letter-spacing: 0.01em;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 /* Barra Inferior */
@@ -215,17 +222,18 @@
 	justify-content: space-between;
 	gap: 0.75rem;
 	padding-top: 1rem;
-	border-top: 1px solid rgba(255, 255, 255, 0.14) !important;
+	border-top: 1px solid #e2e8f0 !important;
 	font-size: 0.76rem;
-	color: #cbd5e1 !important;
+	color: #64748b !important;
 }
 
 .sfoot__copy {
 	margin: 0;
+	color: #64748b !important;
 }
 
 .sfoot__copy strong {
-	color: #ffffff !important;
+	color: #0f172a !important;
 }
 
 .sfoot__status {
@@ -233,14 +241,14 @@
 	align-items: center;
 	gap: 0.45rem;
 	font-weight: 750;
-	color: #22c55e !important;
+	color: #16a34a !important;
 }
 
 .sfoot__status-dot {
 	width: 7px;
 	height: 7px;
 	border-radius: 50%;
-	background: #22c55e;
+	background: #16a34a;
 	box-shadow: 0 0 8px #22c55e;
 	display: inline-block;
 }

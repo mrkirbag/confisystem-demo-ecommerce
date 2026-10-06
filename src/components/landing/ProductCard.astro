@@ -5,7 +5,7 @@ import {
 	formatPrecioRango,
 	initialsFromName,
 	type ProductoListado,
-} from '@/lib/productos/shared';
+} from "@/lib/productos/shared";
 
 interface Props {
 	producto: ProductoListado;
@@ -17,9 +17,13 @@ const esOferta = producto.en_oferta && producto.precio_oferta > 0;
 const normal = producto.precio_por_variante
 	? formatPrecioRango(producto.precio_min, producto.precio_max)
 	: formatPrecio(producto.precio_base);
-const oferta = esOferta ? formatPrecio(producto.precio_oferta) : '';
-const referencia = producto.precio_por_variante ? producto.precio_min : producto.precio_base;
-const descuento = esOferta ? descuentoPorcentaje(referencia, producto.precio_oferta) : 0;
+const oferta = esOferta ? formatPrecio(producto.precio_oferta) : "";
+const referencia = producto.precio_por_variante
+	? producto.precio_min
+	: producto.precio_base;
+const descuento = esOferta
+	? descuentoPorcentaje(referencia, producto.precio_oferta)
+	: 0;
 const agotado = producto.stock_total <= 0;
 const catLabel = producto.subcategoria_nombre
 	? `${producto.categoria_nombre} · ${producto.subcategoria_nombre}`
@@ -30,7 +34,7 @@ const effectivePrice = esOferta
 	: producto.precio_por_variante
 		? producto.precio_min
 		: producto.precio_base;
-const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion || ''}`.toLowerCase();
+const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 ---
 
 <article
@@ -38,23 +42,43 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 	data-store-card
 	data-id={producto.id}
 	data-cat={producto.categoria_id}
-	data-sub={producto.subcategoria_id ?? ''}
+	data-sub={producto.subcategoria_id ?? ""}
 	data-search={searchKeywords}
 	data-price={effectivePrice}
-	data-offer={esOferta ? 'true' : 'false'}
-	data-trending={producto.es_tendencia ? 'true' : 'false'}
+	data-offer={esOferta ? "true" : "false"}
+	data-trending={producto.es_tendencia ? "true" : "false"}
 >
-	<a class="scard__link" href={`/landing/${producto.slug}`} aria-label={`Ver ${producto.nombre}`}></a>
-	<div class:list={['scard__media', { 'is-sold': agotado }]}>
-		{producto.imagen_url ? (
-			<img class="scard__img" src={producto.imagen_url} alt={producto.nombre} loading="lazy" />
-		) : (
-			<span class="scard__fallback">{initials}</span>
-		)}
+	<a
+		class="scard__link"
+		href={`/landing/${producto.slug}`}
+		aria-label={`Ver ${producto.nombre}`}></a>
+	<div class:list={["scard__media", { "is-sold": agotado }]}>
+		{
+			producto.imagen_url ? (
+				<img
+					class="scard__img"
+					src={producto.imagen_url}
+					alt={producto.nombre}
+					loading="lazy"
+				/>
+			) : (
+				<span class="scard__fallback">{initials}</span>
+			)
+		}
 
 		<div class="scard__flags">
-			{producto.es_tendencia ? <span class="scard__flag">Tendencia</span> : null}
-			{esOferta ? <span class="scard__flag scard__flag--offer">−{descuento}%</span> : null}
+			{
+				producto.es_tendencia ? (
+					<span class="scard__flag">Tendencia</span>
+				) : null
+			}
+			{
+				esOferta ? (
+					<span class="scard__flag scard__flag--offer">
+						−{descuento}%
+					</span>
+				) : null
+			}
 		</div>
 
 		{agotado ? <span class="scard__sold">Agotado</span> : null}
@@ -64,9 +88,11 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 		<p class="scard__cat">{catLabel}</p>
 		<h3 class="scard__name">{producto.nombre}</h3>
 		<div class="scard__foot">
-			<div class:list={['scard__price', { 'is-offer': esOferta }]}>
+			<div class:list={["scard__price", { "is-offer": esOferta }]}>
 				{esOferta ? <s class="scard__price-old">{normal}</s> : null}
-				<strong class="scard__price-now">{esOferta ? oferta : normal}</strong>
+				<strong class="scard__price-now"
+					>{esOferta ? oferta : normal}</strong
+				>
 			</div>
 			{
 				!agotado && !producto.precio_por_variante ? (
@@ -77,13 +103,29 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 						data-id={producto.id}
 						data-slug={producto.slug}
 						data-name={producto.nombre}
-						data-price={esOferta ? producto.precio_oferta : producto.precio_base}
+						data-price={
+							esOferta
+								? producto.precio_oferta
+								: producto.precio_base
+						}
 						data-stock={producto.stock_total}
-						data-img={producto.imagen_url || ''}
+						data-img={producto.imagen_url || ""}
 						aria-label={`Agregar ${producto.nombre} al carrito`}
 					>
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.5"
+							width="13"
+							height="13"
+							aria-hidden="true"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M12 4v16m8-8H4"
+							/>
 						</svg>
 						<span>Agregar</span>
 					</button>
@@ -100,7 +142,9 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 		flex-direction: column;
 		overflow: hidden;
 		border-radius: var(--radius-lg);
-		transition: transform 0.18s ease, box-shadow 0.18s ease;
+		transition:
+			transform 0.18s ease,
+			box-shadow 0.18s ease;
 		background: var(--panel);
 		border: 1px solid var(--line-on-panel, var(--line));
 		box-shadow: var(--shadow-soft);
@@ -126,17 +170,25 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 
 	.scard__media {
 		position: relative;
+		width: 100%;
 		aspect-ratio: 1 / 1;
-		display: grid;
-		place-items: center;
-		background: color-mix(in srgb, var(--bg) 55%, var(--panel));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--panel);
 		overflow: hidden;
+		border: none;
 	}
 
 	.scard__img {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
+		object-position: center;
+		padding: 0.4rem;
+		box-sizing: border-box;
 	}
 
 	.scard__media.is-sold .scard__img,
@@ -155,6 +207,7 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 		position: absolute;
 		top: 0.65rem;
 		left: 0.65rem;
+		z-index: 2;
 		display: flex;
 		flex-direction: column;
 		gap: 0.3rem;
@@ -181,8 +234,12 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 		right: 0;
 		bottom: 0;
 		left: 0;
+		z-index: 2;
 		padding: 0.5rem 0.6rem;
-		background: linear-gradient(transparent, color-mix(in srgb, #1c1917 72%, transparent));
+		background: linear-gradient(
+			transparent,
+			color-mix(in srgb, #1c1917 72%, transparent)
+		);
 		color: #fff;
 		font-size: 0.72rem;
 		font-weight: 800;
@@ -201,7 +258,11 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 		margin: 0;
 		font-size: 0.72rem;
 		font-weight: 650;
-		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 55%, transparent);
+		color: color-mix(
+			in srgb,
+			var(--ink-on-panel, var(--ink)) 55%,
+			transparent
+		);
 	}
 
 	.scard__name {
@@ -221,16 +282,20 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 	.scard__price-now {
 		font-size: 1.05rem;
 		font-weight: 800;
-		color: var(--bg);
+		color: var(--ink-on-panel, var(--ink));
 	}
 
 	.scard__price-old {
 		font-size: 0.82rem;
-		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 55%, transparent);
+		color: color-mix(
+			in srgb,
+			var(--ink-on-panel, var(--ink)) 55%,
+			transparent
+		);
 	}
 
 	.scard__price.is-offer .scard__price-now {
-		color: var(--bg);
+		color: var(--accent, #0f766e);
 	}
 
 	.scard__foot {
@@ -255,8 +320,11 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 		font-weight: 700;
 		border: 0;
 		cursor: pointer;
-		box-shadow: 0 3px 8px color-mix(in srgb, var(--color-primario, #0f766e) 35%, transparent);
-		transition: transform 0.15s ease, filter 0.15s ease;
+		box-shadow: 0 3px 8px
+			color-mix(in srgb, var(--color-primario, #0f766e) 35%, transparent);
+		transition:
+			transform 0.15s ease,
+			filter 0.15s ease;
 		flex-shrink: 0;
 	}
 
@@ -267,5 +335,97 @@ const searchKeywords = `${producto.nombre} ${catLabel} ${producto.descripcion ||
 
 	.scard__quick-add-btn:active {
 		transform: scale(0.96);
+	}
+
+	@media (max-width: 768px) {
+		.scard {
+			border-radius: var(--radius-md, 0.75rem);
+		}
+
+		.scard__flags {
+			top: 0.35rem;
+			left: 0.35rem;
+			gap: 0.2rem;
+		}
+
+		.scard__flag {
+			padding: 0.16rem 0.35rem;
+			font-size: 0.55rem;
+			letter-spacing: 0.03em;
+		}
+
+		.scard__sold {
+			padding: 0.3rem 0.45rem;
+			font-size: 0.62rem;
+		}
+
+		.scard__fallback {
+			font-size: 1.5rem;
+		}
+
+		.scard__body {
+			padding: 0.5rem 0.55rem 0.65rem;
+			gap: 0.18rem;
+		}
+
+		.scard__cat {
+			font-size: 0.62rem;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.scard__name {
+			font-size: 0.78rem;
+			line-height: 1.2;
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+			min-height: calc(0.78rem * 1.2 * 2);
+		}
+
+		.scard__foot {
+			margin-top: 0.2rem;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.25rem;
+		}
+
+		.scard__price {
+			gap: 0.15rem;
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.scard__price-now {
+			font-size: 0.86rem;
+			line-height: 1.1;
+		}
+
+		.scard__price-old {
+			font-size: 0.68rem;
+			line-height: 1;
+		}
+
+		.scard__quick-add-btn {
+			padding: 0;
+			width: 1.85rem;
+			height: 1.85rem;
+			border-radius: 50%;
+			display: grid;
+			place-items: center;
+		}
+
+		.scard__quick-add-btn span {
+			display: none;
+		}
+
+		.scard__quick-add-btn svg {
+			width: 13px;
+			height: 13px;
+			margin: 0;
+		}
 	}
 </style>
