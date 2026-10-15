@@ -6,7 +6,7 @@
 }
 
 .admin-dashboard__stat {
-	background: color-mix(in srgb, var(--bg) 18%, var(--panel));
+	background: var(--panel);
 	border: 1px solid var(--line-on-panel, var(--line));
 	border-left: 4px solid var(--accent);
 	border-radius: 0.9rem;

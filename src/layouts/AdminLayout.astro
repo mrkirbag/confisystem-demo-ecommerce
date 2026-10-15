@@ -1,6 +1,7 @@
 ---
 import '../styles/admin/index.css';
 import AdminSidebarNav from '@/components/admin/AdminSidebarNav.astro';
+import CurrencySwitch from '@/components/landing/CurrencySwitch.astro';
 import {
 	getTiendaConfig,
 	getTiendaPersonalizacion,
@@ -61,20 +62,23 @@ const isPanel = variant === 'panel';
 							)}
 							<span class="admin-mobile-bar__name">{storeName}</span>
 						</div>
-						<button
-							type="button"
-							class="admin-burger"
-							aria-label="Abrir menú"
-							aria-expanded="false"
-							aria-controls="admin-sidebar"
-							data-admin-burger
-						>
-							<span class="admin-burger__box" aria-hidden="true">
-								<span class="admin-burger__line"></span>
-								<span class="admin-burger__line"></span>
-								<span class="admin-burger__line"></span>
-							</span>
-						</button>
+						<div class="admin-mobile-bar__actions">
+							<CurrencySwitch tasaBcv={config.tasa_bcv} tasaCop={config.tasa_cop} variant="admin" compact />
+							<button
+								type="button"
+								class="admin-burger"
+								aria-label="Abrir menú"
+								aria-expanded="false"
+								aria-controls="admin-sidebar"
+								data-admin-burger
+							>
+								<span class="admin-burger__box" aria-hidden="true">
+									<span class="admin-burger__line"></span>
+									<span class="admin-burger__line"></span>
+									<span class="admin-burger__line"></span>
+								</span>
+							</button>
+						</div>
 					</header>
 
 					<div class="admin-overlay" data-admin-overlay hidden></div>
@@ -89,11 +93,38 @@ const isPanel = variant === 'panel';
 								)}
 								<span class="admin-sidebar__name">{storeName}</span>
 							</a>
+							<div class="admin-sidebar__currency-wrap">
+								<CurrencySwitch tasaBcv={config.tasa_bcv} tasaCop={config.tasa_cop} variant="admin" />
+							</div>
 						</div>
 
 						<AdminSidebarNav pathname={pathname} />
 
 						<div class="admin-sidebar__foot">
+							<a
+								href="/admin/manual-de-usuario"
+								target="_blank"
+								rel="noopener noreferrer"
+								class="admin-sidebar__manual"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									class="admin-sidebar__manual-icon"
+									aria-hidden="true"
+								>
+									<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+									<path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+								</svg>
+								<span>Manual de usuario</span>
+							</a>
 							<form method="POST" action="/api/auth/logout">
 								<button type="submit" class="admin-sidebar__logout">
 									Cerrar sesión
@@ -115,7 +146,7 @@ const isPanel = variant === 'panel';
 						const burger = document.querySelector('[data-admin-burger]');
 						const overlay = document.querySelector('[data-admin-overlay]');
 
-						function setOpen(open) {
+						function setOpen(open: boolean) {
 							if (!(app instanceof HTMLElement) || !(burger instanceof HTMLButtonElement)) return;
 							app.classList.toggle('is-nav-open', open);
 							burger.setAttribute('aria-expanded', String(open));

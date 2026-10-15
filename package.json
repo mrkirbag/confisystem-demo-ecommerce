@@ -17,6 +17,7 @@
     "@astrojs/react": "^6.0.2",
     "@aws-sdk/client-s3": "^3.1106.0",
     "@libsql/client": "^0.17.4",
+    "apexcharts": "^8.3.1",
     "astro": "^7.2.0",
     "bcryptjs": "^3.0.3",
     "canvas-confetti": "^1.9.4",

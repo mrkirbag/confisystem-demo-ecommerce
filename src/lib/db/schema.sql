@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS tienda_configuracion (
     tiktok TEXT,
     whatsapp TEXT,
     logo_url TEXT,
-    google_analytics TEXT
+    google_analytics TEXT,
+    tasa_bcv REAL DEFAULT NULL,
+    tasa_cop REAL DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS tienda_personalizacion (
@@ -136,6 +138,7 @@ CREATE TABLE IF NOT EXISTS producto_stock_variantes (
     stock INTEGER NOT NULL DEFAULT 0,
     sku TEXT NOT NULL,
     precio REAL NOT NULL DEFAULT 0,
+    precio_oferta REAL NOT NULL DEFAULT 0,
     FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE
 );
 
@@ -209,6 +212,23 @@ CREATE TABLE IF NOT EXISTS bitacora_auditoria (
     FOREIGN KEY (usuario_id) REFERENCES usuarios_admin(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS producto_movimientos_stock (
+    id TEXT PRIMARY KEY,
+    producto_id TEXT NOT NULL,
+    variante_id TEXT,
+    tipo TEXT NOT NULL CHECK(tipo IN ('entrada', 'salida', 'venta', 'devolucion', 'ajuste')),
+    cantidad INTEGER NOT NULL,
+    stock_anterior INTEGER NOT NULL,
+    stock_nuevo INTEGER NOT NULL,
+    motivo TEXT,
+    usuario_id TEXT,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+    FOREIGN KEY (variante_id) REFERENCES producto_stock_variantes(id) ON DELETE SET NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios_admin(id) ON DELETE SET NULL
+);
+
 
 -- ==========================================
 -- ÍNDICES
@@ -228,3 +248,5 @@ CREATE INDEX IF NOT EXISTS idx_ventas_cliente_cedula ON ventas(cliente_cedula);
 CREATE INDEX IF NOT EXISTS idx_ventas_cliente_telefono ON ventas(cliente_telefono);
 CREATE INDEX IF NOT EXISTS idx_venta_items_venta ON venta_items(venta_id);
 CREATE INDEX IF NOT EXISTS idx_bitacora_entidad ON bitacora_auditoria(entidad_afectada, entidad_id);
+CREATE INDEX IF NOT EXISTS idx_movimientos_producto ON producto_movimientos_stock(producto_id);
+CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON producto_movimientos_stock(fecha_registro);

@@ -379,8 +379,13 @@
 }
 
 .pdp-badge--sale {
-	background: #00a650;
+	background: #16a34a;
 	color: #ffffff;
+	font-size: 0.88rem;
+	font-weight: 850;
+	padding: 0.32rem 0.75rem;
+	border-radius: 6px;
+	box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4);
 }
 
 .pdp-hero-sold:not([hidden]) {
@@ -554,14 +559,15 @@
 .pdp-save-badge {
 	display: inline-flex;
 	align-items: center;
-	padding: 0.2rem 0.55rem;
+	padding: 0.28rem 0.7rem;
 	border-radius: 6px;
-	background: color-mix(in srgb, var(--color-primario) 22%, var(--color-secundario));
-	color: var(--color-texto);
-	border: 1px solid color-mix(in srgb, var(--color-primario) 45%, transparent);
-	font-size: 0.82rem;
-	font-weight: 800;
+	background: #16a34a;
+	color: #ffffff;
+	border: 1px solid rgba(22, 163, 74, 0.5);
+	font-size: 0.98rem;
+	font-weight: 850;
 	letter-spacing: 0.02em;
+	box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
 }
 
 

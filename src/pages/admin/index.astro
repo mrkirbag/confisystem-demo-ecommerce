@@ -2,6 +2,7 @@
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
 import { getDb } from '@/lib/db';
+import { formatPrecio } from '@/lib/pedidos';
 
 export const prerender = false;
 
@@ -9,17 +10,21 @@ const admin = Astro.locals.admin!;
 const db = getDb();
 
 let ventasPendientes = 0;
+let ventasConfirmadas = 0;
+let montoConfirmadas = 0;
 let productosActivos = 0;
 
 try {
-	const ventas = await db.execute(
-		`SELECT COUNT(*) AS total FROM ventas WHERE estado = 'pendiente'`,
-	);
-	ventasPendientes = Number(ventas.rows[0]?.total ?? 0);
+	const vPend = await db.execute(`SELECT COUNT(*) AS total FROM ventas WHERE estado = 'pendiente'`);
+	ventasPendientes = Number(vPend.rows[0]?.total ?? 0);
 
-	const productos = await db.execute(
-		`SELECT COUNT(*) AS total FROM productos WHERE activo = 1`,
+	const vConf = await db.execute(
+		`SELECT COUNT(*) AS total, COALESCE(SUM(total), 0) AS monto FROM ventas WHERE estado = 'confirmada'`,
 	);
+	ventasConfirmadas = Number(vConf.rows[0]?.total ?? 0);
+	montoConfirmadas = Number(vConf.rows[0]?.monto ?? 0);
+
+	const productos = await db.execute(`SELECT COUNT(*) AS total FROM productos WHERE activo = 1`);
 	productosActivos = Number(productos.rows[0]?.total ?? 0);
 } catch {
 	// ignore
@@ -27,18 +32,25 @@ try {
 ---
 
 <AdminLayout title="Dashboard">
-	<section class="admin-dashboard">
+	<section class="admin-dashboard orders-page">
 		<AdminSectionHeader title={`Bienvenido, ${admin.nombre}`} kicker="Dashboard" />
 
-		<div class="admin-dashboard__stats">
-			<article class="admin-dashboard__stat">
-				<span class="admin-dashboard__stat-label">Ventas pendientes</span>
-				<strong class="admin-dashboard__stat-value">{ventasPendientes}</strong>
-			</article>
-			<article class="admin-dashboard__stat">
-				<span class="admin-dashboard__stat-label">Productos activos</span>
-				<strong class="admin-dashboard__stat-value">{productosActivos}</strong>
-			</article>
+		<div class="orders-kpis">
+			<a href="/admin/pedidos" class="orders-kpi orders-kpi--warn">
+				<span class="orders-kpi__label">Ventas pendientes</span>
+				<strong class="orders-kpi__value">{ventasPendientes}</strong>
+				<span class="orders-kpi__hint">Con stock reservado · ver pedidos</span>
+			</a>
+			<a href="/admin/estadisticas" class="orders-kpi orders-kpi--ok">
+				<span class="orders-kpi__label">Ventas aprobadas</span>
+				<strong class="orders-kpi__value">{formatPrecio(montoConfirmadas)}</strong>
+				<span class="orders-kpi__hint">{ventasConfirmadas} ventas cerradas · ver estadísticas</span>
+			</a>
+			<a href="/admin/catalogo/productos" class="orders-kpi">
+				<span class="orders-kpi__label">Productos activos</span>
+				<strong class="orders-kpi__value">{productosActivos}</strong>
+				<span class="orders-kpi__hint">Catálogo visible en la tienda</span>
+			</a>
 		</div>
 	</section>
 </AdminLayout>

@@ -88,9 +88,9 @@ const colors = [
 	<section
 		class="admin-theme__preview"
 		data-theme-preview
-		style={`--preview-primario:${values.color_primario};--preview-secundario:${values.color_secundario};--preview-fondo:${values.color_fondo};--preview-texto:${values.color_texto};--preview-titulos:'${values.fuente_titulos}', sans-serif;--preview-cuerpo:'${values.fuente_cuerpo}', sans-serif;`}
+		style={`--preview-primario:${values.color_primario};--preview-accent:${values.color_primario};--preview-secundario:${values.color_secundario};--preview-fondo:${values.color_fondo};--preview-texto:${values.color_texto};--preview-titulos:'${values.fuente_titulos}', sans-serif;--preview-cuerpo:'${values.fuente_cuerpo}', sans-serif;`}
 	>
-		<p class="admin-theme__preview-kicker">Vista previa</p>
+		<p class="admin-theme__preview-kicker" data-preview-kicker>Vista previa</p>
 		<div class="admin-theme__preview-card">
 			<h3 data-preview-title>Tu tienda, con esta identidad</h3>
 			<p data-preview-body>Fondo en el contenido, secundario en el menú y las tarjetas, primario en el botón y texto en las letras.</p>
@@ -113,6 +113,7 @@ const colors = [
 	const preview = document.querySelector('[data-theme-preview]');
 	const titlePreview = document.querySelector('[data-preview-title]');
 	const bodyPreview = document.querySelector('[data-preview-body]');
+	const kickerPreview = document.querySelector('[data-preview-kicker]');
 
 	if (label instanceof HTMLElement) {
 		label.dataset.idle = label.textContent || 'Guardar cambios';
@@ -150,6 +151,7 @@ const colors = [
 		const cuerpo = String(data.get('fuente_cuerpo') || 'Inter');
 
 		preview.style.setProperty('--preview-primario', primario);
+		preview.style.setProperty('--preview-accent', primario);
 		preview.style.setProperty('--preview-secundario', secundario);
 		preview.style.setProperty('--preview-fondo', fondo);
 		preview.style.setProperty('--preview-texto', texto);
@@ -158,6 +160,7 @@ const colors = [
 
 		if (titlePreview instanceof HTMLElement) titlePreview.style.fontFamily = `'${titulos}', sans-serif`;
 		if (bodyPreview instanceof HTMLElement) bodyPreview.style.fontFamily = `'${cuerpo}', sans-serif`;
+		if (kickerPreview instanceof HTMLElement) kickerPreview.style.color = primario || 'var(--accent)';
 	}
 
 	document.querySelectorAll('[data-color-picker]').forEach((picker) => {

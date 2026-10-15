@@ -138,3 +138,48 @@ export function IconWhatsApp({ className }: IconProps) {
 		</svg>
 	);
 }
+
+export function IconPlusCircle({ className }: IconProps) {
+	return (
+		<svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+			<path d="M12 8.5v7M8.5 12h7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+		</svg>
+	);
+}
+
+export function IconMinusCircle({ className }: IconProps) {
+	return (
+		<svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+			<path d="M8.5 12h7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+		</svg>
+	);
+}
+
+export function IconHistory({ className }: IconProps) {
+	return (
+		<svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<path
+				d="M3 12a9 9 0 1 0 2.6-6.4L3 8"
+				stroke="currentColor"
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+			<path d="M3 3.5V8.5H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+			<path d="M12 7v5l3.2 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+		</svg>
+	);
+}
+
+export function IconPrinter({ className }: IconProps) {
+	return (
+		<svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+			<polyline points="6 9 6 2 18 2 18 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+			<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+			<rect x="6" y="14" width="12" height="8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+		</svg>
+	);
+}
+

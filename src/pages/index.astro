@@ -1,33 +1,35 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import StoreNav from '../components/landing/StoreNav.astro';
-import StoreHeader from '../components/landing/StoreHeader.astro';
-import StoreTicker from '../components/landing/StoreTicker.astro';
-import StoreFooter from '../components/landing/StoreFooter.astro';
-import ProductCard from '../components/landing/ProductCard.astro';
-import { listCategorias } from '@/lib/categorias';
-import { listSubcategorias } from '@/lib/subcategorias';
-import { listProductos } from '@/lib/productos';
+import Layout from "../layouts/Layout.astro";
+import StoreNav from "../components/landing/StoreNav.astro";
+import StoreHeader from "../components/landing/StoreHeader.astro";
+import StoreTicker from "../components/landing/StoreTicker.astro";
+import StoreFooter from "../components/landing/StoreFooter.astro";
+import ProductCard from "../components/landing/ProductCard.astro";
+import { listCategorias } from "@/lib/categorias";
+import { listSubcategorias } from "@/lib/subcategorias";
+import { listProductos } from "@/lib/productos";
 import {
 	getTiendaConfig,
 	getTiendaConfiguracion,
 	getTiendaPersonalizacion,
 	googleFontsHref,
 	themeStyleVars,
-} from '@/lib/tienda';
+} from "@/lib/tienda";
 
 export const prerender = false;
 
-const [config, configuracion, theme, categorias, subcategorias, productos] = await Promise.all([
-	getTiendaConfig(),
-	getTiendaConfiguracion(),
-	getTiendaPersonalizacion(),
-	listCategorias(),
-	listSubcategorias(),
-	listProductos(),
-]);
+const [config, configuracion, theme, categorias, subcategorias, productos] =
+	await Promise.all([
+		getTiendaConfig(),
+		getTiendaConfiguracion(),
+		getTiendaPersonalizacion(),
+		listCategorias(),
+		listSubcategorias(),
+		listProductos(),
+	]);
 
-const storeName = configuracion?.nombre_tienda || config.nombre_tienda || 'Demo Tienda';
+const storeName =
+	configuracion?.nombre_tienda || config.nombre_tienda || "Demo Tienda";
 const themeVars = themeStyleVars(theme);
 const fontsHref = googleFontsHref(theme.fuente_titulos, theme.fuente_cuerpo);
 
@@ -56,15 +58,48 @@ const navCategorias = categorias
 	}));
 
 const activos = productos.filter((producto) => producto.activo);
+
+// Agrupar productos por categoría (en el orden de las categorías activas)
+const seccionesCategoria = categorias
+	.filter((cat) => cat.activo)
+	.map((cat) => ({
+		cat,
+		items: activos.filter((p) => p.categoria_id === cat.id),
+	}))
+	.filter((s) => s.items.length > 0);
+const idsAgrupados = new Set(seccionesCategoria.flatMap((s) => s.items.map((p) => p.id)));
+const sinCategoria = activos.filter((p) => !idsAgrupados.has(p.id));
 const tendencias = activos.filter((producto) => producto.es_tendencia);
-const ofertas = activos.filter((producto) => producto.en_oferta && producto.precio_oferta > 0);
+const ofertas = activos.filter(
+	(producto) => producto.en_oferta && producto.precio_oferta > 0,
+);
 
 // Si no hay productos marcados explícitamente en tendencia, mostramos los primeros como destacados
-const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0, 4);
+const productosTendencia =
+	tendencias.length > 0 ? tendencias : activos.slice(0, 4);
+
+// Preparar diapositivas para el carrusel horizontal infinito de tendencias:
+// Aseguramos un conjunto base de al menos 6 elementos y número par (para soportar 2 filas en móvil)
+const baseTendencias = [...productosTendencia];
+if (baseTendencias.length > 0) {
+	while (baseTendencias.length < 6 || baseTendencias.length % 2 !== 0) {
+		baseTendencias.push(...productosTendencia);
+	}
+}
+// 3 conjuntos continuos para rotación infinita sin saltos: [Pre Clones, Principal, Post Clones]
+const carouselTendencias =
+	baseTendencias.length > 0
+		? [...baseTendencias, ...baseTendencias, ...baseTendencias]
+		: [];
+const baseCount = baseTendencias.length;
+const originalCount = productosTendencia.length;
 ---
 
 <Layout
 	title="Inicio"
+	description="Catálogo online de CONFISERVICIO. Descubre gran variedad de confitería, víveres, bebidas y productos de alta calidad al mejor precio en San Cristóbal y Venezuela con entregas y envíos."
+	canonical="https://confiservicio.com/"
+	ogImage={brand.logoUrl || "https://confiservicio.com/favicon.png"}
 	storeName={storeName}
 	logoUrl={brand.logoUrl}
 	whatsapp={brand.whatsapp}
@@ -77,53 +112,209 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		logoUrl={brand.logoUrl}
 		categorias={navCategorias}
 		ofertasCount={ofertas.length}
+		tasaBcv={configuracion?.tasa_bcv || config.tasa_bcv}
+		tasaCop={configuracion?.tasa_cop || config.tasa_cop}
 	/>
 
 	<main class="smain">
-		<!-- Encabezado Llamativo con Datos de la Empresa y Botones Sociales Condicionales -->
-		<StoreHeader brand={brand} />
+		<!-- Hero Móvil 100vh: Head + Ticker + Tendencias ocupan la pantalla completa -->
+		<div class="shero" id="hero-screen">
+			<!-- Encabezado Llamativo con Datos de la Empresa y Botones Sociales Condicionales -->
+			<StoreHeader brand={brand} />
 
-		<!-- Banda en Movimiento (Carrusel Infinito) con Horario y Avisos de la Tienda -->
-		<StoreTicker horario={brand.horario} storeName={storeName} />
+			<!-- Banda en Movimiento (Carrusel Infinito) con Horario y Avisos de la Tienda -->
+			<StoreTicker horario={brand.horario} storeName={storeName} />
 
-		<!-- Sección de Productos en Tendencia (Llamativa y Atractiva al Cargar /) -->
-		{productosTendencia.length > 0 ? (
-			<section class="strending" id="tendencias">
-				<div class="strending__glow" aria-hidden="true"></div>
-				<div class="strending__inner">
-					<div class="strending__head">
-						<div class="strending__title-box">
-							<span class="strending__badge">
-								<svg class="strending__badge-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-									<polyline points="17 6 23 6 23 12"></polyline>
-								</svg>
-								Más Vendido
-							</span>
-							<h2 class="strending__title">Productos en Tendencia</h2>
-							<p class="strending__subtitle">
-								Los favoritos de nuestros clientes con la mejor calidad y disponibilidad inmediata.
-							</p>
+			<!-- Sección de Productos en Tendencia (Carrusel Horizontal Infinito) -->
+			{
+				productosTendencia.length > 0 ? (
+					<section class="strending" id="tendencias">
+						<div class="strending__glow" aria-hidden="true" />
+						<div class="strending__inner">
+							<div class="strending__head">
+								<div class="strending__title-box">
+									<span class="strending__badge">
+										<svg
+											class="strending__badge-icon"
+											viewBox="0 0 24 24"
+											width="14"
+											height="14"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											aria-hidden="true"
+										>
+											<polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+											<polyline points="17 6 23 6 23 12" />
+										</svg>
+										Más Vendido
+									</span>
+									<h2 class="strending__title">
+										Productos en Tendencia
+									</h2>
+									<p class="strending__subtitle">
+										Los favoritos de nuestros clientes con la
+										mejor calidad y disponibilidad inmediata.
+									</p>
+								</div>
+
+								<!-- Controles de Flechas y Puntos Indicadores para PC -->
+								<div class="strending__controls">
+									<div
+										class="strending__dots"
+										id="trending-dots"
+										aria-hidden="true"
+									>
+										{productosTendencia.map((_, i) => (
+											<button
+												type="button"
+												class:list={[
+													"strending__dot",
+													{ "is-active": i === 0 },
+												]}
+												data-dot-index={i}
+												aria-label={`Ir al producto ${i + 1}`}
+											/>
+										))}
+									</div>
+
+									<div class="strending__arrows">
+										<button
+											type="button"
+											class="strending__arrow-btn strending__arrow-btn--prev"
+											data-trending-prev
+											aria-label="Ver producto anterior"
+											title="Anterior"
+										>
+											<svg
+												viewBox="0 0 24 24"
+												width="18"
+												height="18"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2.5"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<polyline points="15 18 9 12 15 6" />
+											</svg>
+										</button>
+										<button
+											type="button"
+											class="strending__arrow-btn strending__arrow-btn--next"
+											data-trending-next
+											aria-label="Ver producto siguiente"
+											title="Siguiente"
+										>
+											<svg
+												viewBox="0 0 24 24"
+												width="18"
+												height="18"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2.5"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												aria-hidden="true"
+											>
+												<polyline points="9 18 15 12 9 6" />
+											</svg>
+										</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Carrusel Infinito con Gestos Táctiles y Flechas -->
+							<div
+								class="strending__carousel"
+								id="trending-carousel"
+								role="region"
+								aria-label="Carrusel de productos en tendencia"
+							>
+								<!-- Flechas Flotantes Laterales para PC -->
+								<button
+									type="button"
+									class="strending__side-arrow strending__side-arrow--prev"
+									data-trending-prev
+									aria-label="Producto anterior"
+									title="Anterior"
+								>
+									<svg
+										viewBox="0 0 24 24"
+										width="22"
+										height="22"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<polyline points="15 18 9 12 15 6" />
+									</svg>
+								</button>
+
+								<button
+									type="button"
+									class="strending__side-arrow strending__side-arrow--next"
+									data-trending-next
+									aria-label="Producto siguiente"
+									title="Siguiente"
+								>
+									<svg
+										viewBox="0 0 24 24"
+										width="22"
+										height="22"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2.5"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<polyline points="9 18 15 12 9 6" />
+									</svg>
+								</button>
+
+								<!-- Track del Carrusel -->
+								<div
+									class="strending__track"
+									id="trending-track"
+									data-base-count={baseCount}
+									data-original-count={originalCount}
+								>
+									{carouselTendencias.map((producto, idx) => (
+										<div
+											class="strending__slide"
+											data-slide-index={idx}
+											data-original-index={idx % originalCount}
+										>
+											<ProductCard producto={producto} />
+										</div>
+									))}
+								</div>
+							</div>
 						</div>
-					</div>
-
-					<div class="sgrid sgrid--trending">
-						{productosTendencia.map((producto) => (
-							<ProductCard producto={producto} />
-						))}
-					</div>
-				</div>
-			</section>
-		) : null}
+					</section>
+				) : null
+			}
+		</div>
 
 		<!-- Catálogo Completo con Filtros de Búsqueda Normal y por Precio -->
 		<section class="ssec" id="todos">
 			<div class="ssec__head">
 				<div>
 					<p class="ssec__kicker">Explora Nuestro Catálogo</p>
-					<h2 class="ssec__title" data-store-title>Todos los productos</h2>
+					<h2 class="ssec__title" data-store-title>
+						Todos los productos
+					</h2>
 				</div>
-				<span class="ssec__count" data-store-count>{activos.length}</span>
+				<span class="ssec__count" data-store-count
+					>{activos.length}</span
+				>
 			</div>
 
 			<!-- Botón Sticky flotante para Móvil (Solo la Lupa) -->
@@ -135,29 +326,64 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 					aria-label="Abrir filtros y búsqueda"
 					title="Buscar y filtrar productos"
 				>
-					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<svg
+						viewBox="0 0 24 24"
+						width="20"
+						height="20"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2.3"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<circle cx="11" cy="11" r="8"></circle>
 						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 					</svg>
-					<span id="mobile-filter-badge" class="sfilter-mobile-badge" hidden></span>
+					<span
+						id="mobile-filter-badge"
+						class="sfilter-mobile-badge"
+						hidden></span>
 				</button>
 			</div>
 
 			<!-- Backdrop para modal de filtros en móvil -->
-			<div class="sfilter-mobile-backdrop" id="mobile-filter-backdrop" hidden></div>
+			<div
+				class="sfilter-mobile-backdrop"
+				id="mobile-filter-backdrop"
+				hidden
+			>
+			</div>
 
 			<!-- BARRA DE FILTROS: Búsqueda Normal + Rango de Precios en Acordeón Sticky -->
 			<div class="sfilter-bar" id="filtros">
 				<!-- Encabezado de filtros para móvil -->
 				<div class="sfilter-modal-head">
 					<div class="sfilter-modal-title-box">
-						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<circle cx="11" cy="11" r="8"></circle>
 							<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 						</svg>
-						<span class="sfilter-modal-title">Filtros y Búsqueda</span>
+						<span class="sfilter-modal-title"
+							>Filtros y Búsqueda</span
+						>
 					</div>
-					<button type="button" id="mobile-filter-close-btn" class="sfilter-modal-close-btn" aria-label="Cerrar filtros">
+					<button
+						type="button"
+						id="mobile-filter-close-btn"
+						class="sfilter-modal-close-btn"
+						aria-label="Cerrar filtros"
+					>
 						✕
 					</button>
 				</div>
@@ -165,7 +391,18 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 				<div class="sfilter-bar__top">
 					<!-- Campo de Búsqueda Normal -->
 					<div class="sfilter-search">
-						<svg class="sfilter-search__icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<svg
+							class="sfilter-search__icon"
+							viewBox="0 0 24 24"
+							width="20"
+							height="20"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2.2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
 							<circle cx="11" cy="11" r="8"></circle>
 							<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 						</svg>
@@ -191,11 +428,21 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 					<!-- Acciones: Selector de Ordenación y Botón Acordeón de Filtros -->
 					<div class="sfilter-bar__actions">
 						<div class="sfilter-sort">
-							<label for="sort-select" class="sfilter-sort__label">Ordenar:</label>
-							<select id="sort-select" class="sfilter-sort__select" aria-label="Ordenar productos">
+							<label for="sort-select" class="sfilter-sort__label"
+								>Ordenar:</label
+							>
+							<select
+								id="sort-select"
+								class="sfilter-sort__select"
+								aria-label="Ordenar productos"
+							>
 								<option value="default">Destacados</option>
-								<option value="price-asc">Precio: Menor a Mayor</option>
-								<option value="price-desc">Precio: Mayor a Menor</option>
+								<option value="price-asc"
+									>Precio: Menor a Mayor</option
+								>
+								<option value="price-desc"
+									>Precio: Mayor a Menor</option
+								>
 								<option value="offers">Solo Ofertas</option>
 							</select>
 						</div>
@@ -208,7 +455,18 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 							aria-controls="filter-accordion-content"
 							title="Mostrar u ocultar filtros de precio"
 						>
-							<svg class="sfilter-accordion-btn__icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<svg
+								class="sfilter-accordion-btn__icon"
+								viewBox="0 0 24 24"
+								width="17"
+								height="17"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
 								<line x1="4" y1="21" x2="4" y2="14"></line>
 								<line x1="4" y1="10" x2="4" y2="3"></line>
 								<line x1="12" y1="21" x2="12" y2="12"></line>
@@ -220,8 +478,23 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 								<line x1="17" y1="16" x2="23" y2="16"></line>
 							</svg>
 							<span>Filtros</span>
-							<span id="filter-active-badge" class="sfilter-accordion-badge" hidden>1</span>
-							<svg class="sfilter-accordion-btn__chevron" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<span
+								id="filter-active-badge"
+								class="sfilter-accordion-badge"
+								hidden>1</span
+							>
+							<svg
+								class="sfilter-accordion-btn__chevron"
+								viewBox="0 0 24 24"
+								width="15"
+								height="15"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
 								<polyline points="6 9 12 15 18 9"></polyline>
 							</svg>
 						</button>
@@ -229,17 +502,46 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 				</div>
 
 				<!-- Contenido del Acordeón (Colapsable / Expandible) -->
-				<div id="filter-accordion-content" class="sfilter-accordion" data-open="true">
+				<div
+					id="filter-accordion-content"
+					class="sfilter-accordion"
+					data-open="true"
+				>
 					<div class="sfilter-accordion__inner">
 						<!-- Filtros por Rango de Precios -->
 						<div class="sfilter-price">
-							<span class="sfilter-price__title">Filtrar por Precio:</span>
+							<span class="sfilter-price__title"
+								>Filtrar por Precio:</span
+							>
 							<div class="sfilter-price__chips">
-								<button type="button" class="sfilter-chip is-active" data-price-bracket="all">Todos</button>
-								<button type="button" class="sfilter-chip" data-price-bracket="0-50">Hasta $50</button>
-								<button type="button" class="sfilter-chip" data-price-bracket="50-150">$50 a $150</button>
-								<button type="button" class="sfilter-chip" data-price-bracket="150-300">$150 a $300</button>
-								<button type="button" class="sfilter-chip" data-price-bracket="300+">Más de $300</button>
+								<button
+									type="button"
+									class="sfilter-chip is-active"
+									data-price-bracket="all">Todos</button
+								>
+								<button
+									type="button"
+									class="sfilter-chip"
+									data-price-bracket="0-50">Hasta $50</button
+								>
+								<button
+									type="button"
+									class="sfilter-chip"
+									data-price-bracket="50-150"
+									>$50 a $150</button
+								>
+								<button
+									type="button"
+									class="sfilter-chip"
+									data-price-bracket="150-300"
+									>$150 a $300</button
+								>
+								<button
+									type="button"
+									class="sfilter-chip"
+									data-price-bracket="300+"
+									>Más de $300</button
+								>
 							</div>
 
 							<!-- Rango personalizado Mín / Máx -->
@@ -269,7 +571,12 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 										aria-label="Precio máximo"
 									/>
 								</div>
-								<button type="button" id="btn-reset-filters" class="sfilter-reset-btn" hidden>
+								<button
+									type="button"
+									id="btn-reset-filters"
+									class="sfilter-reset-btn"
+									hidden
+								>
 									Limpiar filtros
 								</button>
 							</div>
@@ -279,26 +586,84 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 
 				<!-- Botón Aplicar en móvil -->
 				<div class="sfilter-modal-foot">
-					<button type="button" id="mobile-filter-apply-btn" class="sfilter-modal-apply-btn">
-						Ver productos (<span data-store-count-btn>{activos.length}</span>)
+					<button
+						type="button"
+						id="mobile-filter-apply-btn"
+						class="sfilter-modal-apply-btn"
+					>
+						Ver productos (<span data-store-count-btn
+							>{activos.length}</span
+						>)
 					</button>
 				</div>
 			</div>
 
 			<!-- Grid del Catálogo de Productos -->
-			<div class="sgrid" data-store-grid id="catalogo-grid">
-				{activos.map((producto) => <ProductCard producto={producto} />)}
+			<div class="scatlist" id="catalogo-grid" data-store-grid>
+				{seccionesCategoria.map(({ cat, items }) => (
+					<section class="scat" id={`cat-${cat.id}`} data-cat-section>
+						<header class:list={["scat__head", { "scat__head--noimg": !cat.imagen_url }]}>
+							{cat.imagen_url ? (
+								<img class="scat__bg" src={cat.imagen_url} alt="" loading="lazy" />
+							) : null}
+							<div class="scat__overlay" aria-hidden="true"></div>
+							<div class="scat__info">
+								<span class="scat__kicker">Categoría</span>
+								<h3 class="scat__title">{cat.nombre}</h3>
+							</div>
+							<span class="scat__count">{items.length} {items.length === 1 ? "producto" : "productos"}</span>
+						</header>
+						<div class="sgrid">
+							{items.map((producto) => <ProductCard producto={producto} />)}
+						</div>
+					</section>
+				))}
+				{sinCategoria.length > 0 && (
+					<section class="scat" data-cat-section>
+						<header class="scat__head scat__head--noimg">
+							<div class="scat__overlay" aria-hidden="true"></div>
+							<div class="scat__info">
+								<span class="scat__kicker">Catálogo</span>
+								<h3 class="scat__title">Otros productos</h3>
+							</div>
+							<span class="scat__count">{sinCategoria.length} {sinCategoria.length === 1 ? "producto" : "productos"}</span>
+						</header>
+						<div class="sgrid">
+							{sinCategoria.map((producto) => <ProductCard producto={producto} />)}
+						</div>
+					</section>
+				)}
 			</div>
 
 			<!-- Estado Vacío Cuando no Coinciden los Filtros -->
 			<div class="ssec__empty" data-store-empty hidden>
-				<svg class="ssec__empty-svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<svg
+					class="ssec__empty-svg"
+					viewBox="0 0 24 24"
+					width="40"
+					height="40"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
 					<circle cx="11" cy="11" r="8"></circle>
 					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
 				</svg>
-				<h3 class="ssec__empty-title">No encontramos productos que coincidan</h3>
-				<p class="ssec__empty-text">Prueba ajustando los términos de búsqueda o el rango de precios.</p>
-				<button type="button" class="ssec__empty-btn" id="btn-empty-reset">
+				<h3 class="ssec__empty-title">
+					No encontramos productos que coincidan
+				</h3>
+				<p class="ssec__empty-text">
+					Prueba ajustando los términos de búsqueda o el rango de
+					precios
+				</p>
+				<button
+					type="button"
+					class="ssec__empty-btn"
+					id="btn-empty-reset"
+				>
 					Restablecer filtros y ver todo
 				</button>
 			</div>
@@ -311,79 +676,92 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 
 <script>
 	// Elementos del DOM
-	const cards = Array.from(document.querySelectorAll('#catalogo-grid [data-store-card]')).filter(
-		(el): el is HTMLElement => el instanceof HTMLElement,
+	const cards = Array.from(
+		document.querySelectorAll("#catalogo-grid [data-store-card]"),
+	).filter((el): el is HTMLElement => el instanceof HTMLElement);
+	const empty = document.querySelector("[data-store-empty]");
+	const count = document.querySelector("[data-store-count]");
+	const title = document.querySelector("[data-store-title]");
+	const searchInput = document.getElementById(
+		"search-input",
+	) as HTMLInputElement | null;
+	const searchClearBtn = document.getElementById("search-clear-btn");
+	const sortSelect = document.getElementById(
+		"sort-select",
+	) as HTMLSelectElement | null;
+	const priceChips = Array.from(
+		document.querySelectorAll("[data-price-bracket]"),
+	).filter((el): el is HTMLButtonElement => el instanceof HTMLButtonElement);
+	const priceMinInput = document.getElementById(
+		"price-min",
+	) as HTMLInputElement | null;
+	const priceMaxInput = document.getElementById(
+		"price-max",
+	) as HTMLInputElement | null;
+	const resetBtn = document.getElementById("btn-reset-filters");
+	const emptyResetBtn = document.getElementById("btn-empty-reset");
+	const catalogGrid = document.getElementById("catalogo-grid");
+	const accordionToggle = document.getElementById("filter-accordion-toggle");
+	const accordionContent = document.getElementById(
+		"filter-accordion-content",
 	);
-	const empty = document.querySelector('[data-store-empty]');
-	const count = document.querySelector('[data-store-count]');
-	const title = document.querySelector('[data-store-title]');
-	const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
-	const searchClearBtn = document.getElementById('search-clear-btn');
-	const sortSelect = document.getElementById('sort-select') as HTMLSelectElement | null;
-	const priceChips = Array.from(document.querySelectorAll('[data-price-bracket]')).filter(
-		(el): el is HTMLButtonElement => el instanceof HTMLButtonElement,
-	);
-	const priceMinInput = document.getElementById('price-min') as HTMLInputElement | null;
-	const priceMaxInput = document.getElementById('price-max') as HTMLInputElement | null;
-	const resetBtn = document.getElementById('btn-reset-filters');
-	const emptyResetBtn = document.getElementById('btn-empty-reset');
-	const catalogGrid = document.getElementById('catalogo-grid');
-	const accordionToggle = document.getElementById('filter-accordion-toggle');
-	const accordionContent = document.getElementById('filter-accordion-content');
-	const filterBadge = document.getElementById('filter-active-badge');
-	const mobileLupaBtn = document.getElementById('mobile-filter-lupa-btn');
-	const mobileBackdrop = document.getElementById('mobile-filter-backdrop');
-	const mobileCloseBtn = document.getElementById('mobile-filter-close-btn');
-	const mobileApplyBtn = document.getElementById('mobile-filter-apply-btn');
-	const filtersContainer = document.getElementById('filtros');
-	const mobileBadge = document.getElementById('mobile-filter-badge');
-	const btnCount = document.querySelector('[data-store-count-btn]');
+	const filterBadge = document.getElementById("filter-active-badge");
+	const mobileLupaBtn = document.getElementById("mobile-filter-lupa-btn");
+	const mobileBackdrop = document.getElementById("mobile-filter-backdrop");
+	const mobileCloseBtn = document.getElementById("mobile-filter-close-btn");
+	const mobileApplyBtn = document.getElementById("mobile-filter-apply-btn");
+	const filtersContainer = document.getElementById("filtros");
+	const mobileBadge = document.getElementById("mobile-filter-badge");
+	const btnCount = document.querySelector("[data-store-count-btn]");
 
 	function toggleMobileFilters(open: boolean) {
 		if (!filtersContainer) return;
-		filtersContainer.classList.toggle('is-mobile-open', open);
+		filtersContainer.classList.toggle("is-mobile-open", open);
 		if (mobileBackdrop) {
 			mobileBackdrop.hidden = !open;
 		}
 		if (open) {
-			document.body.style.overflow = 'hidden';
+			document.body.style.overflow = "hidden";
 			setTimeout(() => searchInput?.focus(), 150);
 		} else {
-			document.body.style.overflow = '';
+			document.body.style.overflow = "";
 		}
 	}
 
-	mobileLupaBtn?.addEventListener('click', () => toggleMobileFilters(true));
-	mobileCloseBtn?.addEventListener('click', () => toggleMobileFilters(false));
-	mobileBackdrop?.addEventListener('click', () => toggleMobileFilters(false));
-	mobileApplyBtn?.addEventListener('click', () => toggleMobileFilters(false));
+	mobileLupaBtn?.addEventListener("click", () => toggleMobileFilters(true));
+	mobileCloseBtn?.addEventListener("click", () => toggleMobileFilters(false));
+	mobileBackdrop?.addEventListener("click", () => toggleMobileFilters(false));
+	mobileApplyBtn?.addEventListener("click", () => toggleMobileFilters(false));
 
-	window.addEventListener('keydown', (e) => {
-		if (e.key === 'Escape' && filtersContainer?.classList.contains('is-mobile-open')) {
+	window.addEventListener("keydown", (e) => {
+		if (
+			e.key === "Escape" &&
+			filtersContainer?.classList.contains("is-mobile-open")
+		) {
 			toggleMobileFilters(false);
 		}
 	});
 
 	// En dispositivos móviles (<=768px) colapsar el acordeón inicialmente para no ocupar pantalla
 	if (window.innerWidth <= 768) {
-		accordionContent?.setAttribute('data-open', 'false');
-		accordionToggle?.setAttribute('aria-expanded', 'false');
+		accordionContent?.setAttribute("data-open", "false");
+		accordionToggle?.setAttribute("aria-expanded", "false");
 	}
 
-	accordionToggle?.addEventListener('click', () => {
-		const isOpen = accordionContent?.getAttribute('data-open') === 'true';
+	accordionToggle?.addEventListener("click", () => {
+		const isOpen = accordionContent?.getAttribute("data-open") === "true";
 		const nextState = !isOpen;
-		accordionContent?.setAttribute('data-open', String(nextState));
-		accordionToggle?.setAttribute('aria-expanded', String(nextState));
+		accordionContent?.setAttribute("data-open", String(nextState));
+		accordionToggle?.setAttribute("aria-expanded", String(nextState));
 	});
 
 	// Estado actual de filtros
-	let currentFilter = 'all'; // 'all', 'ofertas', 'categoria:...', 'subcategoria:...'
-	let currentSearch = '';
-	let currentPriceBracket = 'all'; // 'all', '0-50', '50-150', '150-300', '300+'
+	let currentFilter = "all"; // 'all', 'ofertas', 'categoria:...', 'subcategoria:...'
+	let currentSearch = "";
+	let currentPriceBracket = "all"; // 'all', '0-50', '50-150', '150-300', '300+'
 	let currentPriceMin: number | null = null;
 	let currentPriceMax: number | null = null;
-	let currentSort = 'default';
+	let currentSort = "default";
 
 	function updateFilterVisibility() {
 		let visibleCount = 0;
@@ -393,22 +771,30 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			let matchCat = true;
 
 			// Filtro de Categoría / Ofertas / Tendencias
-			if (currentFilter === 'all') {
+			if (currentFilter === "all") {
 				matchCat = true;
-			} else if (currentFilter === 'ofertas') {
-				matchCat = card.dataset.offer === 'true';
-			} else if (currentFilter === 'tendencias') {
-				matchCat = card.dataset.trending === 'true';
-			} else if (currentFilter.startsWith('categoria:')) {
-				matchCat = card.dataset.cat === currentFilter.slice('categoria:'.length);
-			} else if (currentFilter.startsWith('subcategoria:')) {
-				matchCat = card.dataset.sub === currentFilter.slice('subcategoria:'.length);
+			} else if (currentFilter === "ofertas") {
+				matchCat = card.dataset.offer === "true";
+			} else if (currentFilter === "tendencias") {
+				matchCat = card.dataset.trending === "true";
+			} else if (currentFilter.startsWith("categoria:")) {
+				matchCat =
+					card.dataset.cat ===
+					currentFilter.slice("categoria:".length);
+			} else if (currentFilter.startsWith("subcategoria:")) {
+				matchCat =
+					card.dataset.sub ===
+					currentFilter.slice("subcategoria:".length);
 			}
 
 			// Filtro de Búsqueda Normal por Texto
 			let matchSearch = true;
 			if (query.length > 0) {
-				const searchPool = (card.dataset.search || card.dataset.name || '').toLowerCase();
+				const searchPool = (
+					card.dataset.search ||
+					card.dataset.name ||
+					""
+				).toLowerCase();
 				matchSearch = searchPool.includes(query);
 			}
 
@@ -417,31 +803,47 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			const price = Number(card.dataset.price) || 0;
 
 			// Rango rápido de precios
-			if (currentPriceBracket === '0-50' && price > 50) matchPrice = false;
-			if (currentPriceBracket === '50-150' && (price < 50 || price > 150)) matchPrice = false;
-			if (currentPriceBracket === '150-300' && (price < 150 || price > 300)) matchPrice = false;
-			if (currentPriceBracket === '300+' && price < 300) matchPrice = false;
+			if (currentPriceBracket === "0-50" && price > 50)
+				matchPrice = false;
+			if (currentPriceBracket === "50-150" && (price < 50 || price > 150))
+				matchPrice = false;
+			if (
+				currentPriceBracket === "150-300" &&
+				(price < 150 || price > 300)
+			)
+				matchPrice = false;
+			if (currentPriceBracket === "300+" && price < 300)
+				matchPrice = false;
 
 			// Entradas manuales de precio mínimo y máximo
-			if (currentPriceMin !== null && price < currentPriceMin) matchPrice = false;
-			if (currentPriceMax !== null && price > currentPriceMax) matchPrice = false;
+			if (currentPriceMin !== null && price < currentPriceMin)
+				matchPrice = false;
+			if (currentPriceMax !== null && price > currentPriceMax)
+				matchPrice = false;
 
 			const isVisible = matchCat && matchSearch && matchPrice;
 			card.hidden = !isVisible;
 			if (isVisible) visibleCount += 1;
 		}
 
+		// Ocultar secciones de categoría sin productos visibles
+		document.querySelectorAll<HTMLElement>("[data-cat-section]").forEach((sec) => {
+			sec.hidden = !sec.querySelector("[data-store-card]:not([hidden])");
+		});
+
 		// Ordenación
 		sortCards();
 
 		// Actualización de contadores y estados vacíos
 		if (empty instanceof HTMLElement) empty.hidden = visibleCount > 0;
-		if (count instanceof HTMLElement) count.textContent = String(visibleCount);
-		if (btnCount instanceof HTMLElement) btnCount.textContent = String(visibleCount);
+		if (count instanceof HTMLElement)
+			count.textContent = String(visibleCount);
+		if (btnCount instanceof HTMLElement)
+			btnCount.textContent = String(visibleCount);
 
 		// Mostrar / Ocultar badge de filtros de precio activos en el botón del acordeón
 		const hasPriceFilter =
-			currentPriceBracket !== 'all' ||
+			currentPriceBracket !== "all" ||
 			currentPriceMin !== null ||
 			currentPriceMax !== null;
 
@@ -453,7 +855,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		const hasActiveFilters =
 			currentSearch.length > 0 ||
 			hasPriceFilter ||
-			currentFilter !== 'all';
+			currentFilter !== "all";
 
 		if (resetBtn instanceof HTMLElement) {
 			resetBtn.hidden = !hasActiveFilters;
@@ -472,12 +874,24 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		if (!catalogGrid) return;
 		const visibleCards = cards.filter((c) => !c.hidden);
 
-		if (currentSort === 'price-asc') {
-			visibleCards.sort((a, b) => (Number(a.dataset.price) || 0) - (Number(b.dataset.price) || 0));
-		} else if (currentSort === 'price-desc') {
-			visibleCards.sort((a, b) => (Number(b.dataset.price) || 0) - (Number(a.dataset.price) || 0));
-		} else if (currentSort === 'offers') {
-			visibleCards.sort((a, b) => (b.dataset.offer === 'true' ? 1 : 0) - (a.dataset.offer === 'true' ? 1 : 0));
+		if (currentSort === "price-asc") {
+			visibleCards.sort(
+				(a, b) =>
+					(Number(a.dataset.price) || 0) -
+					(Number(b.dataset.price) || 0),
+			);
+		} else if (currentSort === "price-desc") {
+			visibleCards.sort(
+				(a, b) =>
+					(Number(b.dataset.price) || 0) -
+					(Number(a.dataset.price) || 0),
+			);
+		} else if (currentSort === "offers") {
+			visibleCards.sort(
+				(a, b) =>
+					(b.dataset.offer === "true" ? 1 : 0) -
+					(a.dataset.offer === "true" ? 1 : 0),
+			);
 		}
 
 		visibleCards.forEach((card, index) => {
@@ -486,34 +900,37 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	}
 
 	function resetAllFilters() {
-		currentSearch = '';
-		currentPriceBracket = 'all';
+		currentSearch = "";
+		currentPriceBracket = "all";
 		currentPriceMin = null;
 		currentPriceMax = null;
-		currentSort = 'default';
+		currentSort = "default";
 
-		if (searchInput) searchInput.value = '';
-		if (priceMinInput) priceMinInput.value = '';
-		if (priceMaxInput) priceMaxInput.value = '';
-		if (sortSelect) sortSelect.value = 'default';
+		if (searchInput) searchInput.value = "";
+		if (priceMinInput) priceMinInput.value = "";
+		if (priceMaxInput) priceMaxInput.value = "";
+		if (sortSelect) sortSelect.value = "default";
 
 		priceChips.forEach((chip) => {
-			chip.classList.toggle('is-active', chip.dataset.priceBracket === 'all');
+			chip.classList.toggle(
+				"is-active",
+				chip.dataset.priceBracket === "all",
+			);
 		});
 
 		updateFilterVisibility();
 	}
 
 	// 1. Eventos de Búsqueda Normal
-	searchInput?.addEventListener('input', () => {
+	searchInput?.addEventListener("input", () => {
 		currentSearch = searchInput.value;
 		updateFilterVisibility();
 	});
 
-	searchClearBtn?.addEventListener('click', () => {
+	searchClearBtn?.addEventListener("click", () => {
 		if (searchInput) {
-			searchInput.value = '';
-			currentSearch = '';
+			searchInput.value = "";
+			currentSearch = "";
 			searchInput.focus();
 			updateFilterVisibility();
 		}
@@ -521,14 +938,14 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 
 	// 2. Eventos de Rango de Precios Rápido (Chips)
 	priceChips.forEach((chip) => {
-		chip.addEventListener('click', () => {
-			priceChips.forEach((c) => c.classList.remove('is-active'));
-			chip.classList.add('is-active');
-			currentPriceBracket = chip.dataset.priceBracket || 'all';
+		chip.addEventListener("click", () => {
+			priceChips.forEach((c) => c.classList.remove("is-active"));
+			chip.classList.add("is-active");
+			currentPriceBracket = chip.dataset.priceBracket || "all";
 
 			// Si el usuario selecciona un chip, limpia los inputs personalizados
-			if (priceMinInput) priceMinInput.value = '';
-			if (priceMaxInput) priceMaxInput.value = '';
+			if (priceMinInput) priceMinInput.value = "";
+			if (priceMaxInput) priceMaxInput.value = "";
 			currentPriceMin = null;
 			currentPriceMax = null;
 
@@ -537,66 +954,69 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	});
 
 	// 3. Entradas Manuales de Precio Mínimo y Máximo
-	priceMinInput?.addEventListener('input', () => {
+	priceMinInput?.addEventListener("input", () => {
 		const val = priceMinInput.value.trim();
-		currentPriceMin = val === '' ? null : Number(val);
-		priceChips.forEach((c) => c.classList.remove('is-active'));
-		currentPriceBracket = 'all';
+		currentPriceMin = val === "" ? null : Number(val);
+		priceChips.forEach((c) => c.classList.remove("is-active"));
+		currentPriceBracket = "all";
 		updateFilterVisibility();
 	});
 
-	priceMaxInput?.addEventListener('input', () => {
+	priceMaxInput?.addEventListener("input", () => {
 		const val = priceMaxInput.value.trim();
-		currentPriceMax = val === '' ? null : Number(val);
-		priceChips.forEach((c) => c.classList.remove('is-active'));
-		currentPriceBracket = 'all';
+		currentPriceMax = val === "" ? null : Number(val);
+		priceChips.forEach((c) => c.classList.remove("is-active"));
+		currentPriceBracket = "all";
 		updateFilterVisibility();
 	});
 
 	// 4. Selector de Ordenación
-	sortSelect?.addEventListener('change', () => {
+	sortSelect?.addEventListener("change", () => {
 		currentSort = sortSelect.value;
 		updateFilterVisibility();
 	});
 
 	// 5. Botones de Limpiar Filtros
-	resetBtn?.addEventListener('click', resetAllFilters);
-	emptyResetBtn?.addEventListener('click', () => {
-		currentFilter = 'all';
-		document.querySelectorAll('[data-nav-filter]').forEach((el) => {
-			el.classList.toggle('is-active', el.getAttribute('data-nav-filter') === 'all');
+	resetBtn?.addEventListener("click", resetAllFilters);
+	emptyResetBtn?.addEventListener("click", () => {
+		currentFilter = "all";
+		document.querySelectorAll("[data-nav-filter]").forEach((el) => {
+			el.classList.toggle(
+				"is-active",
+				el.getAttribute("data-nav-filter") === "all",
+			);
 		});
-		if (title) title.textContent = 'Todos los productos';
+		if (title) title.textContent = "Todos los productos";
 		resetAllFilters();
 	});
 
 	// 6. Manejador Global de Clics (Navegación y Botón de Carrito Rápido)
-	document.addEventListener('click', (event) => {
+	document.addEventListener("click", (event) => {
 		const clicked = event.target;
 		if (!(clicked instanceof Element)) return;
 
 		// Botón de agregar rápido al carrito
-		const addBtn = clicked.closest<HTMLButtonElement>('[data-card-add]');
+		const addBtn = clicked.closest<HTMLButtonElement>("[data-card-add]");
 		if (addBtn) {
 			event.preventDefault();
 			event.stopPropagation();
 
-			const id = addBtn.dataset.id || '';
-			const slug = addBtn.dataset.slug || '';
-			const name = addBtn.dataset.name || '';
+			const id = addBtn.dataset.id || "";
+			const slug = addBtn.dataset.slug || "";
+			const name = addBtn.dataset.name || "";
 			const price = Number(addBtn.dataset.price) || 0;
 			const stock = Number(addBtn.dataset.stock) || 1;
 			const img = addBtn.dataset.img || null;
 
 			window.dispatchEvent(
-				new CustomEvent('confi-cart:add', {
+				new CustomEvent("confi-cart:add", {
 					detail: {
 						product: {
 							id: `${id}__base`,
 							productId: id,
 							slug: slug,
 							nombre: name,
-							combinacion: 'Única',
+							combinacion: "Única",
 							precio: price,
 							imagenUrl: img,
 							maxStock: stock,
@@ -604,64 +1024,119 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 						quantity: 1,
 						redirectToCatalog: false,
 					},
-				})
+				}),
 			);
 
 			// Animación de feedback en el botón
 			const originalHtml = addBtn.innerHTML;
-			addBtn.innerHTML = '<span>✓ Listo</span>';
-			addBtn.style.background = '#16a34a';
+			addBtn.innerHTML = "<span>✓ Listo</span>";
+			addBtn.style.background = "#16a34a";
 			setTimeout(() => {
 				addBtn.innerHTML = originalHtml;
-				addBtn.style.background = '';
+				addBtn.style.background = "";
 			}, 1200);
 
 			return;
 		}
 
 		// Enlaces de Filtro del Menú Lateral y Footer
-		const link = clicked.closest('[data-nav-filter]');
+		const link = clicked.closest("[data-nav-filter]");
 		if (!(link instanceof HTMLElement)) return;
 
 		event.preventDefault();
 
-		const filter = link.dataset.navFilter || 'all';
-		const targetId = link.dataset.navTarget || 'todos';
+		const filter = link.dataset.navFilter || "all";
+		const targetId = link.dataset.navTarget || "todos";
 
-		document.querySelectorAll('[data-nav-filter]').forEach((el) => {
-			el.classList.toggle('is-active', el === link);
+		document.querySelectorAll("[data-nav-filter]").forEach((el) => {
+			el.classList.toggle("is-active", el === link);
 		});
 
-		// Navegación hacia Tendencias
-		if (filter === 'tendencias') {
-			const trendingSec = document.getElementById('tendencias');
+		// Navegación hacia Tendencias (sección pegada arriba, justo donde empieza)
+		if (filter === "tendencias") {
+			const trendingSec = document.getElementById("tendencias");
 			if (trendingSec) {
-				trendingSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				// Si el menú lateral móvil estaba abierto, restaurar overflow
+				document.body.classList.remove("is-nav-open");
+				document.body.style.overflow = "";
+
+				const doScroll = () => {
+					const mobileBar = document.querySelector(".snav__bar");
+					const barHeight =
+						mobileBar &&
+						window.getComputedStyle(mobileBar).display !== "none"
+							? mobileBar.getBoundingClientRect().height
+							: 0;
+					const targetY =
+						trendingSec.getBoundingClientRect().top +
+						window.scrollY -
+						barHeight;
+					window.scrollTo({
+						top: Math.max(0, targetY),
+						behavior: "smooth",
+					});
+				};
+
+				doScroll();
+				setTimeout(doScroll, 80);
 				return;
 			}
 		}
 
 		currentFilter = filter;
 		if (title instanceof HTMLElement) {
-			title.textContent = link.dataset.navLabel || (filter === 'ofertas' ? 'Ofertas Especiales' : 'Todos los productos');
+			title.textContent =
+				link.dataset.navLabel ||
+				(filter === "ofertas"
+					? "Ofertas Especiales"
+					: "Todos los productos");
 		}
 
 		updateFilterVisibility();
 
 		const targetElement = document.getElementById(targetId);
 		if (targetElement) {
-			targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			// Restaurar scroll si el menú móvil estaba abierto
+			document.body.classList.remove("is-nav-open");
+			document.body.style.overflow = "";
+
+			const doScroll = (smooth: boolean) => {
+				const mobileBar = document.querySelector(".snav__bar");
+				const barHeight =
+					mobileBar &&
+					window.getComputedStyle(mobileBar).display !== "none"
+						? mobileBar.getBoundingClientRect().height
+						: 0;
+				const targetY =
+					targetElement.getBoundingClientRect().top +
+					window.scrollY -
+					barHeight;
+				window.scrollTo({
+					top: Math.max(0, targetY),
+					behavior: smooth ? "smooth" : "auto",
+				});
+			};
+
+			// Esperar a que el layout se actualice tras filtrar y recalcular
+			requestAnimationFrame(() => {
+				doScroll(true);
+				setTimeout(() => doScroll(false), 450);
+			});
 		}
 	});
 
 	// 7. Carga inicial mediante Hash en URL (#tendencias, #ofertas, #cat-..., etc.)
 	if (window.location.hash) {
 		const hash = window.location.hash;
-		if (hash === '#tendencias') {
-			const trendingLink = document.querySelector('[data-nav-filter="tendencias"]');
+		if (hash === "#tendencias") {
+			const trendingLink = document.querySelector(
+				'[data-nav-filter="tendencias"]',
+			);
 			if (trendingLink instanceof HTMLElement) trendingLink.click();
-		} else if (hash === '#ofertas') {
-			const ofertasLink = document.querySelector('[data-nav-filter="ofertas"]');
+		} else if (hash === "#ofertas") {
+			const ofertasLink = document.querySelector(
+				'[data-nav-filter="ofertas"]',
+			);
 			if (ofertasLink instanceof HTMLElement) ofertasLink.click();
 		} else {
 			const hashLink =
@@ -671,6 +1146,442 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 				hashLink.click();
 			}
 		}
+	}
+
+	// =========================================================================
+	// 8. Carrusel Horizontal Infinito de Tendencias (Autoplay, Touch y Flechas)
+	// =========================================================================
+	const trendingCarousel = document.getElementById("trending-carousel");
+	const trendingTrack = document.getElementById("trending-track");
+
+	if (trendingCarousel && trendingTrack) {
+		const baseCount = parseInt(trendingTrack.dataset.baseCount || "0", 10);
+		const originalCount = parseInt(trendingTrack.dataset.originalCount || "1", 10);
+		const slides = Array.from(trendingTrack.querySelectorAll<HTMLElement>(".strending__slide"));
+		const prevBtns = Array.from(document.querySelectorAll<HTMLElement>("[data-trending-prev]"));
+		const nextBtns = Array.from(document.querySelectorAll<HTMLElement>("[data-trending-next]"));
+		const dots = Array.from(document.querySelectorAll<HTMLElement>(".strending__dot"));
+
+		if (slides.length > 0 && baseCount > 0) {
+			function getRowsCount(): number {
+				if (slides.length < 2) return 1;
+				const r0 = slides[0]?.getBoundingClientRect();
+				const r1 = slides[1]?.getBoundingClientRect();
+				if (r0 && r1 && Math.abs(r1.left - r0.left) < 6 && r1.top > r0.top + 10) {
+					return 2;
+				}
+				return window.innerWidth <= 900 ? 2 : 1;
+			}
+
+			function getBaseCols(): number {
+				const rows = getRowsCount();
+				return Math.ceil(baseCount / rows);
+			}
+
+			function getSlideStep(): number {
+				const rows = getRowsCount();
+				const nextColIndex = rows === 2 && slides.length > 2 ? 2 : 1;
+				const r0 = slides[0]?.getBoundingClientRect();
+				const rNext = slides[nextColIndex]?.getBoundingClientRect();
+
+				if (r0 && rNext && rNext.left > r0.left) {
+					return rNext.left - r0.left;
+				}
+
+				if (r0 && r0.width > 0) {
+					const isMobile = window.innerWidth <= 900;
+					return r0.width + (isMobile ? 12 : 18);
+				}
+
+				return window.innerWidth <= 900 ? 190 : 338;
+			}
+
+			let currentIndex = getBaseCols(); // Iniciar en el juego central para loop infinito bidireccional
+			let isAnimating = false;
+			let autoplayTimer: ReturnType<typeof setInterval> | null = null;
+			let resumeTimeout: ReturnType<typeof setTimeout> | null = null;
+			let isHovered = false;
+			let isDragging = false;
+			let hasDragged = false;
+			let startX = 0;
+			let startY = 0;
+			let currentX = 0;
+			let currentY = 0;
+			let startTranslate = 0;
+			let isHorizontalSwipe = false;
+
+			function updateDots() {
+				if (dots.length === 0) return;
+				const baseCols = getBaseCols();
+				if (baseCols <= 0) return;
+				const activeCol = ((currentIndex % baseCols) + baseCols) % baseCols;
+				const activeDotIndex = activeCol % dots.length;
+				dots.forEach((dot, idx) => {
+					if (idx === activeDotIndex) {
+						dot.classList.add("is-active");
+						dot.setAttribute("aria-current", "true");
+					} else {
+						dot.classList.remove("is-active");
+						dot.removeAttribute("aria-current");
+					}
+				});
+			}
+
+			const track: HTMLElement = trendingTrack;
+
+			function goToSlide(index: number, animate = true) {
+				currentIndex = index;
+				const step = getSlideStep();
+				const targetX = -currentIndex * step;
+
+				if (animate) {
+					track.style.transition = "transform 0.55s cubic-bezier(0.22, 1, 0.36, 1)";
+					isAnimating = true;
+				} else {
+					track.style.transition = "none";
+					isAnimating = false;
+				}
+
+				track.style.transform = `translate3d(${targetX}px, 0, 0)`;
+				updateDots();
+			}
+
+			// Manejar reinicio transparente de posición para el loop infinito
+			trendingTrack.addEventListener("transitionend", (e) => {
+				if (e.target !== trendingTrack) return;
+				isAnimating = false;
+
+				const baseCols = getBaseCols();
+				if (baseCols <= 0) return;
+				// Si llegamos o sobrepasamos el conjunto de clones derecho
+				if (currentIndex >= 2 * baseCols) {
+					currentIndex = currentIndex - baseCols;
+					goToSlide(currentIndex, false);
+				}
+				// Si llegamos o retrocedemos al conjunto de clones izquierdo
+				else if (currentIndex < baseCols) {
+					currentIndex = currentIndex + baseCols;
+					goToSlide(currentIndex, false);
+				}
+			});
+
+			// Posicionar inicialmente en el centro sin animación de inmediato y tras el primer frame
+			goToSlide(currentIndex, false);
+			requestAnimationFrame(() => {
+				goToSlide(currentIndex, false);
+			});
+			window.addEventListener("load", () => {
+				goToSlide(currentIndex, false);
+			});
+
+			// Recalcular posición si cambia el tamaño de pantalla
+			window.addEventListener("resize", () => {
+				const baseCols = getBaseCols();
+				if (baseCols > 0 && (currentIndex >= 2 * baseCols || currentIndex < baseCols)) {
+					currentIndex = baseCols;
+				}
+				goToSlide(currentIndex, false);
+			});
+
+			// --- Autoplay continuo cada 2 segundos ---
+			function startAutoplay() {
+				stopAutoplay();
+				if (isHovered || isDragging) return;
+				autoplayTimer = setInterval(() => {
+					goToSlide(currentIndex + 1, true);
+				}, 2000);
+			}
+
+			function stopAutoplay() {
+				if (autoplayTimer) {
+					clearInterval(autoplayTimer);
+					autoplayTimer = null;
+				}
+			}
+
+			function pauseAutoplayTemporarily(ms = 2500) {
+				stopAutoplay();
+				if (resumeTimeout) clearTimeout(resumeTimeout);
+				resumeTimeout = setTimeout(() => {
+					if (!isHovered && !isDragging) {
+						startAutoplay();
+					}
+				}, ms);
+			}
+
+			startAutoplay();
+
+			// Pausar al posar el cursor sobre el carrusel en PC
+			trendingCarousel.addEventListener("mouseenter", () => {
+				isHovered = true;
+				stopAutoplay();
+			});
+
+			trendingCarousel.addEventListener("mouseleave", () => {
+				isHovered = false;
+				startAutoplay();
+			});
+
+			// Botones de flecha (PC)
+			prevBtns.forEach((btn) => {
+				btn.addEventListener("click", (e) => {
+					e.preventDefault();
+					pauseAutoplayTemporarily();
+					goToSlide(currentIndex - 1, true);
+				});
+			});
+
+			nextBtns.forEach((btn) => {
+				btn.addEventListener("click", (e) => {
+					e.preventDefault();
+					pauseAutoplayTemporarily();
+					goToSlide(currentIndex + 1, true);
+				});
+			});
+
+			// Clic en los puntos indicadores (dots)
+			dots.forEach((dot) => {
+				dot.addEventListener("click", (e) => {
+					e.preventDefault();
+					const targetIndexAttr = dot.getAttribute("data-dot-index");
+					if (targetIndexAttr !== null) {
+						const targetIdx = parseInt(targetIndexAttr, 10);
+						pauseAutoplayTemporarily();
+						const baseCols = getBaseCols();
+						const currentActive = ((currentIndex % baseCols) + baseCols) % baseCols;
+						const diff = (targetIdx % baseCols) - currentActive;
+						goToSlide(currentIndex + diff, true);
+					}
+				});
+			});
+
+			// --- Arrastre táctil con el dedo en Móvil ---
+			trendingCarousel.addEventListener(
+				"touchstart",
+				(e) => {
+					if (e.touches.length > 1) return;
+					stopAutoplay();
+					isDragging = true;
+					hasDragged = false;
+					isHorizontalSwipe = false;
+					startX = e.touches[0].clientX;
+					startY = e.touches[0].clientY;
+					currentX = startX;
+					currentY = startY;
+					startTranslate = -currentIndex * getSlideStep();
+					trendingTrack.style.transition = "none";
+				},
+				{ passive: true },
+			);
+
+			trendingCarousel.addEventListener(
+				"touchmove",
+				(e) => {
+					if (!isDragging) return;
+					currentX = e.touches[0].clientX;
+					currentY = e.touches[0].clientY;
+					const deltaX = currentX - startX;
+					const deltaY = currentY - startY;
+
+					if (!hasDragged && (Math.abs(deltaX) > 7 || Math.abs(deltaY) > 7)) {
+						if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+							isHorizontalSwipe = true;
+						}
+					}
+
+					if (isHorizontalSwipe) {
+						hasDragged = true;
+						if (e.cancelable) e.preventDefault();
+						const currentTranslate = startTranslate + deltaX;
+						trendingTrack.style.transform = `translate3d(${currentTranslate}px, 0, 0)`;
+					}
+				},
+				{ passive: false },
+			);
+
+			const handleTouchEnd = () => {
+				if (!isDragging) return;
+				isDragging = false;
+				const deltaX = currentX - startX;
+
+				if (hasDragged && isHorizontalSwipe) {
+					const threshold = 35;
+					if (deltaX < -threshold) {
+						goToSlide(currentIndex + 1, true);
+					} else if (deltaX > threshold) {
+						goToSlide(currentIndex - 1, true);
+					} else {
+						goToSlide(currentIndex, true);
+					}
+				} else {
+					goToSlide(currentIndex, false);
+				}
+
+				pauseAutoplayTemporarily();
+			};
+
+			trendingCarousel.addEventListener("touchend", handleTouchEnd, { passive: true });
+			trendingCarousel.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+
+			// --- Arrastre opcional con Mouse en PC ---
+			let isMouseDown = false;
+			trendingCarousel.addEventListener("mousedown", (e) => {
+				if (e.button !== 0) return;
+				stopAutoplay();
+				isMouseDown = true;
+				hasDragged = false;
+				startX = e.clientX;
+				currentX = startX;
+				startTranslate = -currentIndex * getSlideStep();
+				trendingTrack.style.transition = "none";
+			});
+
+			window.addEventListener("mousemove", (e) => {
+				if (!isMouseDown) return;
+				currentX = e.clientX;
+				const deltaX = currentX - startX;
+				if (Math.abs(deltaX) > 8) {
+					hasDragged = true;
+				}
+				const currentTranslate = startTranslate + deltaX;
+				trendingTrack.style.transform = `translate3d(${currentTranslate}px, 0, 0)`;
+			});
+
+			window.addEventListener("mouseup", () => {
+				if (!isMouseDown) return;
+				isMouseDown = false;
+				const deltaX = currentX - startX;
+				if (hasDragged) {
+					if (deltaX < -35) {
+						goToSlide(currentIndex + 1, true);
+					} else if (deltaX > 35) {
+						goToSlide(currentIndex - 1, true);
+					} else {
+						goToSlide(currentIndex, true);
+					}
+				}
+				pauseAutoplayTemporarily(4000);
+			});
+
+			// Evitar que el clic abra accidentalmente la ficha si se estaba deslizando
+			trendingCarousel.addEventListener(
+				"click",
+				(e) => {
+					if (hasDragged) {
+						e.preventDefault();
+						e.stopPropagation();
+						hasDragged = false;
+					}
+				},
+				true,
+			);
+
+			// Recalcular tamaño exacto ante cambios de orientación o resize
+			let resizeTimer: ReturnType<typeof setTimeout>;
+			window.addEventListener("resize", () => {
+				clearTimeout(resizeTimer);
+				resizeTimer = setTimeout(() => {
+					goToSlide(currentIndex, false);
+				}, 120);
+			});
+
+			// Pausar si el usuario cambia de pestaña
+			document.addEventListener("visibilitychange", () => {
+				if (document.hidden) {
+					stopAutoplay();
+				} else if (!isHovered) {
+					startAutoplay();
+				}
+			});
+		}
+	}
+
+	// =========================================================================
+	// 9. Actualización Multitasa Dinámica de Precios (USD, VES, COP)
+	// =========================================================================
+	function formatCurrencyPrice(valUSD: number, moneda: string, tasaBcv: number, tasaCop: number): string {
+		const base = Number(valUSD) || 0;
+		if (moneda === "VES") {
+			const tasa = tasaBcv > 0 ? tasaBcv : 1;
+			const enBs = base * tasa;
+			return "Bs. " + new Intl.NumberFormat("es-VE", {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			}).format(enBs);
+		}
+		if (moneda === "COP") {
+			const tasa = tasaCop > 0 ? tasaCop : 1;
+			const enCop = Math.round(base * tasa);
+			return "$ " + new Intl.NumberFormat("es-CO", {
+				maximumFractionDigits: 0,
+			}).format(enCop) + " COP";
+		}
+		return new Intl.NumberFormat("es-VE", {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits: 2,
+		}).format(base);
+	}
+
+	function formatCurrencyRange(minUSD: number, maxUSD: number, moneda: string, tasaBcv: number, tasaCop: number): string {
+		if (minUSD === maxUSD) return formatCurrencyPrice(minUSD, moneda, tasaBcv, tasaCop);
+		const menor = Math.min(minUSD, maxUSD);
+		const mayor = Math.max(minUSD, maxUSD);
+		return `${formatCurrencyPrice(menor, moneda, tasaBcv, tasaCop)} – ${formatCurrencyPrice(mayor, moneda, tasaBcv, tasaCop)}`;
+	}
+
+	function applyCurrencyToCards(moneda: string, tasaBcv: number, tasaCop: number) {
+		const allCards = document.querySelectorAll<HTMLElement>("[data-store-card]");
+		allCards.forEach((card) => {
+			const isRange = card.dataset.isRange === "true";
+			const isOffer = card.dataset.isOffer === "true";
+
+			const normMin = Number(card.dataset.priceNormalMin) || 0;
+			const normMax = Number(card.dataset.priceNormalMax) || normMin;
+			const offMin = Number(card.dataset.priceOfferMin) || 0;
+			const offMax = Number(card.dataset.priceOfferMax) || offMin;
+
+			const normalFormatted = isRange
+				? formatCurrencyRange(normMin, normMax, moneda, tasaBcv, tasaCop)
+				: formatCurrencyPrice(normMin, moneda, tasaBcv, tasaCop);
+
+			const offerFormatted = isOffer
+				? (isRange && offMin > 0
+					? formatCurrencyRange(offMin, offMax, moneda, tasaBcv, tasaCop)
+					: formatCurrencyPrice(offMin, moneda, tasaBcv, tasaCop))
+				: "";
+
+			const nowEl = card.querySelector<HTMLElement>("[data-card-price-now]");
+			const oldEl = card.querySelector<HTMLElement>("[data-card-price-old]");
+
+			if (nowEl) {
+				nowEl.textContent = isOffer ? offerFormatted : normalFormatted;
+			}
+			if (oldEl && isOffer) {
+				oldEl.textContent = normalFormatted;
+			}
+		});
+	}
+
+	// Escuchar evento de cambio de moneda emitido por CurrencySwitch
+	window.addEventListener("confi-currency:change", (e: any) => {
+		const { moneda, tasaBcv, tasaCop } = e.detail || {};
+		if (moneda) {
+			applyCurrencyToCards(moneda, Number(tasaBcv) || 0, Number(tasaCop) || 0);
+		}
+	});
+
+	// Al cargar la página, chequear si ya había una moneda guardada
+	try {
+		const savedCurrency = localStorage.getItem("demo_tienda_moneda_activa");
+		if (savedCurrency && savedCurrency !== "USD") {
+			const sw = document.querySelector<HTMLElement>("[data-currency-switch]");
+			const bcv = Number(sw?.dataset.tasaBcv) || 0;
+			const cop = Number(sw?.dataset.tasaCop) || 0;
+			applyCurrencyToCards(savedCurrency, bcv, cop);
+		}
+	} catch {
+		// ignore
 	}
 </script>
 
@@ -688,26 +1599,42 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		flex-direction: column;
 	}
 
+	/* CONTENEDOR HERO GENERAL */
+	.shero {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+	}
+
 	/* SECCIÓN TENDENCIAS */
 	.strending {
 		position: relative;
 		overflow: hidden;
-		padding: 2.25rem clamp(1rem, 3.5vw, 2.5rem) 2.5rem;
+		padding: 2rem clamp(1rem, 3.5vw, 2.5rem) 1.65rem;
 		background:
-			radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 75%),
+			radial-gradient(
+				90% 120% at 50% 0%,
+				color-mix(in srgb, #16a34a 10%, transparent),
+				transparent 75%
+			),
 			color-mix(in srgb, var(--panel) 40%, var(--bg));
 		border-bottom: 1px solid var(--line);
-		scroll-margin-top: calc(var(--store-bar-h) + 1rem);
+		scroll-margin-top: 0;
 	}
 
 	.strending__glow {
 		position: absolute;
 		top: -10%;
 		left: 30%;
-		width: 400px;
-		height: 250px;
-		background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%);
-		filter: blur(50px);
+		width: 480px;
+		height: 280px;
+		background: radial-gradient(
+			circle,
+			color-mix(in srgb, #16a34a 18%, transparent) 0%,
+			transparent 70%
+		);
+		filter: blur(55px);
 		pointer-events: none;
 	}
 
@@ -716,6 +1643,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		z-index: 1;
 		max-width: 78rem;
 		margin: 0 auto;
+		width: 100%;
 	}
 
 	.strending__head {
@@ -724,13 +1652,15 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		align-items: flex-end;
 		justify-content: space-between;
 		gap: 1.25rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.15rem;
+		margin-top: 0.35rem;
 	}
 
 	.strending__title-box {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
+		gap: 0.45rem;
+		min-width: 0;
 	}
 
 	.strending__badge {
@@ -738,15 +1668,15 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		align-items: center;
 		gap: 0.35rem;
 		align-self: flex-start;
-		padding: 0.25rem 0.65rem;
+		padding: 0.28rem 0.72rem;
 		border-radius: 9999px;
-		background: #ea580c;
+		background: #16a34a;
 		color: #ffffff;
-		font-size: 0.72rem;
+		font-size: 0.74rem;
 		font-weight: 800;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+		box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
 	}
 
 	.strending__badge-icon {
@@ -756,7 +1686,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	.strending__title {
 		margin: 0;
 		font-family: var(--font-titulos);
-		font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+		font-size: clamp(1.85rem, 3.4vw, 2.55rem);
 		font-weight: 850;
 		letter-spacing: -0.025em;
 		color: var(--ink);
@@ -764,8 +1694,213 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 
 	.strending__subtitle {
 		margin: 0;
-		font-size: 0.92rem;
+		font-size: 0.95rem;
 		color: color-mix(in srgb, var(--ink) 72%, transparent);
+	}
+
+	/* CONTROLES DEL CARRUSEL (PUNTOS Y FLECHAS PC) */
+	.strending__controls {
+		display: flex;
+		align-items: center;
+		gap: 1.15rem;
+	}
+
+	.strending__dots {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+
+	.strending__dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 9999px;
+		background: color-mix(in srgb, var(--ink) 24%, transparent);
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+		transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+
+	.strending__dot.is-active {
+		width: 24px;
+		background: #16a34a;
+		box-shadow: 0 0 12px rgba(22, 163, 74, 0.65);
+	}
+
+	.strending__arrows {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.strending__arrow-btn {
+		display: grid;
+		place-items: center;
+		width: 2.35rem;
+		height: 2.35rem;
+		border-radius: 50%;
+		border: 1.5px solid rgba(255, 255, 255, 0.22);
+		background: #0f172a;
+		color: #ffffff;
+		cursor: pointer;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+		transition:
+			transform 0.16s ease,
+			background 0.16s ease,
+			border-color 0.16s ease,
+			color 0.16s ease,
+			box-shadow 0.16s ease;
+	}
+
+	.strending__arrow-btn:hover {
+		transform: scale(1.08);
+		background: var(--color-primario, #facc15);
+		color: #0f172a;
+		border-color: var(--color-primario, #facc15);
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+	}
+
+	.strending__arrow-btn:active {
+		transform: scale(0.95);
+	}
+
+	/* VIEWPORT DEL CARRUSEL */
+	.strending__carousel {
+		position: relative;
+		width: 100%;
+		overflow: hidden;
+		user-select: none;
+		touch-action: pan-y;
+		cursor: grab;
+		padding: 0.4rem 0.15rem 0.85rem;
+		border-radius: var(--radius-lg);
+	}
+
+	.strending__carousel:active {
+		cursor: grabbing;
+	}
+
+	/* FLECHAS FLOTANTES LATERALES (PC) */
+	.strending__side-arrow {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 10;
+		display: grid;
+		place-items: center;
+		width: 2.85rem;
+		height: 2.85rem;
+		border-radius: 50%;
+		background: rgba(15, 23, 42, 0.88);
+		border: 1.5px solid rgba(255, 255, 255, 0.22);
+		color: #ffffff;
+		cursor: pointer;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(10px);
+		opacity: 0.92;
+		transition:
+			opacity 0.2s ease,
+			transform 0.2s ease,
+			background 0.2s ease,
+			box-shadow 0.2s ease,
+			color 0.2s ease;
+	}
+
+	.strending__side-arrow--prev {
+		left: 0.5rem;
+	}
+
+	.strending__side-arrow--next {
+		right: 0.5rem;
+	}
+
+	.strending__side-arrow:hover {
+		opacity: 1;
+		transform: translateY(-50%) scale(1.1);
+		background: var(--color-primario, #facc15);
+		color: #0f172a;
+		border-color: var(--color-primario, #facc15);
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+	}
+
+	.strending__side-arrow:active {
+		transform: translateY(-50%) scale(0.95);
+	}
+
+	/* TRACK DEL CARRUSEL */
+	.strending__track {
+		display: flex;
+		gap: 1.15rem;
+		width: max-content;
+		will-change: transform;
+	}
+
+	/* SLIDE INDIVIDUAL */
+	/* SLIDE INDIVIDUAL */
+	.strending__slide {
+		flex: 0 0 320px;
+		width: 320px;
+		max-width: 320px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.strending__slide :global(.scard) {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		border-radius: var(--radius-lg, 1.15rem);
+		border: 1.5px solid color-mix(in srgb, var(--line) 75%, #16a34a);
+		box-shadow: 0 12px 34px rgba(0, 0, 0, 0.14);
+		overflow: hidden;
+		transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+	}
+
+	.strending__slide :global(.scard:hover) {
+		transform: translateY(-5px);
+		border-color: #16a34a;
+		box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+	}
+
+	.strending__slide :global(.scard__media) {
+		background: var(--panel) !important;
+		aspect-ratio: 4 / 3;
+		max-height: 235px;
+		width: 100%;
+	}
+
+	.strending__slide :global(.scard__img) {
+		padding: 0.35rem;
+		object-fit: contain;
+	}
+
+	.strending__slide :global(.scard__body) {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		padding: 0.85rem 1.05rem 1rem;
+		gap: 0.4rem;
+	}
+
+	.strending__slide :global(.scard__name) {
+		font-size: 1.02rem;
+		font-weight: 750;
+		line-height: 1.25;
+	}
+
+	.strending__slide :global(.scard__price-now) {
+		font-size: 1.18rem;
+		font-weight: 850;
+	}
+
+	@media (min-width: 1280px) {
+		.strending__slide {
+			flex: 0 0 345px;
+			width: 345px;
+			max-width: 345px;
+		}
 	}
 
 	/* SECCIÓN CATÁLOGO */
@@ -792,7 +1927,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--color-primario, #fff700) !important;
-		text-shadow: 0 1px 8px color-mix(in srgb, var(--color-primario, #fff700) 25%, transparent);
+		text-shadow: 0 1px 8px
+			color-mix(in srgb, var(--color-primario, #fff700) 25%, transparent);
 	}
 
 	.ssec__title {
@@ -999,7 +2135,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		transition: transform 0.22s ease;
 	}
 
-	.sfilter-accordion-btn[aria-expanded="true"] .sfilter-accordion-btn__chevron {
+	.sfilter-accordion-btn[aria-expanded="true"]
+		.sfilter-accordion-btn__chevron {
 		transform: rotate(180deg);
 	}
 
@@ -1086,7 +2223,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		border-color: #0f172a !important;
 		font-weight: 900 !important;
 		box-shadow: 0 3px 12px rgba(15, 23, 42, 0.35);
-		text-shadow: 0 0 6px color-mix(in srgb, var(--color-primario, #fff700) 45%, transparent);
+		text-shadow: 0 0 6px
+			color-mix(in srgb, var(--color-primario, #fff700) 45%, transparent);
 	}
 
 	.sfilter-custom-price {
@@ -1154,6 +2292,107 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		border-color: #ef4444 !important;
 	}
 
+	/* SECCIONES POR CATEGORÍA */
+	.scatlist {
+		display: flex;
+		flex-direction: column;
+		gap: 3rem;
+	}
+	.scat[hidden] {
+		display: none;
+	}
+	.scat {
+		scroll-margin-top: 5rem;
+	}
+	.scat__head {
+		position: relative;
+		isolation: isolate;
+		overflow: hidden;
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 1rem;
+		min-height: 11rem;
+		padding: 1.5rem 1.75rem;
+		margin-bottom: 1.5rem;
+		border-radius: 1.5rem;
+		color: #fff;
+		background: linear-gradient(135deg, var(--color-primario, #4f46e5), var(--color-secundario, #9333ea));
+		box-shadow: 0 14px 34px -12px rgba(0, 0, 0, 0.35);
+	}
+	.scat__head--noimg {
+		min-height: 7rem;
+		align-items: center;
+	}
+	.scat__bg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		z-index: -2;
+		transition: transform 0.8s ease;
+	}
+	.scat__head:hover .scat__bg {
+		transform: scale(1.06);
+	}
+	.scat__overlay {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background:
+			linear-gradient(90deg, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0.1) 100%),
+			linear-gradient(0deg, rgba(0, 0, 0, 0.45), transparent 60%);
+	}
+	.scat__head--noimg .scat__overlay {
+		background: radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.22), transparent 55%);
+	}
+	.scat__info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+	.scat__kicker {
+		align-self: flex-start;
+		padding: 0.2rem 0.65rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.2);
+		backdrop-filter: blur(6px);
+		border: 1px solid rgba(255, 255, 255, 0.35);
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+	.scat__title {
+		margin: 0;
+		font-size: clamp(1.7rem, 5vw, 2.8rem);
+		font-weight: 900;
+		line-height: 1.05;
+		letter-spacing: -0.02em;
+		text-shadow: 0 3px 16px rgba(0, 0, 0, 0.45);
+	}
+	.scat__count {
+		flex-shrink: 0;
+		padding: 0.45rem 0.95rem;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.95);
+		color: #111;
+		font-size: 0.8rem;
+		font-weight: 800;
+		box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+	}
+	@media (max-width: 600px) {
+		.scat__head {
+			min-height: 9rem;
+			padding: 1.1rem;
+			border-radius: 1.15rem;
+			flex-direction: column;
+			align-items: flex-start;
+		}
+	}
+
 	/* GRIDS DE PRODUCTOS */
 	.sgrid {
 		display: grid;
@@ -1188,6 +2427,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		margin: 0;
 		font-size: 1.2rem;
 		font-weight: 800;
+		color: var(--accent-ink);
 	}
 
 	.ssec__empty-text {
@@ -1195,6 +2435,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		font-size: 0.9rem;
 		color: color-mix(in srgb, var(--ink) 65%, transparent);
 		max-width: 25rem;
+		color: var(--accent-ink);
 	}
 
 	.ssec__empty-btn {
@@ -1207,7 +2448,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		font-size: 0.85rem;
 		font-weight: 750;
 		cursor: pointer;
-		box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+		box-shadow: 0 4px 14px
+			color-mix(in srgb, var(--accent) 30%, transparent);
 		transition: transform 0.15s ease;
 	}
 
@@ -1219,6 +2461,216 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		.smain {
 			margin-left: 0;
 			padding-top: var(--store-bar-h);
+		}
+
+		/* COMPORTAMIENTO MÓVIL: Head + Ticker + Tendencias con scroll natural y espacio desahogado */
+		.shero {
+			min-height: calc(100vh - var(--store-bar-h));
+			min-height: calc(100dvh - var(--store-bar-h));
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			flex-shrink: 0;
+			position: relative;
+		}
+
+		.shero :global(.shead) {
+			flex-shrink: 0;
+			padding: clamp(0.45rem, 1.5vh, 0.85rem) 1rem;
+		}
+
+		.shero :global(.sticker) {
+			flex-shrink: 0;
+		}
+
+		.shero .strending {
+			flex: 1 1 auto;
+			min-height: calc(100vh - var(--store-bar-h));
+			min-height: calc(100dvh - var(--store-bar-h));
+			box-sizing: border-box;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			padding: clamp(0.65rem, 1.8vh, 1rem) clamp(0.65rem, 3vw, 1rem);
+			border-bottom: 1px solid var(--line);
+			scroll-margin-top: var(--store-bar-h);
+		}
+
+		.shero .strending__inner {
+			flex: 1 1 auto;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			width: 100%;
+			height: 100%;
+		}
+
+		.shero .strending__head {
+			margin-top: 0.15rem;
+			margin-bottom: clamp(0.35rem, 1vh, 0.6rem);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.5rem;
+			flex-shrink: 0;
+		}
+
+		.shero .strending__title-box {
+			display: flex;
+			align-items: center;
+			gap: 0.55rem;
+			flex-direction: row;
+			flex-wrap: wrap;
+		}
+
+		.shero .strending__badge {
+			padding: 0.22rem 0.55rem;
+			font-size: 0.68rem;
+			gap: 0.28rem;
+			background: #16a34a !important;
+			box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4) !important;
+		}
+
+		.shero .strending__title {
+			font-size: clamp(2rem, 9vw, 2.6rem);
+			font-weight: 900;
+			line-height: 1.1;
+			flex: 1 1 100%;
+			width: 100%;
+		}
+
+		.shero .strending__subtitle {
+			display: none !important;
+		}
+
+		.shero .strending__controls {
+			margin: 0;
+		}
+
+		/* En móvil se ocultan las flechas (el usuario mueve el carrusel con el dedo) */
+		.strending__side-arrow,
+		.strending__arrows {
+			display: none !important;
+		}
+
+		.strending__carousel {
+			flex: 1 1 auto;
+			min-height: 0;
+			display: flex;
+			align-items: stretch;
+			padding: 0.2rem 0;
+			overflow: hidden;
+			touch-action: pan-y;
+		}
+
+		.strending__track {
+			display: grid !important;
+			grid-template-rows: repeat(2, 1fr) !important;
+			grid-auto-flow: column !important;
+			grid-auto-columns: clamp(160px, 46vw, 215px) !important;
+			gap: 0.6rem 0.75rem !important;
+			align-items: stretch;
+			height: 100%;
+			min-height: 0;
+			width: max-content;
+		}
+
+		.strending__slide {
+			width: auto !important;
+			max-width: none !important;
+			flex: none !important;
+			height: 100%;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.strending__slide :global(.scard) {
+			height: 100%;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			border-radius: 1rem;
+			border: 1.5px solid color-mix(in srgb, var(--line) 75%, #16a34a);
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+			background: var(--panel) !important;
+			overflow: hidden;
+		}
+
+		.strending__slide :global(.scard__media) {
+			flex: 0 0 auto;
+			aspect-ratio: 16 / 10 !important;
+			max-height: clamp(85px, 15vh, 135px) !important;
+			background: var(--panel) !important;
+			width: 100%;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.strending__slide :global(.scard__img) {
+			padding: 0.25rem;
+			object-fit: contain;
+		}
+
+		.strending__slide :global(.scard__body) {
+			flex: 1 1 auto;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			padding: 0.5rem 0.65rem 0.6rem;
+			gap: 0.2rem;
+		}
+
+		.strending__slide :global(.scard__cat) {
+			font-size: 0.64rem;
+			margin: 0;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.strending__slide :global(.scard__name) {
+			font-size: 0.8rem;
+			font-weight: 750;
+			line-height: 1.2;
+			margin: 0;
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+			min-height: calc(0.8rem * 1.2 * 2);
+		}
+
+		.strending__slide :global(.scard__foot) {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.35rem;
+			margin-top: auto;
+		}
+
+		.strending__slide :global(.scard__price) {
+			display: flex;
+			flex-direction: column;
+			gap: 0.1rem;
+		}
+
+		.strending__slide :global(.scard__price-now) {
+			font-size: 0.95rem;
+			font-weight: 850;
+			line-height: 1.1;
+		}
+
+		.strending__slide :global(.scard__price-old) {
+			font-size: 0.72rem;
+		}
+
+		.strending__slide :global(.scard__quick-add-btn) {
+			width: 2rem;
+			height: 2rem;
+			flex-shrink: 0;
 		}
 
 		.sfilter-bar {
@@ -1240,16 +2692,11 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
 			gap: 0.85rem;
 		}
-
-		.sgrid--trending {
-			grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-		}
 	}
 
 	/* RESPONSIVE MÓVIL: 2 Columnas y Lupa Sticky con Modal de Filtros */
 	@media (max-width: 768px) {
-		.ssec,
-		.strending {
+		.ssec {
 			padding: 1.5rem clamp(0.65rem, 3vw, 1.25rem) 1.5rem;
 		}
 
@@ -1257,8 +2704,7 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			margin-bottom: 0.85rem;
 		}
 
-		.sgrid,
-		.sgrid--trending {
+		.sgrid {
 			grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 			gap: 0.65rem;
 		}
@@ -1287,7 +2733,10 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			place-items: center;
 			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
 			cursor: pointer;
-			transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+			transition:
+				transform 0.15s ease,
+				background 0.15s ease,
+				box-shadow 0.15s ease;
 		}
 
 		.sfilter-mobile-lupa-btn:active {
@@ -1339,7 +2788,8 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3) !important;
 			overflow-y: auto;
 			-webkit-overflow-scrolling: touch;
-			padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
+			padding: 1.25rem 1.25rem
+				calc(1.25rem + env(safe-area-inset-bottom, 0px)) !important;
 			margin-bottom: 0 !important;
 			animation: slideUpMobile 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 		}
@@ -1401,7 +2851,9 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 			cursor: pointer;
 			box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
 			text-align: center;
-			transition: transform 0.15s ease, background 0.15s ease;
+			transition:
+				transform 0.15s ease,
+				background 0.15s ease;
 		}
 
 		.sfilter-modal-apply-btn:active {
@@ -1410,14 +2862,12 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	}
 
 	@media (max-width: 360px) {
-		.ssec,
-		.strending {
+		.ssec {
 			padding-left: 0.5rem;
 			padding-right: 0.5rem;
 		}
 
-		.sgrid,
-		.sgrid--trending {
+		.sgrid {
 			gap: 0.5rem;
 		}
 	}
@@ -1599,7 +3049,9 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 		font-size: 0.78rem !important;
 		font-weight: 750 !important;
 		text-decoration: none !important;
-		transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease !important;
 		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
 	}
 
@@ -1615,7 +3067,12 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 	}
 
 	:global(.sfoot__social-btn--ig) {
-		background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045) !important;
+		background: linear-gradient(
+			135deg,
+			#833ab4,
+			#fd1d1d,
+			#fcb045
+		) !important;
 		color: #ffffff !important;
 		border: 1px solid rgba(0, 0, 0, 0.08) !important;
 	}
@@ -1664,23 +3121,6 @@ const productosTendencia = tendencias.length > 0 ? tendencias : activos.slice(0,
 
 	:global(.sfoot__copy strong) {
 		color: #0f172a !important;
-	}
-
-	:global(.sfoot__status) {
-		display: inline-flex !important;
-		align-items: center !important;
-		gap: 0.45rem !important;
-		font-weight: 750 !important;
-		color: #16a34a !important;
-	}
-
-	:global(.sfoot__status-dot) {
-		width: 7px !important;
-		height: 7px !important;
-		border-radius: 50% !important;
-		background: #16a34a !important;
-		box-shadow: 0 0 8px #22c55e !important;
-		display: inline-block !important;
 	}
 
 	@media (max-width: 860px) {

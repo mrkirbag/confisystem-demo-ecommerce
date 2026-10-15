@@ -1,12 +1,1234 @@
 ---
-import AdminLayout from '@/layouts/AdminLayout.astro';
-import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import AdminSectionHeader from "@/components/admin/AdminSectionHeader.astro";
+import {
+	getEstadisticasVentas,
+	formatPrecio,
+	formatFechaCorta,
+} from "@/lib/pedidos";
 
 export const prerender = false;
+
+const stats = await getEstadisticasVentas();
+
+const tablas = [
+	{
+		id: "tab-confirmadas",
+		titulo: "Ventas aprobadas",
+		badge: "Aprobada / Confirmada",
+		badgeClass: "is-success",
+		resumen: `Total facturado: ${formatPrecio(stats.montoConfirmadas)}`,
+		montoLabel: "Monto cobrado",
+		vacio: "Aún no hay ventas confirmadas.",
+		filas: stats.ultimasConfirmadas,
+	},
+	{
+		id: "tab-pendientes",
+		titulo: "Ventas pendientes",
+		badge: "Pendiente",
+		badgeClass: "is-warning",
+		resumen: `Stock retenido por ${formatPrecio(stats.montoPendientes)}`,
+		montoLabel: "Total pendiente",
+		vacio: "No hay pedidos pendientes en espera.",
+		filas: stats.ultimasPendientes,
+	},
+	{
+		id: "tab-canceladas",
+		titulo: "Ventas canceladas",
+		badge: "Cancelada",
+		badgeClass: "is-danger",
+		resumen: `Stock devuelto por ${formatPrecio(stats.montoCanceladas)}`,
+		montoLabel: "Monto cancelado",
+		vacio: "No hay ventas canceladas.",
+		filas: stats.ultimasCanceladas,
+	},
+];
+
+// Datos serializados para los gráficos de ApexCharts
+const chartFlujoData = {
+	categories: stats.flujoAprobadas.map((p) => p.label || p.fecha),
+	series: stats.flujoAprobadas.map((p) => Number(p.monto.toFixed(2))),
+	counts: stats.flujoAprobadas.map((p) => p.cantidad),
+};
+
+const chartTopProductosData = {
+	categories: stats.masVendidos
+		.slice(0, 7)
+		.map((p) =>
+			p.nombre.length > 20 ? p.nombre.slice(0, 18) + "…" : p.nombre,
+		),
+	fullNames: stats.masVendidos.slice(0, 7).map((p) => p.nombre),
+	series: stats.masVendidos.slice(0, 7).map((p) => p.unidades_vendidas),
+	montos: stats.masVendidos
+		.slice(0, 7)
+		.map((p) => formatPrecio(p.monto_total)),
+};
+
+const chartDonutData = {
+	series: [
+		stats.totalConfirmadas,
+		stats.totalPendientes,
+		stats.totalCanceladas,
+	],
+	labels: ["Aprobadas", "Pendientes", "Canceladas"],
+	colors: ["#10b981", "#f59e0b", "#ef4444"],
+};
 ---
 
-<AdminLayout title="Estadísticas">
-	<section>
-		<AdminSectionHeader title="Estadísticas" kicker="Reportes" />
+<AdminLayout title="Estadísticas de Ventas">
+	<section class="orders-page stats-dashboard" data-stats-page>
+		<div class="stats-header-bar">
+			<AdminSectionHeader
+				title="Estadísticas de Ventas"
+				kicker="Reportes y Rendimiento"
+			/>
+			<div
+				class="stats-header-actions"
+				style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;"
+			>
+				<button
+					id="btn-print-stats"
+					type="button"
+					class="admin-btn admin-btn--ghost admin-btn--icon-label"
+					title="Imprimir reporte de estadísticas"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+						style="width:1rem;height:1rem;"
+					>
+						<polyline points="6 9 6 2 18 2 18 9"></polyline>
+						<path
+							d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+						></path>
+						<rect x="6" y="14" width="12" height="8"></rect>
+					</svg>
+					Imprimir reporte
+				</button>
+				<a
+					href="/admin/pedidos"
+					class="admin-btn admin-btn--ghost admin-btn--icon-label"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+						style="width:1rem;height:1rem;"
+					>
+						<rect x="3" y="3" width="7" height="7"></rect>
+						<rect x="14" y="3" width="7" height="7"></rect>
+						<rect x="14" y="14" width="7" height="7"></rect>
+						<rect x="3" y="14" width="7" height="7"></rect>
+					</svg>
+					Ir a gestión de pedidos
+				</a>
+			</div>
+		</div>
+
+		<!-- KPIs Principales -->
+		<div class="orders-kpis stats-kpis-grid">
+			<div class="orders-kpi orders-kpi--ok">
+				<span class="orders-kpi__label">Ingresos Confirmados</span>
+				<strong class="orders-kpi__value"
+					>{formatPrecio(stats.montoConfirmadas)}</strong
+				>
+				<span class="orders-kpi__hint">
+					{stats.totalConfirmadas}
+					{
+						stats.totalConfirmadas === 1
+							? "venta aprobada"
+							: "ventas aprobadas"
+					}
+				</span>
+			</div>
+			<div class="orders-kpi orders-kpi--warn">
+				<span class="orders-kpi__label">Monto en Espera</span>
+				<strong class="orders-kpi__value"
+					>{formatPrecio(stats.montoPendientes)}</strong
+				>
+				<span class="orders-kpi__hint">
+					{stats.totalPendientes}
+					{
+						stats.totalPendientes === 1
+							? "pedido pendiente"
+							: "pedidos pendientes"
+					}
+				</span>
+			</div>
+			<div class="orders-kpi orders-kpi--bad">
+				<span class="orders-kpi__label">Monto Cancelado</span>
+				<strong class="orders-kpi__value"
+					>{formatPrecio(stats.montoCanceladas)}</strong
+				>
+				<span class="orders-kpi__hint">
+					{stats.totalCanceladas}
+					{
+						stats.totalCanceladas === 1
+							? "pedido cancelado"
+							: "pedidos cancelados"
+					}
+				</span>
+			</div>
+			<div class="orders-kpi orders-kpi--info">
+				<span class="orders-kpi__label">Ticket Promedio</span>
+				<strong class="orders-kpi__value"
+					>{formatPrecio(stats.ticketPromedio)}</strong
+				>
+				<span class="orders-kpi__hint"
+					>Tasa de efectividad: {stats.tasaEfectividad}%</span
+				>
+			</div>
+		</div>
+
+		<!-- Sección de Gráficos Interactivos con ApexCharts -->
+		<div class="stats-charts-grid">
+			<!-- Gráfico 1: Flujo de Dinero de Ventas Aprobadas (Ancho completo arriba) -->
+			<div
+				class="order-card-panel stats-chart-card stats-chart-card--full"
+			>
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Flujo de Dinero (Ventas Aprobadas)
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Ingresos generados por ventas cobradas y aprobadas
+							en el tiempo.
+						</p>
+					</div>
+					<span class="stats-chart-pill"
+						>{formatPrecio(stats.montoConfirmadas)} total facturado</span
+					>
+				</div>
+				<div class="stats-chart-container">
+					{
+						stats.flujoAprobadas.length === 0 ? (
+							<div class="stats-empty-chart">
+								Aún no hay historial de ventas aprobadas para
+								graficar.
+							</div>
+						) : (
+							<div
+								id="chart-flujo-ventas"
+								class="apex-chart-target"
+							/>
+						)
+					}
+				</div>
+			</div>
+
+			<!-- Gráfico 2: Top Productos Más Vendidos (Columna izquierda) -->
+			<div
+				class="order-card-panel stats-chart-card stats-chart-card--half"
+			>
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Top Productos Más Vendidos
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Ranking de unidades despachadas en pedidos
+							confirmados.
+						</p>
+					</div>
+				</div>
+				<div class="stats-chart-container">
+					{
+						stats.masVendidos.length === 0 ? (
+							<div class="stats-empty-chart">
+								No hay registros de productos vendidos en
+								compras aprobadas.
+							</div>
+						) : (
+							<div
+								id="chart-top-productos"
+								class="apex-chart-target"
+							/>
+						)
+					}
+				</div>
+			</div>
+
+			<!-- Gráfico 3: Distribución de Estados de Pedidos (Columna derecha) -->
+			<div
+				class="order-card-panel stats-chart-card stats-chart-card--half"
+			>
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Distribución de Ventas
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Proporción de pedidos según su estado actual.
+						</p>
+					</div>
+				</div>
+				<div class="stats-chart-container stats-chart-container--donut">
+					{
+						stats.totalConfirmadas +
+							stats.totalPendientes +
+							stats.totalCanceladas ===
+						0 ? (
+							<div class="stats-empty-chart">
+								Sin pedidos registrados.
+							</div>
+						) : (
+							<div
+								id="chart-donut-estados"
+								class="apex-chart-target"
+							/>
+						)
+					}
+				</div>
+			</div>
+		</div>
+
+		<!-- Sección: Tablas de Inventario Crítico (Baja Existencia y Agotados) -->
+		<div class="stats-inventory-grid">
+			<!-- Tarjeta: Productos Agotados -->
+			<div
+				class="order-card-panel stats-inventory-card stats-inventory-card--danger"
+			>
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Productos Agotados (0 stock)
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Ítems que no tienen inventario disponible para la
+							venta.
+						</p>
+					</div>
+					<span class="order-badge is-danger"
+						>{stats.agotados.length}</span
+					>
+				</div>
+
+				{
+					stats.agotados.length === 0 ? (
+						<div class="admin-empty" style="padding: 1.5rem 1rem;">
+							<p
+								class="admin-empty__text"
+								style="font-size: 0.9rem;"
+							>
+								Excelente: no tienes productos con stock en 0.
+							</p>
+						</div>
+					) : (
+						<div
+							class="stats-collapsible-wrapper"
+							data-expand-group="agotados"
+						>
+							<div class="admin-table-wrap stats-mini-table-wrap">
+								<table class="admin-table admin-table--simple">
+									<thead>
+										<tr>
+											<th>Producto</th>
+											<th>Variante</th>
+											<th>SKU</th>
+											<th>Stock</th>
+										</tr>
+									</thead>
+									<tbody>
+										{stats.agotados.map((p, idx) => (
+											<tr
+												class={
+													idx >= 5
+														? "stats-row-extra is-hidden"
+														: ""
+												}
+											>
+												<td>
+													<span class="admin-table__name">
+														{p.nombre}
+													</span>
+												</td>
+												<td>
+													<span class="admin-table__meta">
+														{p.combinacion}
+													</span>
+												</td>
+												<td>
+													<code>{p.sku || "—"}</code>
+												</td>
+												<td>
+													<span class="stats-stock-badge is-zero">
+														0 uds.
+													</span>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+							{stats.agotados.length > 5 && (
+								<div class="stats-table-footer-action">
+									<button
+										type="button"
+										class="stats-toggle-expand-btn"
+										data-expand-trigger="agotados"
+										data-total={stats.agotados.length}
+									>
+										Ver todo ({stats.agotados.length})
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.5"
+										>
+											<path d="m6 9 6 6 6-6" />
+										</svg>
+									</button>
+								</div>
+							)}
+						</div>
+					)
+				}
+			</div>
+
+			<!-- Tarjeta: Productos con Baja Existencia -->
+			<div
+				class="order-card-panel stats-inventory-card stats-inventory-card--warning"
+			>
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Baja Existencia (1 a 5 unidades)
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Inventario crítico próximo a agotarse.
+						</p>
+					</div>
+					<span class="order-badge is-warning"
+						>{stats.bajaExistencia.length}</span
+					>
+				</div>
+
+				{
+					stats.bajaExistencia.length === 0 ? (
+						<div class="admin-empty" style="padding: 1.5rem 1rem;">
+							<p
+								class="admin-empty__text"
+								style="font-size: 0.9rem;"
+							>
+								No hay productos con baja existencia en este
+								momento.
+							</p>
+						</div>
+					) : (
+						<div
+							class="stats-collapsible-wrapper"
+							data-expand-group="baja-existencia"
+						>
+							<div class="admin-table-wrap stats-mini-table-wrap">
+								<table class="admin-table admin-table--simple">
+									<thead>
+										<tr>
+											<th>Producto</th>
+											<th>Variante</th>
+											<th>SKU</th>
+											<th>Stock</th>
+										</tr>
+									</thead>
+									<tbody>
+										{stats.bajaExistencia.map((p, idx) => (
+											<tr
+												class={
+													idx >= 5
+														? "stats-row-extra is-hidden"
+														: ""
+												}
+											>
+												<td>
+													<span class="admin-table__name">
+														{p.nombre}
+													</span>
+												</td>
+												<td>
+													<span class="admin-table__meta">
+														{p.combinacion}
+													</span>
+												</td>
+												<td>
+													<code>{p.sku || "—"}</code>
+												</td>
+												<td>
+													<span class="stats-stock-badge is-low">
+														{p.stock} uds.
+													</span>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+							{stats.bajaExistencia.length > 5 && (
+								<div class="stats-table-footer-action">
+									<button
+										type="button"
+										class="stats-toggle-expand-btn"
+										data-expand-trigger="baja-existencia"
+										data-total={stats.bajaExistencia.length}
+									>
+										Ver todo ({stats.bajaExistencia.length})
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.5"
+										>
+											<path d="m6 9 6 6 6-6" />
+										</svg>
+									</button>
+								</div>
+							)}
+						</div>
+					)
+				}
+			</div>
+		</div>
+
+		<!-- Sección: Productos Más Vendidos vs Menos Vendidos (Tablas comparativas) -->
+		<div class="stats-inventory-grid">
+			<div class="order-card-panel">
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Ranking: Más Vendidos
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Mayor rotación en ventas aprobadas.
+						</p>
+					</div>
+					<span class="order-badge is-info"
+						>{stats.masVendidos.length}</span
+					>
+				</div>
+
+				{
+					stats.masVendidos.length === 0 ? (
+						<div class="admin-empty" style="padding: 1.5rem 1rem;">
+							<p class="admin-empty__text">
+								Sin ventas registradas aún.
+							</p>
+						</div>
+					) : (
+						<div
+							class="stats-collapsible-wrapper"
+							data-expand-group="mas-vendidos"
+						>
+							<div class="admin-table-wrap stats-mini-table-wrap">
+								<table class="admin-table admin-table--simple">
+									<thead>
+										<tr>
+											<th>Producto</th>
+											<th>Vendidos</th>
+											<th>Facturado</th>
+											<th>Stock Disp.</th>
+										</tr>
+									</thead>
+									<tbody>
+										{stats.masVendidos.map((p, idx) => (
+											<tr
+												class={
+													idx >= 5
+														? "stats-row-extra is-hidden"
+														: ""
+												}
+											>
+												<td>
+													<div
+														class="order-item-prod"
+														style="min-width:auto;"
+													>
+														{p.imagen_url ? (
+															<img
+																class="order-item-thumb"
+																src={
+																	p.imagen_url
+																}
+																alt=""
+																style="width:2.2rem;height:2.2rem;"
+															/>
+														) : (
+															<span
+																class="order-item-thumb"
+																style="width:2.2rem;height:2.2rem;font-size:0.75rem;"
+															>
+																{p.nombre
+																	.slice(0, 2)
+																	.toUpperCase()}
+															</span>
+														)}
+														<span class="admin-table__name">
+															{p.nombre}
+														</span>
+													</div>
+												</td>
+												<td>
+													<strong class="stats-highlight-count">
+														{p.unidades_vendidas}{" "}
+														uds.
+													</strong>
+												</td>
+												<td class="order-money">
+													{formatPrecio(
+														p.monto_total,
+													)}
+												</td>
+												<td>
+													<span class="admin-table__meta">
+														{p.stock_actual} en
+														stock
+													</span>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+							{stats.masVendidos.length > 5 && (
+								<div class="stats-table-footer-action">
+									<button
+										type="button"
+										class="stats-toggle-expand-btn"
+										data-expand-trigger="mas-vendidos"
+										data-total={stats.masVendidos.length}
+									>
+										Ver todo ({stats.masVendidos.length})
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.5"
+										>
+											<path d="m6 9 6 6 6-6" />
+										</svg>
+									</button>
+								</div>
+							)}
+						</div>
+					)
+				}
+			</div>
+
+			<div class="order-card-panel">
+				<div class="order-card-panel__head">
+					<div>
+						<h2 class="order-card-panel__title">
+							Ranking: Menos Vendidos
+						</h2>
+						<p
+							class="order-card-panel__text"
+							style="margin: 0.25rem 0 0 0.75rem;"
+						>
+							Productos activos con menor demanda o sin rotación.
+						</p>
+					</div>
+					<span class="order-badge">{stats.menosVendidos.length}</span
+					>
+				</div>
+
+				{
+					stats.menosVendidos.length === 0 ? (
+						<div class="admin-empty" style="padding: 1.5rem 1rem;">
+							<p class="admin-empty__text">
+								No hay productos registrados en el catálogo.
+							</p>
+						</div>
+					) : (
+						<div
+							class="stats-collapsible-wrapper"
+							data-expand-group="menos-vendidos"
+						>
+							<div class="admin-table-wrap stats-mini-table-wrap">
+								<table class="admin-table admin-table--simple">
+									<thead>
+										<tr>
+											<th>Producto</th>
+											<th>Vendidos</th>
+											<th>Facturado</th>
+											<th>Stock Disp.</th>
+										</tr>
+									</thead>
+									<tbody>
+										{stats.menosVendidos.map((p, idx) => (
+											<tr
+												class={
+													idx >= 5
+														? "stats-row-extra is-hidden"
+														: ""
+												}
+											>
+												<td>
+													<div
+														class="order-item-prod"
+														style="min-width:auto;"
+													>
+														{p.imagen_url ? (
+															<img
+																class="order-item-thumb"
+																src={
+																	p.imagen_url
+																}
+																alt=""
+																style="width:2.2rem;height:2.2rem;"
+															/>
+														) : (
+															<span
+																class="order-item-thumb"
+																style="width:2.2rem;height:2.2rem;font-size:0.75rem;"
+															>
+																{p.nombre
+																	.slice(0, 2)
+																	.toUpperCase()}
+															</span>
+														)}
+														<span class="admin-table__name">
+															{p.nombre}
+														</span>
+													</div>
+												</td>
+												<td>
+													<span class="admin-table__meta">
+														{p.unidades_vendidas}{" "}
+														uds.
+													</span>
+												</td>
+												<td class="order-money">
+													{formatPrecio(
+														p.monto_total,
+													)}
+												</td>
+												<td>
+													<span class="admin-table__meta">
+														{p.stock_actual} en
+														stock
+													</span>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+							{stats.menosVendidos.length > 5 && (
+								<div class="stats-table-footer-action">
+									<button
+										type="button"
+										class="stats-toggle-expand-btn"
+										data-expand-trigger="menos-vendidos"
+										data-total={stats.menosVendidos.length}
+									>
+										Ver todo ({stats.menosVendidos.length})
+										<svg
+											width="14"
+											height="14"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2.5"
+										>
+											<path d="m6 9 6 6 6-6" />
+										</svg>
+									</button>
+								</div>
+							)}
+						</div>
+					)
+				}
+			</div>
+		</div>
+
+		<!-- Sección: Listas de Ventas (Aprobadas, Pendientes y Canceladas) -->
+		<div class="order-card-panel" style="margin-top: 1.5rem;">
+			<div class="order-card-panel__head">
+				<div>
+					<h2 class="order-card-panel__title">Historial de Ventas</h2>
+					<p
+						class="order-card-panel__text"
+						style="margin: 0.25rem 0 0 0.75rem;"
+					>
+						Consulta detallada de pedidos clasificados por su
+						estado.
+					</p>
+				</div>
+			</div>
+
+			<div
+				class="orders-toolbar stats-tabs"
+				style="margin-bottom: 1.25rem;"
+			>
+				<div class="admin-toolbar__seg" role="tablist">
+					<button
+						type="button"
+						class="is-on"
+						data-tab="tab-confirmadas"
+					>
+						Aprobadas ({stats.totalConfirmadas})
+					</button>
+					<button type="button" data-tab="tab-pendientes">
+						Pendientes ({stats.totalPendientes})
+					</button>
+					<button type="button" data-tab="tab-canceladas">
+						Canceladas ({stats.totalCanceladas})
+					</button>
+				</div>
+			</div>
+
+			{
+				tablas.map((t, i) => (
+					<div id={t.id} data-tab-content hidden={i !== 0}>
+						<div class="stats-table-header-sub">
+							<span class:list={["order-badge", t.badgeClass]}>
+								{t.badge}
+							</span>
+							<span class="admin-badge admin-badge--operador">
+								{t.resumen}
+							</span>
+						</div>
+
+						{t.filas.length === 0 ? (
+							<div class="admin-empty">
+								<p class="admin-empty__text">{t.vacio}</p>
+							</div>
+						) : (
+							<div class="admin-table-wrap">
+								<table class="admin-table">
+									<thead>
+										<tr>
+											<th>Código</th>
+											<th>Fecha</th>
+											<th>Cliente</th>
+											<th>Productos</th>
+											<th>{t.montoLabel}</th>
+											<th class="admin-table__th-actions">
+												<span class="sr-only">
+													Acción
+												</span>
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										{t.filas.map((venta) => (
+											<tr>
+												<td>
+													<span class="admin-table__name">
+														#{venta.codigo}
+													</span>
+												</td>
+												<td>
+													{formatFechaCorta(
+														venta.creado_en,
+													)}
+												</td>
+												<td>
+													<div class="admin-table__identity">
+														<span class="admin-table__name">
+															{
+																venta.cliente_nombre
+															}
+														</span>
+														<span class="admin-table__meta">
+															{
+																venta.cliente_telefono
+															}
+														</span>
+													</div>
+												</td>
+												<td>
+													{venta.items_resumen ||
+														`${venta.total_items} productos`}
+												</td>
+												<td class="order-money">
+													{formatPrecio(venta.total)}
+												</td>
+												<td class="admin-table__td-actions">
+													<a
+														href={`/admin/pedidos/${venta.id}`}
+														class="admin-btn admin-btn--ghost admin-btn--icon-label"
+													>
+														Ver detalle
+													</a>
+												</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							</div>
+						)}
+					</div>
+				))
+			}
+		</div>
 	</section>
 </AdminLayout>
+
+<script
+	is:inline
+	define:vars={{
+		chartFlujoData,
+		chartTopProductosData,
+		chartDonutData,
+	}}
+>
+	window.__STATS_CHARTS_DATA__ = {
+		chartFlujoData,
+		chartTopProductosData,
+		chartDonutData,
+	};
+</script>
+
+<script>
+	import ApexCharts from "apexcharts";
+
+	function initStatsPage() {
+		const page = document.querySelector("[data-stats-page]") as HTMLElement;
+		if (!page) return;
+
+		const statsData = (window as any).__STATS_CHARTS_DATA__ || {};
+		const chartFlujoData = statsData.chartFlujoData || {
+			categories: [],
+			series: [],
+			counts: [],
+		};
+		const chartTopProductosData = statsData.chartTopProductosData || {
+			categories: [],
+			series: [],
+			montos: [],
+			fullNames: [],
+		};
+		const chartDonutData = statsData.chartDonutData || {
+			series: [],
+			labels: [],
+			colors: [],
+		};
+
+		// Pestañas de tablas
+		const tabs = page.querySelectorAll<HTMLElement>("[data-tab]");
+		const contents = page.querySelectorAll<HTMLElement>("[data-tab-content]");
+
+		tabs.forEach((tab) => {
+			tab.addEventListener("click", () => {
+				tabs.forEach((t) => t.classList.toggle("is-on", t === tab));
+				contents.forEach((c) => {
+					c.hidden = c.id !== tab.dataset.tab;
+				});
+			});
+		});
+
+		// 1. Gráfico de Flujo de Dinero (Área con degradado)
+		const flujoEl = document.getElementById("chart-flujo-ventas");
+		if (flujoEl && chartFlujoData.categories.length > 0) {
+			const optionsFlujo = {
+				chart: {
+					type: "area",
+					height: 290,
+					toolbar: { show: false },
+					zoom: { enabled: false },
+					fontFamily: "inherit",
+					background: "transparent",
+				},
+				theme: { mode: "light" },
+				colors: ["#00e396"],
+				stroke: { curve: "smooth", width: 3 },
+				fill: {
+					type: "gradient",
+					gradient: {
+						shadeIntensity: 1,
+						opacityFrom: 0.55,
+						opacityTo: 0.08,
+						stops: [0, 90, 100],
+					},
+				},
+				dataLabels: { enabled: false },
+				series: [
+					{
+						name: "Ventas Aprobadas ($)",
+						data: chartFlujoData.series,
+					},
+				],
+				xaxis: {
+					categories: chartFlujoData.categories,
+					labels: {
+						style: {
+							colors: "#0f172a",
+							fontSize: "11px",
+							fontWeight: 600,
+						},
+					},
+					axisBorder: { show: false },
+					axisTicks: { show: false },
+				},
+				yaxis: {
+					labels: {
+						style: {
+							colors: "#0f172a",
+							fontSize: "11px",
+							fontWeight: 600,
+						},
+						formatter: (val: any) =>
+							"$" +
+							Number(val).toLocaleString("en-US", {
+								minimumFractionDigits: 0,
+							}),
+					},
+				},
+				grid: {
+					borderColor: "rgba(0, 0, 0, 0.08)",
+					strokeDashArray: 4,
+				},
+				tooltip: {
+					theme: "light",
+					y: {
+						formatter: (val: any, opt?: any) => {
+							const idx = opt?.dataPointIndex ?? 0;
+							const cant = chartFlujoData.counts[idx] || 0;
+							return `$${Number(val).toFixed(2)} (${cant} ${cant === 1 ? "pedido" : "pedidos"})`;
+						},
+					},
+				},
+			};
+			const chartFlujo = new (ApexCharts as any)(flujoEl, optionsFlujo);
+			chartFlujo.render();
+		}
+
+		// 2. Gráfico Donut de Estados
+		const donutEl = document.getElementById("chart-donut-estados");
+		if (
+			donutEl &&
+			chartDonutData.series.reduce((a: number, b: number) => a + b, 0) > 0
+		) {
+			const optionsDonut = {
+				chart: {
+					type: "donut",
+					height: 290,
+					fontFamily: "inherit",
+					background: "transparent",
+				},
+				theme: { mode: "light" },
+				colors: ["#00e396", "#feb019", "#ff4560"],
+				labels: chartDonutData.labels,
+				series: chartDonutData.series,
+				legend: {
+					position: "bottom",
+					labels: {
+						colors: "#000000",
+						useSeriesColors: false,
+					},
+					fontSize: "13px",
+					fontWeight: 600,
+					markers: { radius: 12 },
+				},
+				dataLabels: {
+					enabled: true,
+					formatter: (val: any) => Number(val).toFixed(1) + "%",
+					style: {
+						fontSize: "12px",
+						fontWeight: "bold",
+						colors: ["#ffffff"],
+					},
+					dropShadow: { enabled: true, blur: 3, opacity: 0.7 },
+				},
+				plotOptions: {
+					pie: {
+						donut: {
+							size: "65%",
+							labels: {
+								show: true,
+								total: {
+									show: true,
+									label: "Total Pedidos",
+									color: "#000000",
+									fontSize: "14px",
+									fontWeight: 700,
+									formatter: (w: any) =>
+										(w?.globals?.seriesTotals || []).reduce(
+											(a: number, b: number) => a + b,
+											0,
+										),
+								},
+								value: {
+									show: true,
+									color: "#000000",
+									fontSize: "20px",
+									fontWeight: 800,
+								},
+							},
+						},
+					},
+				},
+				stroke: { show: false },
+				tooltip: {
+					theme: "light",
+					y: {
+						formatter: (val: any) => `${val} pedido(s)`,
+					},
+				},
+			};
+			const chartDonut = new (ApexCharts as any)(donutEl, optionsDonut);
+			chartDonut.render();
+		}
+
+		// 3. Gráfico de Barras Horizontales: Top Productos Más Vendidos
+		const topEl = document.getElementById("chart-top-productos");
+		if (topEl && chartTopProductosData.categories.length > 0) {
+			const optionsTop = {
+				chart: {
+					type: "bar",
+					height: 290,
+					toolbar: { show: false },
+					fontFamily: "inherit",
+					background: "transparent",
+				},
+				theme: { mode: "light" },
+				colors: ["#008ffb"],
+				plotOptions: {
+					bar: {
+						horizontal: true,
+						borderRadius: 6,
+						barHeight: "58%",
+						distributed: false,
+						dataLabels: { position: "top" },
+					},
+				},
+				dataLabels: {
+					enabled: true,
+					formatter: (val: any) => val + " uds.",
+					offsetX: 10,
+					style: {
+						fontSize: "11px",
+						fontWeight: 700,
+						colors: ["#000000"],
+					},
+				},
+				series: [
+					{
+						name: "Unidades Vendidas",
+						data: chartTopProductosData.series,
+					},
+				],
+				xaxis: {
+					categories: chartTopProductosData.categories,
+					labels: {
+						style: {
+							colors: "#000000",
+							fontSize: "11px",
+							fontWeight: 600,
+						},
+					},
+					axisBorder: { show: false },
+					axisTicks: { show: false },
+				},
+				yaxis: {
+					labels: {
+						style: {
+							colors: "#000000",
+							fontSize: "11px",
+							fontWeight: 600,
+						},
+					},
+				},
+				grid: {
+					borderColor: "rgba(0, 0, 0, 0.08)",
+					strokeDashArray: 4,
+				},
+				tooltip: {
+					theme: "light",
+					y: {
+						formatter: (val: any, opt?: any) => {
+							const idx = opt?.dataPointIndex ?? 0;
+							const fact =
+								chartTopProductosData.montos[idx] || "$0.00";
+							return `${val} unidades vendidas · Total: ${fact}`;
+						},
+					},
+				},
+			};
+			const chartTop = new (ApexCharts as any)(topEl, optionsTop);
+			chartTop.render();
+		}
+	}
+
+	// 4. Manejo de acordeón / expansión 'Ver todo' para las 4 tablas de estadísticas
+	function initCollapsibleTables() {
+		const triggers = document.querySelectorAll<HTMLButtonElement>(
+			"[data-expand-trigger]",
+		);
+		triggers.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const groupKey = btn.getAttribute("data-expand-trigger");
+				if (!groupKey) return;
+				const wrapper = document.querySelector(
+					`[data-expand-group="${groupKey}"]`,
+				);
+				if (!wrapper) return;
+
+				const isExpanded = btn.classList.contains("is-expanded");
+				const hiddenRows =
+					wrapper.querySelectorAll("tr.stats-row-extra");
+				const total = btn.getAttribute("data-total") || "";
+
+				if (isExpanded) {
+					// Contraer a 5
+					hiddenRows.forEach((row) => row.classList.add("is-hidden"));
+					btn.classList.remove("is-expanded");
+					btn.innerHTML = `Ver todo (${total}) <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>`;
+				} else {
+					// Expandir todos
+					hiddenRows.forEach((row) =>
+						row.classList.remove("is-hidden"),
+					);
+					btn.classList.add("is-expanded");
+					btn.innerHTML = `Ver menos <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg>`;
+				}
+			});
+		});
+	}
+
+	function startPage() {
+		initStatsPage();
+		initCollapsibleTables();
+
+		const printBtn = document.getElementById("btn-print-stats");
+		if (printBtn) {
+			printBtn.addEventListener("click", () => {
+				window.print();
+			});
+		}
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", startPage);
+	} else {
+		startPage();
+	}
+</script>

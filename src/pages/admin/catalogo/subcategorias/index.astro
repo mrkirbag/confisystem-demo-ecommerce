@@ -10,5 +10,5 @@ const [items, categorias] = await Promise.all([listSubcategorias(), listCategori
 ---
 
 <AdminLayout title="Subcategorías">
-	<SubcategoriasCrud client:load initialItems={items} categorias={categorias} />
+	<SubcategoriasCrud client:only="react" initialItems={items} categorias={categorias} />
 </AdminLayout>

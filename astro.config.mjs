@@ -7,6 +7,7 @@ const src = fileURLToPath(new URL('./src', import.meta.url));
 const lib = (entry) => fileURLToPath(new URL(`./src/lib/${entry}`, import.meta.url));
 
 export default defineConfig({
+	site: 'https://confiservicio.com',
 	output: 'server',
 	adapter: netlify(),
 	integrations: [react()],

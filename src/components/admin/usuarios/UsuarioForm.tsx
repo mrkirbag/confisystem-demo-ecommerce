@@ -21,14 +21,13 @@ function PasswordField({
 	label,
 	value,
 	onChange,
-	placeholder,
 	required,
 	autoFocus,
 }: {
 	label: string;
 	value: string;
 	onChange: (value: string) => void;
-	placeholder: string;
+	placeholder?: string;
 	required?: boolean;
 	autoFocus?: boolean;
 }) {
@@ -45,7 +44,6 @@ function PasswordField({
 					onChange={(event) => onChange(event.target.value)}
 					minLength={8}
 					autoComplete="new-password"
-					placeholder={placeholder}
 					required={required}
 					autoFocus={autoFocus}
 				/>
@@ -168,7 +166,6 @@ export default function UsuarioForm({
 							maxLength={80}
 							autoComplete="name"
 							autoFocus
-							placeholder="Ana Pérez"
 							value={nombre}
 							onChange={(event) => setNombre(event.target.value)}
 						/>
@@ -182,7 +179,6 @@ export default function UsuarioForm({
 							required
 							maxLength={160}
 							autoComplete="email"
-							placeholder="ana@mitienda.com"
 							value={correo}
 							onChange={(event) => setCorreo(event.target.value)}
 						/>
@@ -208,7 +204,6 @@ export default function UsuarioForm({
 							label={mode === 'create' ? 'Contraseña' : 'Nueva contraseña'}
 							value={password}
 							onChange={setPassword}
-							placeholder="Mínimo 8 caracteres"
 							required={mode === 'create' || changePassword}
 							autoFocus={mode === 'edit'}
 						/>
@@ -216,7 +211,6 @@ export default function UsuarioForm({
 							label="Confirmar contraseña"
 							value={passwordConfirm}
 							onChange={setPasswordConfirm}
-							placeholder="Repite la contraseña"
 							required={mode === 'create' || changePassword}
 						/>
 					</div>

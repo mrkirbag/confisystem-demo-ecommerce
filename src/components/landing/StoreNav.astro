@@ -1,4 +1,6 @@
 ---
+import CurrencySwitch from "./CurrencySwitch.astro";
+
 interface SubcatItem {
 	id: string;
 	nombre: string;
@@ -17,56 +19,91 @@ interface Props {
 	logoUrl?: string | null;
 	categorias: CategoriaItem[];
 	ofertasCount?: number;
+	tasaBcv?: number | null;
+	tasaCop?: number | null;
 }
 
-const { storeName, logoUrl = null, categorias = [], ofertasCount = 0 } = Astro.props;
-const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
+const {
+	storeName,
+	logoUrl = null,
+	categorias = [],
+	ofertasCount = 0,
+	tasaBcv = null,
+	tasaCop = null,
+} = Astro.props;
+const initial = storeName.trim().charAt(0).toUpperCase() || "D";
 ---
 
 <header class="snav__bar" data-nav-bar>
 	<a class="snav__bar-brand" href="#top" aria-label="Ir al inicio">
-		{logoUrl ? (
-			<img class="snav__bar-logo" src={logoUrl} alt="" />
-		) : (
-			<span class="snav__bar-fallback">{initial}</span>
-		)}
+		{
+			logoUrl ? (
+				<img class="snav__bar-logo" src={logoUrl} alt="" />
+			) : (
+				<span class="snav__bar-fallback">{initial}</span>
+			)
+		}
 		<span class="snav__bar-name">{storeName}</span>
 	</a>
-	<button
-		type="button"
-		class="snav__burger"
-		aria-label="Abrir menú"
-		aria-expanded="false"
-		aria-controls="snav"
-		data-nav-burger
-	>
-		<span class="snav__burger-box" aria-hidden="true">
-			<span></span>
-			<span></span>
-			<span></span>
-		</span>
-	</button>
+
+	<div class="snav__bar-actions">
+		<CurrencySwitch tasaBcv={tasaBcv} tasaCop={tasaCop} variant="storefront" compact />
+		<button
+			type="button"
+			class="snav__burger"
+			aria-label="Abrir menú"
+			aria-expanded="false"
+			aria-controls="snav"
+			data-nav-burger
+		>
+			<span class="snav__burger-box" aria-hidden="true">
+				<span></span>
+				<span></span>
+				<span></span>
+			</span>
+		</button>
+	</div>
 </header>
 
-<button type="button" class="snav__overlay" aria-label="Cerrar menú" data-nav-overlay hidden></button>
+<button
+	type="button"
+	class="snav__overlay"
+	aria-label="Cerrar menú"
+	data-nav-overlay
+	hidden></button>
 
 <aside class="snav" id="snav" data-nav-aside>
 	<div class="snav__head">
 		<a class="snav__brand" href="#top" aria-label="Ir al inicio">
-			{logoUrl ? (
-				<img class="snav__logo" src={logoUrl} alt={storeName} />
-			) : (
-				<span class="snav__fallback">{initial}</span>
-			)}
 			<span class="snav__name">{storeName}</span>
 		</a>
+		<div class="snav__currency-wrap">
+			<CurrencySwitch tasaBcv={tasaBcv} tasaCop={tasaCop} variant="storefront" />
+		</div>
 	</div>
 
 	<nav class="snav__nav" aria-label="Catálogo">
 		<ul class="snav__list">
 			<li>
-				<a class="snav__link is-active" href="/#todos" data-nav-filter="all" data-nav-target="todos" data-nav-label="Todos los productos">
-					<svg class="snav__ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<a
+					class="snav__link is-active"
+					href="/#todos"
+					data-nav-filter="all"
+					data-nav-target="todos"
+					data-nav-label="Todos los productos"
+				>
+					<svg
+						class="snav__ico"
+						viewBox="0 0 24 24"
+						width="16"
+						height="16"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
 						<rect x="3" y="3" width="7" height="7"></rect>
 						<rect x="14" y="3" width="7" height="7"></rect>
 						<rect x="14" y="14" width="7" height="7"></rect>
@@ -76,21 +113,63 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 				</a>
 			</li>
 			<li>
-				<a class="snav__link" href="/#tendencias" data-nav-filter="tendencias" data-nav-target="tendencias" data-nav-label="Tendencias">
-					<svg class="snav__ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+				<a
+					class="snav__link"
+					href="/#tendencias"
+					data-nav-filter="tendencias"
+					data-nav-target="tendencias"
+					data-nav-label="Tendencias"
+				>
+					<svg
+						class="snav__ico"
+						viewBox="0 0 24 24"
+						width="16"
+						height="16"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<polygon
+							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+						></polygon>
 					</svg>
 					<span>Tendencias</span>
 				</a>
 			</li>
 			<li>
-				<a class="snav__link snav__link--ofertas" href="/#ofertas" data-nav-filter="ofertas" data-nav-target="todos" data-nav-label="Ofertas Especiales">
-					<svg class="snav__ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-						<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+				<a
+					class="snav__link snav__link--ofertas"
+					href="/#ofertas"
+					data-nav-filter="ofertas"
+					data-nav-target="todos"
+					data-nav-label="Ofertas Especiales"
+				>
+					<svg
+						class="snav__ico"
+						viewBox="0 0 24 24"
+						width="16"
+						height="16"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path
+							d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"
+						></path>
 						<line x1="7" y1="7" x2="7.01" y2="7"></line>
 					</svg>
 					<span>Ofertas</span>
-					{ofertasCount > 0 ? <span class="snav__badge">{ofertasCount}</span> : null}
+					{
+						ofertasCount > 0 ? (
+							<span class="snav__badge">{ofertasCount}</span>
+						) : null
+					}
 				</a>
 			</li>
 		</ul>
@@ -98,76 +177,92 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 		<p class="snav__group-title">Categorías</p>
 
 		<ul class="snav__list">
-			{categorias.map((cat) => (
-				<li class="snav__group">
-					<details class="snav__details">
-						<summary class="snav__summary">
-							<span>{cat.nombre}</span>
-							<svg class="snav__chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<polyline points="6 9 12 15 18 9"></polyline>
-							</svg>
-						</summary>
-						<ul class="snav__sublist">
-							<li>
-								<a
-									class="snav__sublink"
-									href={`/#cat-${cat.slug}`}
-									data-nav-filter={`categoria:${cat.id}`}
-									data-nav-target="todos"
-									data-nav-label={cat.nombre}
+			{
+				categorias.map((cat) => (
+					<li class="snav__group">
+						<details class="snav__details">
+							<summary class="snav__summary">
+								<span>{cat.nombre}</span>
+								<svg
+									class="snav__chevron"
+									viewBox="0 0 24 24"
+									width="12"
+									height="12"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
 								>
-									Toda la categoría
-								</a>
-							</li>
-							{cat.subcategorias.map((sub) => (
+									<polyline points="6 9 12 15 18 9" />
+								</svg>
+							</summary>
+							<ul class="snav__sublist">
 								<li>
 									<a
 										class="snav__sublink"
-										href={`/#sub-${sub.slug}`}
-										data-nav-filter={`subcategoria:${sub.id}`}
+										href={`/#cat-${cat.slug}`}
+										data-nav-filter={`categoria:${cat.id}`}
 										data-nav-target="todos"
-										data-nav-label={sub.nombre}
+										data-nav-label={cat.nombre}
 									>
-										{sub.nombre}
+										Toda la categoría
 									</a>
 								</li>
-							))}
-						</ul>
-					</details>
-				</li>
-			))}
+								{cat.subcategorias.map((sub) => (
+									<li>
+										<a
+											class="snav__sublink"
+											href={`/#sub-${sub.slug}`}
+											data-nav-filter={`subcategoria:${sub.id}`}
+											data-nav-target="todos"
+											data-nav-label={sub.nombre}
+										>
+											{sub.nombre}
+										</a>
+									</li>
+								))}
+							</ul>
+						</details>
+					</li>
+				))
+			}
 		</ul>
 	</nav>
 </aside>
 
 <script>
-	const burger = document.querySelector('[data-nav-burger]');
-	const overlay = document.querySelector('[data-nav-overlay]');
-	const aside = document.querySelector('[data-nav-aside]');
+	const burger = document.querySelector("[data-nav-burger]");
+	const overlay = document.querySelector("[data-nav-overlay]");
+	const aside = document.querySelector("[data-nav-aside]");
 
 	function setOpen(open: boolean) {
-		document.body.classList.toggle('is-nav-open', open);
-		document.body.style.overflow = open ? 'hidden' : '';
+		document.body.classList.toggle("is-nav-open", open);
+		document.body.style.overflow = open ? "hidden" : "";
 		if (burger) {
-			burger.setAttribute('aria-expanded', String(open));
-			burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+			burger.setAttribute("aria-expanded", String(open));
+			burger.setAttribute(
+				"aria-label",
+				open ? "Cerrar menú" : "Abrir menú",
+			);
 		}
 		if (overlay instanceof HTMLElement) overlay.hidden = !open;
 	}
 
-	burger?.addEventListener('click', () => {
-		setOpen(!document.body.classList.contains('is-nav-open'));
+	burger?.addEventListener("click", () => {
+		setOpen(!document.body.classList.contains("is-nav-open"));
 	});
 
-	overlay?.addEventListener('click', () => setOpen(false));
+	overlay?.addEventListener("click", () => setOpen(false));
 
-	aside?.addEventListener('click', (event) => {
+	aside?.addEventListener("click", (event) => {
 		const clicked = event.target;
-		if (clicked instanceof Element && clicked.closest('a')) setOpen(false);
+		if (clicked instanceof Element && clicked.closest("a")) setOpen(false);
 	});
 
-	document.addEventListener('keydown', (event) => {
-		if (event.key === 'Escape') setOpen(false);
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape") setOpen(false);
 	});
 </script>
 
@@ -191,6 +286,15 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 	.snav__head {
 		padding: 1.15rem 1.25rem;
 		border-bottom: 1px solid var(--line-on-panel, var(--line));
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+	}
+
+	.snav__currency-wrap {
+		width: 100%;
+		display: flex;
+		justify-content: flex-start;
 	}
 
 	.snav__brand {
@@ -289,7 +393,11 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 		font-weight: 800;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 55%, transparent);
+		color: color-mix(
+			in srgb,
+			var(--ink-on-panel, var(--ink)) 55%,
+			transparent
+		);
 	}
 
 	.snav__details {
@@ -315,7 +423,7 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 	}
 
 	.snav__summary::marker {
-		content: '';
+		content: "";
 	}
 
 	.snav__summary:hover {
@@ -349,7 +457,11 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 		padding: 0.5rem 0.7rem;
 		border-radius: 0.6rem;
 		font-size: 0.88rem;
-		color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 82%, transparent);
+		color: color-mix(
+			in srgb,
+			var(--ink-on-panel, var(--ink)) 82%,
+			transparent
+		);
 	}
 
 	.snav__sublink:hover {
@@ -389,7 +501,7 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-			gap: 1rem;
+			gap: 0.75rem;
 			position: fixed;
 			top: 0;
 			left: 0;
@@ -399,6 +511,12 @@ const initial = storeName.trim().charAt(0).toUpperCase() || 'D';
 			padding: 0 1rem;
 			background: var(--panel);
 			border-bottom: 1px solid var(--line-on-panel, var(--line));
+		}
+
+		.snav__bar-actions {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
 		}
 
 		.snav__bar-brand {

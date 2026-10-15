@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { isValidSlug, slugify, type Categoria } from '@/lib/categorias/shared';
 import ImageUpload from '../crud/ImageUpload';
 
@@ -27,8 +27,7 @@ export default function CategoriaForm({
 	onDeactivate,
 }: Props) {
 	const [nombre, setNombre] = useState(values?.nombre ?? '');
-	const [slug, setSlug] = useState(values?.slug ?? '');
-	const [slugLocked, setSlugLocked] = useState(mode === 'edit');
+	const slug = slugify(nombre.trim());
 	const [imagenUrl, setImagenUrl] = useState(values?.imagen_url ?? null);
 	const [file, setFile] = useState<File | null>(null);
 	const [fileName, setFileName] = useState('');
@@ -37,17 +36,12 @@ export default function CategoriaForm({
 
 	const submitLabel = mode === 'create' ? 'Crear categoría' : 'Guardar cambios';
 
-	useEffect(() => {
-		if (slugLocked) return;
-		setSlug(slugify(nombre));
-	}, [nombre, slugLocked]);
-
 	async function handleSubmit(event: FormEvent) {
 		event.preventDefault();
 		setError('');
 
 		const nombreTrim = nombre.trim();
-		const slugTrim = slugify(slug.trim() || nombreTrim);
+		const slugTrim = slug;
 
 		if (nombreTrim.length < 2) {
 			setError('El nombre es obligatorio.');
@@ -132,29 +126,16 @@ export default function CategoriaForm({
 							minLength={2}
 							maxLength={80}
 							autoFocus
-							placeholder="Redes"
 							value={nombre}
 							onChange={(event) => setNombre(event.target.value)}
 						/>
-					</label>
-
-					<label className="admin-form__field admin-form__field--full">
-						Slug
-						<input
-							className="admin-form__input"
-							type="text"
-							required
-							maxLength={80}
-							placeholder="ropa-mujer"
-							value={slug}
-							onChange={(event) => {
-								setSlugLocked(true);
-								setSlug(slugify(event.target.value));
-							}}
-						/>
+						<span className="admin-form__hint">
+							Slug: <strong>{slug || '—'}</strong>
+						</span>
 					</label>
 
 					<ImageUpload
+						hint="Imagen horizontal (formato apaisado, ej. 16:9 · 1200×675 px) · JPG, PNG, WebP o AVIF · máx. 5 MB"
 						previewUrl={imagenUrl}
 						fileName={fileName}
 						disabled={loading}

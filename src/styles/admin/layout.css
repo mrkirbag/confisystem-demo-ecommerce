@@ -120,7 +120,7 @@
 .admin-burger:hover,
 .admin-burger:focus-visible {
 	border-color: var(--accent);
-	color: var(--accent);
+	color: var(--accent-ink);
 	background: color-mix(in srgb, var(--accent) 10%, var(--panel));
 	outline: none;
 }
@@ -163,7 +163,7 @@
 
 .admin-app.is-nav-open .admin-burger {
 	border-color: var(--accent);
-	color: var(--accent);
+	color: var(--accent-ink);
 	background: color-mix(in srgb, var(--accent) 12%, var(--panel));
 }
 
@@ -208,11 +208,26 @@
 	position: relative;
 }
 
+.admin-mobile-bar__actions {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
 /* Arriba: logo fijo */
 .admin-sidebar__head {
 	padding: 1.35rem 1.15rem 1.1rem;
 	border-bottom: 1px solid var(--line);
 	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+}
+
+.admin-sidebar__currency-wrap {
+	width: 100%;
+	display: flex;
+	justify-content: flex-start;
 }
 
 .admin-sidebar__brand {
@@ -312,18 +327,19 @@
 }
 
 .admin-sidebar__link.is-active {
-	background: color-mix(in srgb, var(--accent) 12%, transparent);
-	color: var(--accent);
+	background: var(--accent);
+	color: var(--accent-ink);
+	box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .admin-sidebar__link.is-active::before {
-	height: 1.25rem;
+	height: 0;
 }
 
 .admin-sidebar__link.is-active .admin-sidebar__icon,
 .admin-sidebar__group.is-active > .admin-sidebar__group-btn .admin-sidebar__icon {
 	opacity: 1;
-	color: var(--accent);
+	color: inherit;
 }
 
 .admin-sidebar__group {
@@ -379,28 +395,72 @@
 	padding: 0.85rem 0.9rem 1.1rem;
 	border-top: 1px solid var(--line);
 	background: var(--panel);
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.admin-sidebar__manual {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.55rem;
+	width: 100%;
+	border: 1px solid color-mix(in srgb, var(--accent) 70%, #d97706);
+	background: var(--accent);
+	color: var(--accent-ink, #000000);
+	padding: 0.65rem 0.85rem;
+	border-radius: 0.7rem;
+	text-decoration: none;
+	cursor: pointer;
+	font-weight: 700;
+	font-size: 0.9rem;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+	transition:
+		border-color 0.15s ease,
+		background 0.15s ease,
+		transform 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.admin-sidebar__manual:hover {
+	background: color-mix(in srgb, var(--accent) 85%, #000000);
+	border-color: color-mix(in srgb, var(--accent) 90%, #000000);
+	color: var(--accent-ink, #000000);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+
+.admin-sidebar__manual-icon {
+	flex-shrink: 0;
+	width: 1.05rem;
+	height: 1.05rem;
 }
 
 .admin-sidebar__logout {
 	width: 100%;
-	border: 1px solid var(--line-on-panel, var(--line));
-	background: transparent;
-	color: var(--ink-on-panel, var(--ink));
+	border: 1px solid #ef4444;
+	background: #dc2626;
+	color: #ffffff;
 	padding: 0.7rem 0.85rem;
 	border-radius: 0.7rem;
 	cursor: pointer;
-	font-weight: 600;
+	font-weight: 700;
 	font-size: 0.9rem;
+	box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
 	transition:
 		border-color 0.15s ease,
 		background 0.15s ease,
-		color 0.15s ease;
+		transform 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
 .admin-sidebar__logout:hover {
-	border-color: var(--danger-ink);
-	color: var(--danger-ink);
-	background: var(--danger-bg);
+	border-color: #b91c1c;
+	background: #b91c1c;
+	color: #ffffff;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 10px rgba(185, 28, 28, 0.3);
 }
 
 .admin-overlay {
@@ -530,4 +590,44 @@
 .admin-table-wrap::-webkit-scrollbar-thumb:hover {
 	background: var(--scroll-thumb-hover);
 	background-clip: padding-box;
+}
+
+@media print {
+	.admin-sidebar,
+	.admin-topbar,
+	.admin-nav,
+	.stats-header-actions,
+	.admin-toolbar__filters,
+	.admin-toolbar__bar button,
+	.admin-table__th-actions,
+	.admin-table__td-actions,
+	.stats-table-footer-action,
+	.admin-btn,
+	.admin-dialog,
+	.admin-dialog-backdrop {
+		display: none !important;
+	}
+
+	body,
+	.admin-layout,
+	.admin-main {
+		margin: 0 !important;
+		padding: 0 !important;
+		background: #ffffff !important;
+		color: #000000 !important;
+		box-shadow: none !important;
+		width: 100% !important;
+	}
+
+	.admin-card,
+	.order-card-panel,
+	.admin-table-wrap {
+		box-shadow: none !important;
+		border: 1px solid #e2e8f0 !important;
+		break-inside: avoid;
+	}
+
+	tr.stats-row-extra.is-hidden {
+		display: table-row !important;
+	}
 }

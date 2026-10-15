@@ -67,11 +67,11 @@ export default function AtributoForm({
 
 		const nombreTrim = nombre.trim();
 		if (nombreTrim.length < 2) {
-			setError('El nombre es obligatorio. Ej: Talla, Color, Marca.');
+			setError('Escribe el nombre del atributo.');
 			return;
 		}
 		if (showOptions && opciones.length < 1) {
-			setError('Agrega al menos una opción. Ej: S, M, L.');
+			setError('Agrega al menos una opción a la lista.');
 			return;
 		}
 
@@ -118,7 +118,7 @@ export default function AtributoForm({
 
 				<div className="admin-form__grid">
 					<label className="admin-form__field admin-form__field--full">
-						Nombre
+						1. ¿Cómo se llama el atributo?
 						<input
 							className="admin-form__input"
 							type="text"
@@ -126,14 +126,13 @@ export default function AtributoForm({
 							minLength={2}
 							maxLength={80}
 							autoFocus
-							placeholder="Talla, Color, Marca…"
 							value={nombre}
 							onChange={(event) => setNombre(event.target.value)}
 						/>
 					</label>
 
 					<fieldset className="admin-form__field admin-form__field--full admin-choice">
-						<legend className="admin-choice__legend">¿Cómo lo usa el cliente?</legend>
+						<legend className="admin-choice__legend">2. ¿Qué tipo de dato es?</legend>
 						<div className="admin-choice__grid">
 							{ATRIBUTO_TIPOS.map((item) => {
 								const info = TIPO_INFO[item];
@@ -152,7 +151,6 @@ export default function AtributoForm({
 										/>
 										<strong>{info.label}</strong>
 										<small>{info.hint}</small>
-										<span>{info.example}</span>
 									</label>
 								);
 							})}
@@ -161,14 +159,13 @@ export default function AtributoForm({
 
 					{showOptions ? (
 						<div className="admin-form__field admin-form__field--full">
-							Opciones
+							3. Lista de opciones disponibles
 							<div className="admin-options">
 								<div className="admin-options__add">
 									<input
 										className="admin-form__input"
 										type="text"
 										maxLength={40}
-										placeholder="Ej: S, M, L o Rojo"
 										value={draft}
 										onChange={(event) => setDraft(event.target.value)}
 										onKeyDown={onDraftKey}
@@ -185,7 +182,7 @@ export default function AtributoForm({
 								</div>
 								{opciones.length === 0 ? (
 									<p className="admin-form__hint">
-										Aún no hay opciones. Escribe una y pulsa Agregar o Enter.
+										Escribe una opción y pulsa Agregar o Enter. Repite para cada opción.
 									</p>
 								) : (
 									<ul className="admin-options__list">
@@ -210,7 +207,7 @@ export default function AtributoForm({
 						</div>
 					) : (
 						<p className="admin-form__hint admin-form__hint--box">
-							Este dato se escribe cuando armes cada producto. No hace falta agregar opciones.
+							No necesitas definir opciones: este dato se escribe al crear cada producto.
 						</p>
 					)}
 				</div>

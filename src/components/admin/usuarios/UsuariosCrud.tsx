@@ -145,7 +145,6 @@ export default function UsuariosCrud({ initialUsers, currentUserId }: Props) {
 						<input
 							className="admin-toolbar__control"
 							type="search"
-							placeholder="Buscar…"
 							value={query}
 							onChange={(event) => setQuery(event.target.value)}
 						/>

@@ -5,7 +5,7 @@ type Props = {
 	open: boolean;
 	title: string;
 	kicker?: string;
-	size?: 'form' | 'sheet' | 'preview';
+	size?: 'form' | 'sheet' | 'preview' | 'md' | 'lg';
 	locked?: boolean;
 	onClose: () => void;
 	children: ReactNode;
@@ -38,7 +38,7 @@ export default function FormModal({
 			const target = event.target;
 			if (!(target instanceof HTMLInputElement) || target.type !== 'number') return;
 			event.preventDefault();
-			const body = dialog.querySelector('.admin-dialog__body');
+			const body = dialog?.querySelector('.admin-dialog__body');
 			if (body instanceof HTMLElement) body.scrollTop += event.deltaY;
 		}
 

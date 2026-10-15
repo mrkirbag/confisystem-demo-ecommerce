@@ -1,12 +1,196 @@
 ---
 import AdminLayout from '@/layouts/AdminLayout.astro';
 import AdminSectionHeader from '@/components/admin/AdminSectionHeader.astro';
+import { listPedidos, formatPrecio, formatFechaCorta, estadoBadgeInfo } from '@/lib/pedidos';
 
 export const prerender = false;
+
+const pedidos = await listPedidos();
+
+const countPendientes = pedidos.filter((p) => p.estado === 'pendiente').length;
+const countConfirmadas = pedidos.filter((p) => p.estado === 'confirmada').length;
+const countCanceladas = pedidos.filter((p) => p.estado === 'cancelada').length;
+const montoPendiente = pedidos
+	.filter((p) => p.estado === 'pendiente')
+	.reduce((acc, p) => acc + p.total, 0);
+
+function initials(name: string) {
+	const p = (name || '').trim().split(/\s+/).filter(Boolean);
+	if (p.length === 0) return 'C';
+	if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+	return `${p[0][0]}${p[1][0]}`.toUpperCase();
+}
 ---
 
 <AdminLayout title="Pedidos">
-	<section>
+	<section class="orders-page" data-orders-page>
 		<AdminSectionHeader title="Pedidos" kicker="Ventas" />
+
+		<div class="orders-kpis">
+			<div class="orders-kpi orders-kpi--warn">
+				<span class="orders-kpi__label">Por confirmar</span>
+				<strong class="orders-kpi__value">{countPendientes}</strong>
+				<span class="orders-kpi__hint">{formatPrecio(montoPendiente)} con stock reservado</span>
+			</div>
+			<div class="orders-kpi orders-kpi--ok">
+				<span class="orders-kpi__label">Aprobadas</span>
+				<strong class="orders-kpi__value">{countConfirmadas}</strong>
+				<span class="orders-kpi__hint">Ventas consolidadas</span>
+			</div>
+			<div class="orders-kpi orders-kpi--bad">
+				<span class="orders-kpi__label">Canceladas</span>
+				<strong class="orders-kpi__value">{countCanceladas}</strong>
+				<span class="orders-kpi__hint">Stock devuelto al inventario</span>
+			</div>
+			<div class="orders-kpi orders-kpi--info">
+				<span class="orders-kpi__label">Total registrados</span>
+				<strong class="orders-kpi__value">{pedidos.length}</strong>
+				<span class="orders-kpi__hint">Historial completo</span>
+			</div>
+		</div>
+
+		<div class="orders-toolbar">
+			<div class="admin-toolbar__seg" role="tablist" aria-label="Filtrar por estado">
+				<button type="button" class="is-on" data-filter="todos">Todos</button>
+				<button type="button" data-filter="pendiente">Pendientes</button>
+				<button type="button" data-filter="confirmada">Aprobadas</button>
+				<button type="button" data-filter="cancelada">Canceladas</button>
+			</div>
+
+			<label class="admin-toolbar__search">
+				<svg class="admin-toolbar__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+				<input
+					type="search"
+					class="admin-toolbar__control"
+					placeholder="Buscar cliente, teléfono o código…"
+					aria-label="Buscar pedidos"
+					data-search-input
+				/>
+			</label>
+		</div>
+
+		{pedidos.length === 0 ? (
+			<div class="admin-empty">
+				<h2 class="admin-empty__title">Aún no hay pedidos</h2>
+				<p class="admin-empty__text">
+					Cuando un cliente envíe su carrito por WhatsApp aparecerá aquí con el stock ya reservado.
+				</p>
+			</div>
+		) : (
+			<>
+				<div class="orders-grid" data-orders-grid>
+					{pedidos.map((pedido) => {
+						const badge = estadoBadgeInfo(pedido.estado);
+						const search = `${pedido.codigo} ${pedido.cliente_nombre} ${pedido.cliente_telefono} ${pedido.cliente_cedula}`.toLowerCase();
+						return (
+							<a
+								href={`/admin/pedidos/${pedido.id}`}
+								class="order-card"
+								data-order-card
+								data-status={pedido.estado}
+								data-search={search}
+								aria-label={`Abrir pedido ${pedido.codigo}`}
+							>
+								<div class="order-card__head">
+									<div>
+										<span class="order-card__code">#{pedido.codigo}</span>
+										<span class="order-card__date">{formatFechaCorta(pedido.creado_en)}</span>
+									</div>
+									<span class:list={['order-badge', badge.className]}>{badge.label}</span>
+								</div>
+
+								<div class="order-card__client">
+									<span class="order-card__avatar" aria-hidden="true">{initials(pedido.cliente_nombre)}</span>
+									<div class="order-card__client-info">
+										<span class="order-card__client-name">{pedido.cliente_nombre}</span>
+										<span class="order-card__client-meta">
+											{pedido.cliente_telefono}{pedido.cliente_cedula ? ` · CI ${pedido.cliente_cedula}` : ''}
+										</span>
+									</div>
+								</div>
+
+								<div class="order-card__items">
+									<strong>
+										{pedido.total_items} {pedido.total_items === 1 ? 'producto' : 'productos'} · {pedido.total_unidades} uds.
+									</strong>
+									<span>{pedido.items_resumen || 'Sin detalle'}</span>
+									{pedido.primeras_imagenes.length > 0 ? (
+										<div class="order-card__thumbs">
+											{pedido.primeras_imagenes.map((img) => (
+												<img class="order-card__thumb" src={img} alt="" loading="lazy" />
+											))}
+										</div>
+									) : null}
+								</div>
+
+								<div class="order-card__foot">
+									<span class="order-card__mode">
+										{pedido.modalidad_entrega === 'delivery' ? 'Envío a domicilio' : 'Retiro en tienda'}
+									</span>
+									<strong class="order-card__total">{formatPrecio(pedido.total)}</strong>
+								</div>
+							</a>
+						);
+					})}
+				</div>
+
+				<div class="admin-empty" data-orders-empty hidden>
+					<h2 class="admin-empty__title">Sin resultados</h2>
+					<p class="admin-empty__text">Ningún pedido coincide con el filtro o la búsqueda.</p>
+				</div>
+			</>
+		)}
 	</section>
 </AdminLayout>
+
+<script>
+	function initOrdersList() {
+		const root = document.querySelector<HTMLElement>('[data-orders-page]');
+		if (!root) return;
+
+		const buttons = root.querySelectorAll<HTMLButtonElement>('[data-filter]');
+		const input = root.querySelector<HTMLInputElement>('[data-search-input]');
+		const cards = root.querySelectorAll<HTMLElement>('[data-order-card]');
+		const empty = root.querySelector<HTMLElement>('[data-orders-empty]');
+
+		let filter = 'todos';
+		let query = '';
+
+		function apply() {
+			const q = query.trim().toLowerCase();
+			let visible = 0;
+			cards.forEach((card) => {
+				const ok =
+					(filter === 'todos' || card.dataset.status === filter) &&
+					(!q || (card.dataset.search || '').includes(q));
+				card.hidden = !ok;
+				card.style.display = ok ? '' : 'none';
+				if (ok) visible++;
+			});
+			if (empty) empty.hidden = visible > 0 || cards.length === 0;
+		}
+
+		buttons.forEach((btn) => {
+			btn.addEventListener('click', () => {
+				buttons.forEach((b) => b.classList.remove('is-on'));
+				btn.classList.add('is-on');
+				filter = btn.dataset.filter || 'todos';
+				apply();
+			});
+		});
+
+		input?.addEventListener('input', () => {
+			query = input.value;
+			apply();
+		});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initOrdersList);
+	} else {
+		initOrdersList();
+	}
+</script>

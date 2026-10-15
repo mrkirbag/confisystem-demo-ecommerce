@@ -13,16 +13,29 @@ interface Props {
 
 const { producto } = Astro.props;
 
-const esOferta = producto.en_oferta && producto.precio_oferta > 0;
+const minOferta =
+	producto.precio_por_variante && (producto.precio_oferta_min ?? 0) > 0
+		? producto.precio_oferta_min!
+		: producto.precio_oferta;
+const maxOferta =
+	producto.precio_por_variante && (producto.precio_oferta_max ?? 0) > 0
+		? producto.precio_oferta_max!
+		: producto.precio_oferta;
+
+const esOferta = producto.en_oferta && minOferta > 0;
 const normal = producto.precio_por_variante
 	? formatPrecioRango(producto.precio_min, producto.precio_max)
 	: formatPrecio(producto.precio_base);
-const oferta = esOferta ? formatPrecio(producto.precio_oferta) : "";
+const oferta = esOferta
+	? producto.precio_por_variante && minOferta > 0
+		? formatPrecioRango(minOferta, maxOferta)
+		: formatPrecio(minOferta)
+	: "";
 const referencia = producto.precio_por_variante
 	? producto.precio_min
 	: producto.precio_base;
 const descuento = esOferta
-	? descuentoPorcentaje(referencia, producto.precio_oferta)
+	? descuentoPorcentaje(referencia, minOferta)
 	: 0;
 const agotado = producto.stock_total <= 0;
 const catLabel = producto.subcategoria_nombre
@@ -30,7 +43,7 @@ const catLabel = producto.subcategoria_nombre
 	: producto.categoria_nombre;
 const initials = initialsFromName(producto.nombre);
 const effectivePrice = esOferta
-	? producto.precio_oferta
+	? minOferta
 	: producto.precio_por_variante
 		? producto.precio_min
 		: producto.precio_base;
@@ -45,6 +58,12 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 	data-sub={producto.subcategoria_id ?? ""}
 	data-search={searchKeywords}
 	data-price={effectivePrice}
+	data-price-normal-min={producto.precio_por_variante ? producto.precio_min : producto.precio_base}
+	data-price-normal-max={producto.precio_por_variante ? producto.precio_max : producto.precio_base}
+	data-price-offer-min={minOferta}
+	data-price-offer-max={maxOferta}
+	data-is-range={producto.precio_por_variante ? "true" : "false"}
+	data-is-offer={esOferta ? "true" : "false"}
 	data-offer={esOferta ? "true" : "false"}
 	data-trending={producto.es_tendencia ? "true" : "false"}
 >
@@ -69,7 +88,9 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 		<div class="scard__flags">
 			{
 				producto.es_tendencia ? (
-					<span class="scard__flag">Tendencia</span>
+					<span class="scard__flag scard__flag--trending">
+						Tendencia
+					</span>
 				) : null
 			}
 			{
@@ -89,8 +110,8 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 		<h3 class="scard__name">{producto.nombre}</h3>
 		<div class="scard__foot">
 			<div class:list={["scard__price", { "is-offer": esOferta }]}>
-				{esOferta ? <s class="scard__price-old">{normal}</s> : null}
-				<strong class="scard__price-now"
+				{esOferta ? <s class="scard__price-old" data-card-price-old>{normal}</s> : null}
+				<strong class="scard__price-now" data-card-price-now
 					>{esOferta ? oferta : normal}</strong
 				>
 			</div>
@@ -225,8 +246,20 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 	}
 
 	.scard__flag--offer {
-		background: #b45309;
-		color: #fff7ed;
+		background: #16a34a !important;
+		color: #ffffff !important;
+		font-size: 0.82rem !important;
+		font-weight: 900 !important;
+		padding: 0.3rem 0.62rem !important;
+		letter-spacing: 0.02em !important;
+		box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4) !important;
+		line-height: 1 !important;
+	}
+
+	.scard__flag--trending {
+		background: #16a34a !important;
+		color: #ffffff !important;
+		box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4) !important;
 	}
 
 	.scard__sold {
@@ -296,6 +329,13 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 
 	.scard__price.is-offer .scard__price-now {
 		color: var(--accent, #0f766e);
+		-webkit-text-stroke: 3px #000;
+		paint-order: stroke fill;
+		text-shadow:
+			-1px -1px 0 #000,
+			1px -1px 0 #000,
+			-1px 1px 0 #000,
+			1px 1px 0 #000;
 	}
 
 	.scard__foot {
@@ -352,6 +392,11 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 			padding: 0.16rem 0.35rem;
 			font-size: 0.55rem;
 			letter-spacing: 0.03em;
+		}
+
+		.scard__flag--offer {
+			font-size: 0.72rem !important;
+			padding: 0.2rem 0.46rem !important;
 		}
 
 		.scard__sold {

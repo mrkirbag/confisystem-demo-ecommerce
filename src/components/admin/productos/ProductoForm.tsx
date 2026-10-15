@@ -8,6 +8,7 @@ import {
 	PRODUCT_SLOTS,
 	allocateSkus,
 	cartesianCombinaciones,
+	formatPrecio,
 	inferVarianteSeleccion,
 	type Producto,
 	type ProductoListado,
@@ -44,6 +45,7 @@ type VarianteDraft = {
 	stock: string;
 	sku: string;
 	precio: string;
+	precio_oferta: string;
 };
 
 function emptySlots(): SlotState[] {
@@ -128,8 +130,7 @@ export default function ProductoForm({
 	const [categoriaId, setCategoriaId] = useState(activas[0]?.id ?? '');
 	const [subcategoriaId, setSubcategoriaId] = useState('');
 	const [nombre, setNombre] = useState('');
-	const [slug, setSlug] = useState('');
-	const [slugLocked, setSlugLocked] = useState(mode === 'edit');
+	const slug = slugify(nombre.trim());
 	const [descripcion, setDescripcion] = useState('');
 	const [precio, setPrecio] = useState('');
 	const [esTendencia, setEsTendencia] = useState(false);
@@ -140,7 +141,7 @@ export default function ProductoForm({
 	const [varianteAttrs, setVarianteAttrs] = useState<string[]>([]);
 	const [varianteOpciones, setVarianteOpciones] = useState<Record<string, string[]>>({});
 	const [variantes, setVariantes] = useState<Record<string, VarianteDraft>>({
-		[COMBINACION_UNICA]: { stock: '0', sku: '', precio: '' },
+		[COMBINACION_UNICA]: { stock: '0', sku: '', precio: '', precio_oferta: '' },
 	});
 	const [textos, setTextos] = useState<Record<string, string>>({});
 	const [multiples, setMultiples] = useState<Record<string, string[]>>({});
@@ -191,11 +192,7 @@ export default function ProductoForm({
 
 	const puedePrecioPorVariante = combinaciones.length > 1;
 	const usarPrecioPorVariante = puedePrecioPorVariante && precioPorVariante;
-
-	useEffect(() => {
-		if (slugLocked) return;
-		setSlug(slugify(nombre));
-	}, [nombre, slugLocked]);
+	const pedirOfertaPorVariante = usarPrecioPorVariante && enOferta;
 
 	useEffect(() => {
 		if (!categoriaId) {
@@ -236,7 +233,6 @@ export default function ProductoForm({
 				setCategoriaId(item.categoria_id);
 				setSubcategoriaId(item.subcategoria_id ?? '');
 				setNombre(item.nombre);
-				setSlug(item.slug);
 				setDescripcion(item.descripcion);
 				setPrecio(String(item.precio_base));
 				setEsTendencia(item.es_tendencia);
@@ -266,6 +262,7 @@ export default function ProductoForm({
 								stock: String(variante.stock),
 								sku: variante.sku,
 								precio: String(variante.precio),
+								precio_oferta: variante.precio_oferta > 0 ? String(variante.precio_oferta) : '',
 							},
 						]),
 					),
@@ -326,7 +323,7 @@ export default function ProductoForm({
 		setError('');
 
 		const nombreTrim = nombre.trim();
-		const slugTrim = slugify(slug.trim() || nombreTrim);
+		const slugTrim = slug;
 		const existingSkus: Record<string, string> = {};
 		for (const combinacion of combinaciones) {
 			const kept = variantes[combinacion]?.sku?.trim();
@@ -358,24 +355,28 @@ export default function ProductoForm({
 		}
 
 		const oferta = Number(precioOferta);
-		if (enOferta && (!Number.isFinite(oferta) || oferta <= 0 || oferta >= precioBase)) {
+		if (enOferta && !usarPrecioPorVariante && (!Number.isFinite(oferta) || oferta <= 0 || oferta >= precioBase)) {
 			setError('El precio de oferta debe ser menor que el precio normal.');
 			return;
 		}
 
 		if (combinaciones.length === 0) {
-			setError(`Demasiadas combinaciones. El máximo es ${MAX_COMBINACIONES}. Quita opciones.`);
+			setError(`Demasiadas combinaciones. El máximo es ${MAX_COMBINACIONES}. Reduce opciones.`);
 			return;
 		}
 
 		const variantesPayload = combinaciones.map((combinacion) => {
 			const draft = variantes[combinacion];
 			const rawPrecio = (draft?.precio ?? '').trim();
+			const rawOferta = (draft?.precio_oferta ?? '').trim();
+			const p = usarPrecioPorVariante && rawPrecio !== '' ? Number(rawPrecio) : precioBase;
+			const po = pedirOfertaPorVariante && rawOferta !== '' ? Number(rawOferta) : (enOferta ? oferta : 0);
 			return {
 				combinacion,
 				stock: Number(draft?.stock ?? 0),
 				sku: assignedSkus[combinacion] ?? '',
-				precio: usarPrecioPorVariante && rawPrecio !== '' ? Number(rawPrecio) : precioBase,
+				precio: p,
+				precio_oferta: po,
 			};
 		});
 
@@ -389,18 +390,32 @@ export default function ProductoForm({
 		}
 
 		if (enOferta) {
-			const minimo = usarPrecioPorVariante
-				? Math.min(precioBase, ...variantesPayload.map((item) => item.precio))
-				: precioBase;
-			if (oferta >= minimo) {
-				setError(
-					usarPrecioPorVariante
-						? 'El precio de oferta debe ser menor que el precio más bajo de las variantes.'
-						: 'El precio de oferta debe ser menor que el precio normal.',
-				);
-				return;
+			if (usarPrecioPorVariante) {
+				for (const item of variantesPayload) {
+					if (!Number.isFinite(item.precio_oferta) || item.precio_oferta <= 0) {
+						setError(`Indica el precio de oferta para la combinación “${item.combinacion}”.`);
+						return;
+					}
+					if (item.precio_oferta >= item.precio) {
+						setError(
+							`El precio de oferta de “${item.combinacion}” (${formatPrecio(item.precio_oferta)}) debe ser menor que su precio normal (${formatPrecio(item.precio)}).`,
+						);
+						return;
+					}
+				}
+			} else {
+				if (!Number.isFinite(oferta) || oferta <= 0 || oferta >= precioBase) {
+					setError('El precio de oferta debe ser menor que el precio normal.');
+					return;
+				}
 			}
 		}
+
+		const effectiveOferta = enOferta
+			? (usarPrecioPorVariante
+				? Math.min(...variantesPayload.map((v) => v.precio_oferta))
+				: oferta)
+			: 0;
 
 		const detalles = extras
 			.map((atributo) => {
@@ -462,7 +477,7 @@ export default function ProductoForm({
 					precio_base: precioBase,
 					es_tendencia: esTendencia,
 					en_oferta: enOferta,
-					precio_oferta: enOferta ? oferta : 0,
+					precio_oferta: effectiveOferta,
 					precio_por_variante: usarPrecioPorVariante,
 					imagenes,
 					variantes: variantesPayload,
@@ -596,26 +611,12 @@ export default function ProductoForm({
 								minLength={2}
 								maxLength={120}
 								autoFocus
-								placeholder="Camisa de lino"
 								value={nombre}
 								onChange={(event) => setNombre(event.target.value)}
 							/>
-						</label>
-
-						<label className="admin-form__field admin-form__field--full">
-							Slug
-							<input
-								className="admin-form__input"
-								type="text"
-								required
-								maxLength={80}
-								placeholder="camisa-de-lino"
-								value={slug}
-								onChange={(event) => {
-									setSlugLocked(true);
-									setSlug(slugify(event.target.value));
-								}}
-							/>
+							<span className="admin-form__hint">
+								Slug: <strong>{slug || '—'}</strong>
+							</span>
 						</label>
 
 						<label className="admin-form__field admin-form__field--full">
@@ -624,7 +625,6 @@ export default function ProductoForm({
 								className="admin-form__input admin-form__textarea"
 								rows={4}
 								maxLength={4000}
-								placeholder="Tela, corte, cuidados…"
 								value={descripcion}
 								onChange={(event) => setDescripcion(event.target.value)}
 							/>
@@ -632,7 +632,7 @@ export default function ProductoForm({
 
 						<div className="admin-form__row">
 							<label className="admin-form__field">
-								Precio USD
+								Precio de Partida (USD)
 								<input
 									className="admin-form__input"
 									type="number"
@@ -640,14 +640,10 @@ export default function ProductoForm({
 									min={0}
 									step="0.01"
 									inputMode="decimal"
-									placeholder="0.00"
 									autoComplete="off"
 									value={precio}
 									onChange={(event) => setPrecio(event.target.value)}
 								/>
-								<span className="admin-form__hint">
-									Precio USD de partida. Si cambia por talla o color, actívalo más abajo.
-								</span>
 							</label>
 						</div>
 					</div>
@@ -689,22 +685,29 @@ export default function ProductoForm({
 						/>
 					</div>
 					{enOferta ? (
-						<label className="admin-form__field">
-							Precio de oferta USD
-							<input
-								className="admin-form__input"
-								type="number"
-								required
-								min={0}
-								step="0.01"
-								inputMode="decimal"
-								placeholder="0.00"
-								autoComplete="off"
-								value={precioOferta}
-								onChange={(event) => setPrecioOferta(event.target.value)}
-							/>
-							<span className="admin-form__hint">Debe ser menor que el precio USD normal.</span>
-						</label>
+						usarPrecioPorVariante ? (
+							<p className="admin-form__hint admin-form__hint--box">
+								El producto tiene precios distintos por combinación: los precios de oferta se configuran directamente en cada combinación en la sección de variantes y stock abajo.
+							</p>
+						) : (
+							<div className="admin-form__row">
+								<label className="admin-form__field">
+									Precio de oferta USD
+									<input
+										className="admin-form__input"
+										type="number"
+										required
+										min={0}
+										step="0.01"
+										inputMode="decimal"
+										autoComplete="off"
+										value={precioOferta}
+										onChange={(event) => setPrecioOferta(event.target.value)}
+									/>
+									<span className="admin-form__hint">Debe ser menor que el precio de partida.</span>
+								</label>
+							</div>
+						)
 					) : null}
 				</section>
 
@@ -712,16 +715,13 @@ export default function ProductoForm({
 					<h3 className="admin-form__legend">Variantes y stock</h3>
 					{unicas.length === 0 ? (
 						<p className="admin-form__hint admin-form__hint--box">
-							Este producto se vende de una sola forma: un stock y un SKU. Si tiene talla, color u otra
-							opción que el cliente elige, créala antes en{' '}
-							<a href="/admin/catalogo/atributos">Atributos</a> con el tipo “Elige una”.
+							Este producto se vende en una sola presentación. Si deseas ofrecer opciones seleccionables para el cliente, créalas primero en{' '}
+							<a href="/admin/catalogo/atributos">Atributos</a> con el tipo “Una opción”.
 						</p>
 					) : (
 						<>
 							<p className="admin-form__hint">
-								Si el cliente elige talla, color u otra opción, marca cuáles aplican a este producto.
-								Cada combinación tiene su propio stock y SKU. Si no marcas ninguna, el producto queda
-								con un solo código.
+								Selecciona los atributos que aplican a las distintas opciones o presentaciones de este producto. Cada combinación tendrá su propio control de inventario.
 							</p>
 							<div className="admin-picks">
 								{unicas.map((item) => (
@@ -738,7 +738,7 @@ export default function ProductoForm({
 								.filter((item) => varianteAttrs.includes(item.id))
 								.map((item) => (
 									<div key={item.id} className="admin-form__field">
-										¿Qué {item.nombre.toLowerCase()} tiene este producto?
+										¿Qué opciones de {item.nombre.toLowerCase()} aplican a este producto?
 										<div className="admin-picks">
 											{item.opciones.map((opcion) => (
 												<PickChip
@@ -764,35 +764,36 @@ export default function ProductoForm({
 						<ToggleSwitch
 							on={precioPorVariante}
 							title="Precio USD distinto por combinación"
-							hint="Actívalo si XL, un color u otra opción cuesta diferente. Si no, todas usan el mismo precio USD."
+							hint="Actívalo si el precio cambia según la combinación seleccionada."
 							onToggle={() => setPrecioPorVariante((current) => !current)}
 						/>
 					) : null}
 
 					{combinaciones.length === 0 ? (
 						<p className="admin-form__hint admin-form__hint--box">
-							Demasiadas combinaciones (máximo {MAX_COMBINACIONES}). Quita opciones.
+							Demasiadas combinaciones (máximo {MAX_COMBINACIONES}). Reduce opciones.
 						</p>
 					) : (
-						<div className={`admin-variants${usarPrecioPorVariante ? ' admin-variants--priced' : ''}`}>
+						<div
+							className={`admin-variants${usarPrecioPorVariante ? ' admin-variants--priced' : ''}${
+								pedirOfertaPorVariante ? ' admin-variants--with-offer' : ''
+							}`}
+						>
 							{usarPrecioPorVariante ? (
 								<p className="admin-form__hint">
-									Cambia el precio USD solo en las combinaciones que cuesten distinto.
+									{pedirOfertaPorVariante
+										? 'Indica el precio normal y el precio de oferta para cada combinación.'
+										: 'Indica el precio normal para cada combinación.'}
 								</p>
 							) : null}
-							<p className="admin-form__hint">
-								El SKU se genera solo. Negro/M y Negro/L son códigos distintos; si no hay variantes,
-								también se asigna uno. No cambia después de guardar.
-							</p>
 							<div className="admin-variants__head">
 								<span>Combinación</span>
 								{usarPrecioPorVariante ? <span>Precio USD</span> : null}
+								{pedirOfertaPorVariante ? <span>Oferta USD</span> : null}
 								<span>Stock</span>
-								<span>SKU</span>
 							</div>
 							{combinaciones.map((combinacion) => {
-								const draft = variantes[combinacion] ?? { stock: '0', sku: '', precio: '' };
-								const sku = slug.trim() ? skuMap[combinacion] : 'Se asigna al guardar';
+								const draft = variantes[combinacion] ?? { stock: '0', sku: '', precio: '', precio_oferta: '' };
 								return (
 									<div key={combinacion} className="admin-variants__row">
 										<span className="admin-variants__combo">{combinacion}</span>
@@ -804,12 +805,28 @@ export default function ProductoForm({
 												step="0.01"
 												inputMode="decimal"
 												aria-label={`Precio USD ${combinacion}`}
-												placeholder={precio || '0.00'}
 												value={draft.precio === '' ? precio : draft.precio}
 												onChange={(event) =>
 													setVariantes((current) => ({
 														...current,
 														[combinacion]: { ...draft, precio: event.target.value },
+													}))
+												}
+											/>
+										) : null}
+										{pedirOfertaPorVariante ? (
+											<input
+												className="admin-form__input"
+												type="number"
+												min={0}
+												step="0.01"
+												inputMode="decimal"
+												aria-label={`Precio Oferta USD ${combinacion}`}
+												value={draft.precio_oferta}
+												onChange={(event) =>
+													setVariantes((current) => ({
+														...current,
+														[combinacion]: { ...draft, precio_oferta: event.target.value },
 													}))
 												}
 											/>
@@ -829,13 +846,6 @@ export default function ProductoForm({
 												}))
 											}
 										/>
-										<span
-											className={`admin-variants__sku${slug.trim() ? '' : ' is-pending'}`}
-											title={sku}
-											aria-label={`SKU ${combinacion}`}
-										>
-											{sku}
-										</span>
 									</div>
 								);
 							})}
@@ -847,8 +857,7 @@ export default function ProductoForm({
 					<section className="admin-form__block">
 						<h3 className="admin-form__legend">Otros datos</h3>
 						<p className="admin-form__hint">
-							Información fija de este producto: material, marca, peso… No cambia el stock ni crea
-							combinaciones.
+							Datos y especificaciones fijas de este producto (marca, modelo, características técnicas). No afectan el stock ni crean combinaciones.
 						</p>
 						<div className="admin-form__grid">
 							{extras.map((atributo) => {

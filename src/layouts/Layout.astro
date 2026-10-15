@@ -4,38 +4,75 @@ import FloatingCart from '../components/landing/FloatingCart.astro';
 
 interface Props {
 	title?: string;
+	description?: string;
+	canonical?: string;
+	ogImage?: string | null;
+	ogType?: 'website' | 'product';
+	jsonLd?: Record<string, any> | Array<Record<string, any>> | null;
 	storeName?: string;
 	logoUrl?: string | null;
 	whatsapp?: string | null;
 	storeAddress?: string | null;
 	themeVars?: string;
 	fontsHref?: string;
+	showCart?: boolean;
 }
 
 const {
 	title,
-	storeName = 'Demo Tienda',
+	description = 'Catálogo online y tienda virtual de CONFISERVICIO. Encuentra los mejores productos, ofertas exclusivas y precios actualizados con pedido directo por WhatsApp.',
+	canonical,
+	ogImage = null,
+	ogType = 'website',
+	jsonLd = null,
+	storeName = 'CONFISERVICIO',
 	logoUrl = null,
 	whatsapp = null,
 	storeAddress = null,
 	themeVars = '',
 	fontsHref = '',
+	showCart = true,
 } = Astro.props;
 
-const docTitle = title ? `${title} · ${storeName}` : storeName;
+const docTitle = title && title !== 'Inicio' ? `${title} | ${storeName}` : `${storeName} | Tienda Online y Catálogo Oficial`;
 const faviconUrl = logoUrl || '/favicon.ico';
+const currentUrl = canonical || (Astro.site ? new URL(Astro.url.pathname, Astro.site).href : `https://confiservicio.com${Astro.url.pathname}`);
+const shareImage = ogImage || logoUrl || 'https://confiservicio.com/favicon.png';
 ---
 
 <!doctype html>
 <html lang="es" style={themeVars}>
 	<head>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{docTitle}</title>
+		<meta name="description" content={description} />
+		<link rel="canonical" href={currentUrl} />
+
+		<!-- OpenGraph / Facebook -->
+		<meta property="og:type" content={ogType} />
+		<meta property="og:url" content={currentUrl} />
+		<meta property="og:title" content={docTitle} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={shareImage} />
+		<meta property="og:site_name" content={storeName} />
+		<meta property="og:locale" content="es_VE" />
+
+		<!-- Twitter Cards -->
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:url" content={currentUrl} />
+		<meta name="twitter:title" content={docTitle} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={shareImage} />
+
+		<!-- Favicons & Mobile Icons -->
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" type="image/webp" href={logoUrl || '/favicon.webp'} />
 		<link rel="icon" type="image/png" href="/favicon.png" />
 		<link rel="icon" href={faviconUrl} />
 		<link rel="apple-touch-icon" href={logoUrl || '/favicon.png'} />
+
+		<!-- Google Fonts -->
 		{fontsHref ? (
 			<>
 				<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,11 +80,29 @@ const faviconUrl = logoUrl || '/favicon.ico';
 				<link href={fontsHref} rel="stylesheet" />
 			</>
 		) : null}
+
 		<meta name="generator" content={Astro.generator} />
-		<title>{docTitle}</title>
+
+		<!-- Schema.org Datos Estructurados -->
+		{jsonLd ? (
+			<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+		) : (
+			<script type="application/ld+json" set:html={JSON.stringify({
+				"@context": "https://schema.org",
+				"@type": "Store",
+				"name": storeName,
+				"url": "https://confiservicio.com",
+				"logo": logoUrl || "https://confiservicio.com/favicon.png",
+				"description": description,
+				...(storeAddress ? { "address": { "@type": "PostalAddress", "streetAddress": storeAddress } } : {}),
+				...(whatsapp ? { "telephone": whatsapp } : {})
+			})} />
+		)}
 	</head>
 	<body class="storefront">
 		<slot />
-		<FloatingCart storeName={storeName} whatsapp={whatsapp} storeAddress={storeAddress} />
+		{showCart ? (
+			<FloatingCart storeName={storeName} whatsapp={whatsapp} storeAddress={storeAddress} />
+		) : null}
 	</body>
 </html>

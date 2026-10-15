@@ -159,22 +159,33 @@ const variantPrice =
 		: basePrice;
 
 const offerActive = Boolean(producto.en_oferta);
+const variantOffer =
+	variante && isByVariant && Number(variante.precio_oferta) > 0
+		? Number(variante.precio_oferta)
+		: 0;
 const offerPrice = Number(producto.precio_oferta) || 0;
-const hasOffer = offerActive && offerPrice > 0 && offerPrice < basePrice;
 
 let regularPrice = variantPrice;
 let salePrice = regularPrice;
 let descuento = 0;
+let hasOffer = false;
 
-if (hasOffer) {
-	if (regularPrice === basePrice) {
-		salePrice = offerPrice;
-	} else {
-		const ratio = (basePrice - offerPrice) / basePrice;
-		salePrice = Math.round(regularPrice * (1 - ratio) * 100) / 100;
-	}
-	if (regularPrice > salePrice) {
+if (offerActive) {
+	if (variantOffer > 0 && variantOffer < regularPrice) {
+		salePrice = variantOffer;
+		hasOffer = true;
 		descuento = Math.round((1 - salePrice / regularPrice) * 100);
+	} else if (offerPrice > 0 && offerPrice < basePrice) {
+		if (regularPrice === basePrice) {
+			salePrice = offerPrice;
+		} else {
+			const ratio = (basePrice - offerPrice) / basePrice;
+			salePrice = Math.round(regularPrice * (1 - ratio) * 100) / 100;
+		}
+		if (regularPrice > salePrice) {
+			hasOffer = true;
+			descuento = Math.round((1 - salePrice / regularPrice) * 100);
+		}
 	}
 }
 
@@ -215,6 +226,7 @@ const waAskHref = waNumber
 	: null;
 
 const pdpData = {
+	id: producto.id,
 	nombre: producto.nombre,
 	slug: producto.slug,
 	whatsapp: waNumber,
@@ -225,18 +237,58 @@ const pdpData = {
 	combinacionUnica: COMBINACION_UNICA,
 	grupos,
 	variantes: producto.variantes.map((row) => ({
+		id: row.id,
 		combinacion: row.combinacion,
 		stock: row.stock,
 		sku: row.sku,
 		precio: row.precio,
+		precio_oferta: row.precio_oferta ?? 0,
 	})),
 	fotos: fotos.map((img) => ({ url: img.url })),
+	tasaBcv: Number(configuracion?.tasa_bcv || config.tasa_bcv || 0),
+	tasaCop: Number(configuracion?.tasa_cop || config.tasa_cop || 0),
 };
 const pdpDataJson = JSON.stringify(pdpData);
+
+// SEO y Schema.org estructurado para el producto
+const seoDescription = producto.descripcion
+	? producto.descripcion.slice(0, 155).trim()
+	: `Compra ${producto.nombre} en ${storeName}. Disponibilidad inmediata, opciones personalizadas y pedidos directos por WhatsApp.`;
+
+const canonicalProductUrl = `https://confiservicio.com/landing/${producto.slug}`;
+const mainProductImage = fotos[0]?.url || brand.logoUrl || "https://confiservicio.com/favicon.png";
+
+const productJsonLd = {
+	"@context": "https://schema.org/",
+	"@type": "Product",
+	"name": producto.nombre,
+	"image": fotos.map((f) => f.url),
+	"description": seoDescription,
+	"sku": variante?.sku || producto.slug,
+	"offers": {
+		"@type": "Offer",
+		"url": canonicalProductUrl,
+		"priceCurrency": "USD",
+		"price": String(payPrice.toFixed(2)),
+		"availability": disponible
+			? "https://schema.org/InStock"
+			: "https://schema.org/OutOfStock",
+		"itemCondition": "https://schema.org/NewCondition",
+		"seller": {
+			"@type": "Organization",
+			"name": storeName,
+		},
+	},
+};
 ---
 
 <Layout
 	title={producto.nombre}
+	description={seoDescription}
+	canonical={canonicalProductUrl}
+	ogImage={mainProductImage}
+	ogType="product"
+	jsonLd={productJsonLd}
 	storeName={storeName}
 	logoUrl={brand.logoUrl}
 	whatsapp={brand.whatsapp}
@@ -248,6 +300,8 @@ const pdpDataJson = JSON.stringify(pdpData);
 		storeName={storeName}
 		logoUrl={brand.logoUrl}
 		categorias={navCategorias}
+		tasaBcv={configuracion?.tasa_bcv || config.tasa_bcv}
+		tasaCop={configuracion?.tasa_cop || config.tasa_cop}
 	/>
 
 	<main class="page-pdp" id="top" data-pdp>
@@ -1020,16 +1074,43 @@ const pdpDataJson = JSON.stringify(pdpData);
 		picked: {},
 		qty: 1,
 		activePhotoIndex: 0,
+		currentMoneda: "USD",
 	};
 	const qs = (sel, ctx = document) => ctx.querySelector(sel);
 	const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
-	const formatMoney = (val) =>
-		new Intl.NumberFormat("es-VE", {
+	try {
+		const saved = localStorage.getItem("demo_tienda_moneda_activa");
+		if (saved === "USD" || saved === "VES" || saved === "COP") {
+			state.currentMoneda = saved;
+		}
+	} catch {
+		// ignore
+	}
+
+	const formatMoney = (val) => {
+		const base = Number(val) || 0;
+		if (state.currentMoneda === "VES") {
+			const tasa = state.data.tasaBcv > 0 ? state.data.tasaBcv : 1;
+			const enBs = base * tasa;
+			return "Bs. " + new Intl.NumberFormat("es-VE", {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			}).format(enBs);
+		}
+		if (state.currentMoneda === "COP") {
+			const tasa = state.data.tasaCop > 0 ? state.data.tasaCop : 1;
+			const enCop = Math.round(base * tasa);
+			return "$ " + new Intl.NumberFormat("es-CO", {
+				maximumFractionDigits: 0,
+			}).format(enCop) + " COP";
+		}
+		return new Intl.NumberFormat("es-VE", {
 			style: "currency",
 			currency: "USD",
 			minimumFractionDigits: 2,
-		}).format(val);
+		}).format(base);
+	};
 
 	function getCombo() {
 		return state.data.grupos.length === 0
@@ -1097,23 +1178,33 @@ const pdpDataJson = JSON.stringify(pdpData);
 				: basePrice;
 
 		const offerActive = Boolean(state.data.enOferta);
+		const variantOffer =
+			v && isByVariant && Number(v.precio_oferta) > 0
+				? Number(v.precio_oferta)
+				: 0;
 		const offerPrice = Number(state.data.precioOferta) || 0;
-		const hasOffer =
-			offerActive && offerPrice > 0 && offerPrice < basePrice;
 
 		let regularPrice = variantPrice;
 		let salePrice = regularPrice;
 		let discount = 0;
+		let hasOffer = false;
 
-		if (hasOffer) {
-			if (regularPrice === basePrice) {
-				salePrice = offerPrice;
-			} else {
-				const ratio = (basePrice - offerPrice) / basePrice;
-				salePrice = Math.round(regularPrice * (1 - ratio) * 100) / 100;
-			}
-			if (regularPrice > salePrice) {
+		if (offerActive) {
+			if (variantOffer > 0 && variantOffer < regularPrice) {
+				salePrice = variantOffer;
+				hasOffer = true;
 				discount = Math.round((1 - salePrice / regularPrice) * 100);
+			} else if (offerPrice > 0 && offerPrice < basePrice) {
+				if (regularPrice === basePrice) {
+					salePrice = offerPrice;
+				} else {
+					const ratio = (basePrice - offerPrice) / basePrice;
+					salePrice = Math.round(regularPrice * (1 - ratio) * 100) / 100;
+				}
+				if (regularPrice > salePrice) {
+					hasOffer = true;
+					discount = Math.round((1 - salePrice / regularPrice) * 100);
+				}
 			}
 		}
 
@@ -1308,8 +1399,8 @@ const pdpDataJson = JSON.stringify(pdpData);
 					? v.combinacion
 					: getCombo();
 
-			const variantKey = v ? (v.sku || v.combinacion || "base") : "base";
-			const itemId = `${state.data.slug}__${variantKey}`;
+			const variantKey = v ? (v.id || v.sku || v.combinacion || "base") : "base";
+			const itemId = `${state.data.id || state.data.slug}__${variantKey}`;
 			const firstPhoto = state.data.fotos.length > 0 ? state.data.fotos[0].url : null;
 
 			window.dispatchEvent(
@@ -1317,7 +1408,8 @@ const pdpDataJson = JSON.stringify(pdpData);
 					detail: {
 						product: {
 							id: itemId,
-							productId: state.data.slug,
+							productId: state.data.id || state.data.slug,
+							varianteId: v ? v.id : null,
 							slug: state.data.slug,
 							nombre: state.data.nombre,
 							combinacion: comboLabel,
@@ -1545,6 +1637,17 @@ const pdpDataJson = JSON.stringify(pdpData);
 
 		// Sincronizar estado inicial
 		updateVariant();
+
+		// Escuchar cambio dinámico de moneda
+		window.addEventListener("confi-currency:change", (e) => {
+			const { moneda, tasaBcv, tasaCop } = e.detail || {};
+			if (moneda) {
+				state.currentMoneda = moneda;
+				if (tasaBcv) state.data.tasaBcv = Number(tasaBcv);
+				if (tasaCop) state.data.tasaCop = Number(tasaCop);
+				updateVariant();
+			}
+		});
 	}
 
 	if (document.readyState === "loading") {

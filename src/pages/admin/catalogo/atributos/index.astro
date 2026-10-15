@@ -9,5 +9,5 @@ const items = await listAtributos();
 ---
 
 <AdminLayout title="Atributos">
-	<AtributosCrud client:load initialItems={items} />
+	<AtributosCrud client:only="react" initialItems={items} />
 </AdminLayout>

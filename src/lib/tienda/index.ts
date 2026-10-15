@@ -6,6 +6,8 @@ export type TiendaConfig = {
 	nombre_tienda: string | null;
 	logo_url: string | null;
 	whatsapp: string | null;
+	tasa_bcv: number | null;
+	tasa_cop: number | null;
 };
 
 export type TiendaConfiguracion = {
@@ -21,6 +23,8 @@ export type TiendaConfiguracion = {
 	whatsapp: string | null;
 	logo_url: string | null;
 	google_analytics: string | null;
+	tasa_bcv: number | null;
+	tasa_cop: number | null;
 };
 
 export type TiendaConfiguracionInput = Omit<TiendaConfiguracion, 'id'>;
@@ -77,6 +81,8 @@ export const DEFAULT_CONFIG: TiendaConfig = {
 	nombre_tienda: 'Demo Tienda',
 	logo_url: null,
 	whatsapp: null,
+	tasa_bcv: null,
+	tasa_cop: null,
 };
 
 export const EMPTY_TIENDA_FORM: TiendaConfiguracionInput = {
@@ -91,12 +97,20 @@ export const EMPTY_TIENDA_FORM: TiendaConfiguracionInput = {
 	whatsapp: '',
 	logo_url: '',
 	google_analytics: '',
+	tasa_bcv: null,
+	tasa_cop: null,
 };
 
 function asText(value: unknown) {
 	if (value == null) return null;
 	const text = String(value).trim();
 	return text.length > 0 ? text : null;
+}
+
+function asNumber(value: unknown): number | null {
+	if (value == null || value === '') return null;
+	const num = Number(value);
+	return Number.isFinite(num) && num > 0 ? num : null;
 }
 
 function mapConfiguracion(row: Record<string, unknown>): TiendaConfiguracion {
@@ -113,6 +127,8 @@ function mapConfiguracion(row: Record<string, unknown>): TiendaConfiguracion {
 		whatsapp: asText(row.whatsapp),
 		logo_url: asText(row.logo_url),
 		google_analytics: asText(row.google_analytics),
+		tasa_bcv: asNumber(row.tasa_bcv),
+		tasa_cop: asNumber(row.tasa_cop),
 	};
 }
 
@@ -129,6 +145,8 @@ export function sanitizeTiendaInput(raw: Record<string, unknown>): TiendaConfigu
 		whatsapp: asText(raw.whatsapp)?.replace(/[^\d+]/g, '') ?? null,
 		logo_url: asText(raw.logo_url),
 		google_analytics: asText(raw.google_analytics),
+		tasa_bcv: asNumber(raw.tasa_bcv),
+		tasa_cop: asNumber(raw.tasa_cop),
 	};
 }
 
@@ -141,6 +159,14 @@ export function validateTiendaInput(input: TiendaConfiguracionInput) {
 		return 'El correo no es válido.';
 	}
 
+	if (input.tasa_bcv !== null && input.tasa_bcv <= 0) {
+		return 'La tasa en Bolívares debe ser un valor numérico positivo.';
+	}
+
+	if (input.tasa_cop !== null && input.tasa_cop <= 0) {
+		return 'La tasa en Pesos (COP) debe ser un valor numérico positivo.';
+	}
+
 	return null;
 }
 
@@ -148,7 +174,7 @@ export async function getTiendaConfig(): Promise<TiendaConfig> {
 	try {
 		const db = getDb();
 		const result = await db.execute(`
-			SELECT id, nombre_tienda, logo_url, whatsapp
+			SELECT id, nombre_tienda, logo_url, whatsapp, tasa_bcv, tasa_cop
 			FROM tienda_configuracion
 			ORDER BY nombre_tienda COLLATE NOCASE
 			LIMIT 1
@@ -161,6 +187,8 @@ export async function getTiendaConfig(): Promise<TiendaConfig> {
 			nombre_tienda: (row.nombre_tienda as string | null) ?? DEFAULT_CONFIG.nombre_tienda,
 			logo_url: (row.logo_url as string | null) ?? null,
 			whatsapp: (row.whatsapp as string | null) ?? null,
+			tasa_bcv: asNumber(row.tasa_bcv),
+			tasa_cop: asNumber(row.tasa_cop),
 		};
 	} catch {
 		return DEFAULT_CONFIG;
@@ -170,7 +198,8 @@ export async function getTiendaConfig(): Promise<TiendaConfig> {
 const CONFIG_SELECT = `
 	SELECT
 		id, nombre_tienda, rif, telefono, correo, direccion, horario,
-		instagram, tiktok, whatsapp, logo_url, google_analytics
+		instagram, tiktok, whatsapp, logo_url, google_analytics,
+		tasa_bcv, tasa_cop
 	FROM tienda_configuracion
 	LIMIT 1
 `;
@@ -202,7 +231,9 @@ export async function saveTiendaConfiguracion(input: TiendaConfiguracionInput) {
 					tiktok = ?,
 					whatsapp = ?,
 					logo_url = ?,
-					google_analytics = ?
+					google_analytics = ?,
+					tasa_bcv = ?,
+					tasa_cop = ?
 				WHERE id = ?
 			`,
 			args: [
@@ -217,6 +248,8 @@ export async function saveTiendaConfiguracion(input: TiendaConfiguracionInput) {
 				input.whatsapp,
 				logoUrl,
 				input.google_analytics,
+				input.tasa_bcv,
+				input.tasa_cop,
 				current.id,
 			],
 		});
@@ -229,8 +262,9 @@ export async function saveTiendaConfiguracion(input: TiendaConfiguracionInput) {
 		sql: `
 			INSERT INTO tienda_configuracion (
 				id, nombre_tienda, rif, telefono, correo, direccion, horario,
-				instagram, tiktok, whatsapp, logo_url, google_analytics
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				instagram, tiktok, whatsapp, logo_url, google_analytics,
+				tasa_bcv, tasa_cop
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`,
 		args: [
 			id,
@@ -245,6 +279,8 @@ export async function saveTiendaConfiguracion(input: TiendaConfiguracionInput) {
 			input.whatsapp,
 			logoUrl,
 			input.google_analytics,
+			input.tasa_bcv,
+			input.tasa_cop,
 		],
 	});
 

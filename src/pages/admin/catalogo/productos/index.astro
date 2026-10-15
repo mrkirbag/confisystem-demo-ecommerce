@@ -20,7 +20,7 @@ const [items, categorias, subcategorias, atributos, config] = await Promise.all(
 
 <AdminLayout title="Productos">
 	<ProductosCrud
-		client:load
+		client:only="react"
 		initialItems={items}
 		categorias={categorias}
 		subcategorias={subcategorias}

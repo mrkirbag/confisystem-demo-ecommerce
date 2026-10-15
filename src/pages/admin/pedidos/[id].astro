@@ -1,0 +1,1357 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import AdminSectionHeader from "@/components/admin/AdminSectionHeader.astro";
+import {
+	getPedidoById,
+	formatPrecio,
+	formatFechaCorta,
+	estadoBadgeInfo,
+} from "@/lib/pedidos";
+import { getDb } from "@/lib/db";
+import { getTiendaConfiguracion } from "@/lib/tienda";
+
+export const prerender = false;
+
+const id = Astro.params.id as string;
+const [pedido, tiendaConfig] = await Promise.all([
+	getPedidoById(id),
+	getTiendaConfiguracion(),
+]);
+
+if (!pedido) {
+	return Astro.redirect("/admin/pedidos");
+}
+
+const tasaBcv = Number(tiendaConfig?.tasa_bcv || 0);
+const tasaCop = Number(tiendaConfig?.tasa_cop || 0);
+
+const badge = estadoBadgeInfo(pedido.estado);
+
+const db = getDb();
+const prodsQuery = await db.execute(`
+	SELECT p.id, p.nombre, p.slug, p.precio_base, p.en_oferta, p.precio_oferta, p.precio_por_variante,
+		(SELECT url FROM productos_imagenes WHERE producto_id = p.id ORDER BY orden ASC LIMIT 1) AS imagen_url
+	FROM productos p
+	WHERE p.activo = 1
+	ORDER BY p.nombre ASC
+`);
+
+const varsQuery = await db.execute(`
+	SELECT id, producto_id, combinacion, stock, sku, precio, COALESCE(precio_oferta, 0) AS precio_oferta
+	FROM producto_stock_variantes
+	ORDER BY combinacion ASC
+`);
+
+const variantesMap: Record<string, any[]> = {};
+const stockActualMap: Record<string, number> = {};
+for (const raw of varsQuery.rows) {
+	const r = raw as Record<string, unknown>;
+	const pId = String(r.producto_id);
+	const vId = String(r.id);
+	const st = Number(r.stock ?? 0);
+	stockActualMap[vId] = st;
+	if (!variantesMap[pId]) variantesMap[pId] = [];
+	variantesMap[pId].push({
+		id: vId,
+		combinacion: String(r.combinacion || "Único"),
+		stock: st,
+		sku: String(r.sku || ""),
+		precio: Number(r.precio ?? 0),
+		precio_oferta: Number(r.precio_oferta ?? 0),
+	});
+}
+
+// Cantidad original en este pedido por variante (stock ya reservado)
+const stockOriginalPedido: Record<string, number> = {};
+for (const it of pedido.items) {
+	if (it.variante_id) {
+		stockOriginalPedido[it.variante_id] =
+			(stockOriginalPedido[it.variante_id] || 0) + it.cantidad;
+	}
+}
+
+const catalogo = prodsQuery.rows.map((raw) => {
+	const r = raw as Record<string, unknown>;
+	const pId = String(r.id);
+	return {
+		id: pId,
+		nombre: String(r.nombre || ""),
+		slug: String(r.slug || ""),
+		precio_base: Number(r.precio_base ?? 0),
+		en_oferta: Boolean(r.en_oferta),
+		precio_oferta: Number(r.precio_oferta ?? 0),
+		precio_por_variante: Boolean(r.precio_por_variante),
+		imagen_url: r.imagen_url ? String(r.imagen_url) : null,
+		variantes: variantesMap[pId] || [],
+	};
+});
+
+function cleanPhone(ph: string) {
+	const digits = (ph || "").replace(/\D/g, "");
+	if (!digits) return "";
+	if (digits.startsWith("0") && digits.length === 11)
+		return "58" + digits.slice(1);
+	if (
+		digits.length === 10 &&
+		["414", "424", "412", "416", "426"].some((p) => digits.startsWith(p))
+	) {
+		return "58" + digits;
+	}
+	return digits;
+}
+
+const waPhone = cleanPhone(pedido.cliente_telefono);
+const waLink = waPhone
+	? `https://wa.me/${waPhone}?text=${encodeURIComponent(`Hola ${pedido.cliente_nombre}, te escribimos sobre tu pedido #${pedido.codigo}.`)}`
+	: null;
+
+function initials(name: string) {
+	const p = (name || "").trim().split(/\s+/).filter(Boolean);
+	if (p.length === 0) return "C";
+	if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+	return `${p[0][0]}${p[1][0]}`.toUpperCase();
+}
+
+const esCombo = (c: string | null) =>
+	!!c && !["DEFAULT", "Única", "Único"].includes(c);
+---
+
+<AdminLayout title={`Pedido #${pedido.codigo}`}>
+	<section
+		class="orders-page"
+		data-order-detail-page
+		data-order-id={pedido.id}
+	>
+		<a href="/admin/pedidos" class="order-back">
+			<svg
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+				aria-hidden="true"
+			>
+				<line x1="19" y1="12" x2="5" y2="12"></line>
+				<polyline points="12 19 5 12 12 5"></polyline>
+			</svg>
+			Volver a pedidos
+		</a>
+
+		<div class="order-detail-head">
+			<div>
+				<AdminSectionHeader
+					title={`Pedido #${pedido.codigo}`}
+					kicker="Venta"
+				/>
+				<p class="order-detail-sub">
+					<span class:list={["order-badge", badge.className]}
+						>{badge.label}</span
+					>
+					<span>
+						Registrado el {formatFechaCorta(pedido.creado_en)}
+						{
+							pedido.confirmado_por_nombre
+								? ` · Aprobado por ${pedido.confirmado_por_nombre}`
+								: ""
+						}
+					</span>
+				</p>
+			</div>
+
+			<div class="order-detail-actions">
+				<button
+					type="button"
+					class="admin-btn admin-btn--ghost"
+					data-btn-save
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+					>
+						<path
+							d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+						></path>
+						<polyline points="17 21 17 13 7 13 7 21"></polyline>
+						<polyline points="7 3 7 8 15 8"></polyline>
+					</svg>
+					Guardar cambios
+				</button>
+				<button
+					type="button"
+					class="admin-btn admin-btn--danger"
+					data-btn-cancel
+					disabled={pedido.estado === "cancelada"}
+					title="Cancela la venta y devuelve el stock al inventario"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="10"></circle>
+						<line x1="15" y1="9" x2="9" y2="15"></line>
+						<line x1="9" y1="9" x2="15" y2="15"></line>
+					</svg>
+					Cancelar venta
+				</button>
+				<button
+					type="button"
+					class="admin-btn admin-btn--primary"
+					data-btn-accept
+					disabled={pedido.estado === "confirmada"}
+					title="Confirma la venta y la suma a las estadísticas"
+				>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						aria-hidden="true"
+					>
+						<polyline points="20 6 9 17 4 12"></polyline>
+					</svg>
+					Aceptar venta
+				</button>
+			</div>
+		</div>
+
+		<div class="admin-form__alert" data-order-alert role="alert"></div>
+
+		<div class="order-detail-layout">
+			<div class="order-detail-col">
+				<div class="order-card-panel">
+					<div class="order-card-panel__head">
+						<div>
+							<h2 class="order-card-panel__title">
+								Productos en la venta (<span data-items-count
+									>{pedido.items.length}</span
+								>)
+							</h2>
+							<p
+								class="order-card-panel__text"
+								style="margin: 0.35rem 0 0 0.7rem;"
+							>
+								Ajusta precios unitarios y cantidades o agrega
+								más ítems.
+							</p>
+						</div>
+						<button
+							type="button"
+							class="admin-btn admin-btn--primary admin-btn--icon-label"
+							data-open-add-product
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+								style="width:1rem;height:1rem;"
+							>
+								<line x1="12" y1="5" x2="12" y2="19"></line>
+								<line x1="5" y1="12" x2="19" y2="12"></line>
+							</svg>
+							Agregar producto
+						</button>
+					</div>
+
+					<div class="admin-table-wrap">
+						<table
+							class="admin-table admin-table--simple order-products-table"
+						>
+							<thead>
+								<tr>
+									<th>Producto</th>
+									<th>Precio unit.</th>
+									<th>Cant.</th>
+									<th>Subtotal</th>
+									<th class="admin-table__th-actions">
+										<span class="sr-only">Quitar</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody data-items-tbody>
+								{
+									pedido.items.map((it) => {
+										const stDisp = it.variante_id
+											? (stockActualMap[it.variante_id] ??
+												999)
+											: 999;
+										const origQty = it.variante_id
+											? (stockOriginalPedido[
+													it.variante_id
+												] ?? it.cantidad)
+											: it.cantidad;
+										const maxPermitido = origQty + stDisp;
+										return (
+											<tr
+												data-item-row
+												data-item-id={it.id}
+												data-product-id={it.producto_id}
+												data-variant-id={
+													it.variante_id || ""
+												}
+												data-product-name={
+													it.nombre_producto
+												}
+												data-combination={
+													it.combinacion || "Única"
+												}
+												data-img={it.imagen_url || ""}
+												data-stock-available={stDisp}
+												data-max-qty={maxPermitido}
+											>
+												<td>
+													<div class="order-item-prod">
+														{it.imagen_url ? (
+															<img
+																class="order-item-thumb"
+																src={
+																	it.imagen_url
+																}
+																alt=""
+															/>
+														) : (
+															<span class="order-item-thumb">
+																{it.nombre_producto
+																	.slice(0, 2)
+																	.toUpperCase()}
+															</span>
+														)}
+														<div class="admin-table__identity">
+															<span class="admin-table__name">
+																{
+																	it.nombre_producto
+																}
+															</span>
+															{esCombo(
+																it.combinacion,
+															) ? (
+																<span class="admin-table__meta">
+																	{
+																		it.combinacion
+																	}
+																</span>
+															) : null}
+															{it.variante_id ? (
+																<span
+																	class="order-item-stock-tag"
+																	data-item-stock-hint
+																>
+																	Stock
+																	disponible:{" "}
+																	{stDisp}{" "}
+																	(Máx:{" "}
+																	{
+																		maxPermitido
+																	}
+																	)
+																</span>
+															) : null}
+														</div>
+													</div>
+												</td>
+												<td>
+													<div class="order-input-currency">
+														<span class="order-input-currency__symbol">
+															$
+														</span>
+														<input
+															type="number"
+															step="0.01"
+															min="0"
+															class="admin-form__input order-num-input"
+															data-item-price-input
+															aria-label="Precio unitario"
+															value={
+																it.precio_unitario
+															}
+														/>
+													</div>
+												</td>
+												<td>
+													<input
+														type="number"
+														step="1"
+														min="1"
+														max={maxPermitido}
+														class="admin-form__input order-num-input order-num-input--qty"
+														data-item-qty-input
+														aria-label="Cantidad"
+														title={`Máximo disponible: ${maxPermitido}`}
+														value={it.cantidad}
+													/>
+												</td>
+												<td
+													class="order-money"
+													data-item-subtotal-cell
+												>
+													{formatPrecio(it.subtotal)}
+												</td>
+												<td class="admin-table__td-actions">
+													<button
+														type="button"
+														class="admin-btn admin-btn--danger admin-btn--icon"
+														data-btn-delete-item
+														aria-label="Quitar producto"
+														title="Quitar producto"
+													>
+														<svg
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+															aria-hidden="true"
+														>
+															<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+														</svg>
+													</button>
+												</td>
+											</tr>
+										);
+									})
+								}
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<div class="order-card-panel">
+					<div class="order-card-panel__head">
+						<h2 class="order-card-panel__title">
+							Notas internas del pedido
+						</h2>
+					</div>
+					<p
+						class="order-card-panel__text"
+						style="margin-left: 0.7rem;"
+					>
+						Anotaciones sobre acuerdos especiales, dirección de
+						entrega o comentarios del cliente.
+					</p>
+					<textarea
+						class="admin-form__textarea order-notes-textarea"
+						rows="3"
+						data-order-notes
+						aria-label="Notas del pedido"
+						placeholder="Ej: Acordado pago por Zelle al recibir, entregar después de las 2:00 PM…"
+						>{pedido.nota || ""}</textarea
+					>
+				</div>
+			</div>
+
+			<div class="order-detail-col">
+				<!-- Acordeón de Datos del Cliente -->
+				<details class="order-accordion" open>
+					<summary class="order-accordion__summary">
+						<div class="order-accordion__header-left">
+							<span
+								class="order-accordion__avatar"
+								aria-hidden="true"
+							>
+								{initials(pedido.cliente_nombre)}
+							</span>
+							<div class="order-accordion__title-group">
+								<h2 class="order-accordion__title">
+									Datos del Cliente
+								</h2>
+								<span class="order-accordion__subtitle"
+									>{pedido.cliente_nombre}</span
+								>
+							</div>
+						</div>
+						<svg
+							class="order-accordion__chevron"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							aria-hidden="true"
+						>
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</summary>
+
+					<div class="order-accordion__content">
+						<dl class="order-datalist">
+							<div class="order-datalist__item">
+								<dt>Nombre Completo</dt>
+								<dd class="order-datalist__val-highlight">
+									{pedido.cliente_nombre}
+								</dd>
+							</div>
+
+							{
+								pedido.cliente_cedula ? (
+									<div class="order-datalist__item">
+										<dt>Cédula / RIF</dt>
+										<dd>{pedido.cliente_cedula}</dd>
+									</div>
+								) : null
+							}
+
+							<div class="order-datalist__item">
+								<dt>Teléfono de Contacto</dt>
+								<dd class="order-datalist__phone">
+									<a
+										href={`tel:${pedido.cliente_telefono}`}
+										class="order-phone-link"
+									>
+										{pedido.cliente_telefono}
+									</a>
+									{
+										waLink ? (
+											<a
+												class="admin-btn admin-btn--success admin-btn--icon-label order-wa-btn"
+												href={waLink}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												<svg
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+													aria-hidden="true"
+													style="width:0.95rem;height:0.95rem;"
+												>
+													<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+												</svg>
+												WhatsApp
+											</a>
+										) : null
+									}
+								</dd>
+							</div>
+
+							<div class="order-datalist__item">
+								<dt>Modalidad de Entrega</dt>
+								<dd>
+									<span
+										class={`order-delivery-tag ${pedido.modalidad_entrega === "delivery" ? "is-delivery" : "is-pickup"}`}
+									>
+										{
+											pedido.modalidad_entrega ===
+											"delivery"
+												? "🚚 Envío a domicilio"
+												: "🏬 Retiro en tienda"
+										}
+									</span>
+								</dd>
+							</div>
+
+							{
+								pedido.direccion_envio ? (
+									<div class="order-datalist__item">
+										<dt>Dirección de Envío</dt>
+										<dd class="order-datalist__address">
+											{pedido.direccion_envio}
+										</dd>
+									</div>
+								) : null
+							}
+
+							{
+								pedido.metodo_pago ? (
+									<div class="order-datalist__item">
+										<dt>Método de Pago Seleccionado</dt>
+										<dd>
+											<span class="order-payment-tag">
+												{pedido.metodo_pago}
+											</span>
+										</dd>
+									</div>
+								) : null
+							}
+						</dl>
+					</div>
+				</details>
+
+				<!-- Tarjeta de Resumen Financiero -->
+				<div class="order-card-panel order-card-panel--summary">
+					<div class="order-card-panel__head">
+						<h2 class="order-card-panel__title">
+							Resumen de Cuenta
+						</h2>
+					</div>
+					<div class="order-summary">
+						<div class="order-summary__row">
+							<span>Subtotal productos</span>
+							<strong data-summary-subtotal
+								>{formatPrecio(pedido.subtotal)}</strong
+							>
+						</div>
+						<div class="order-summary__row">
+							<label for="order-shipping">Costo de envío</label>
+							<div class="order-input-currency">
+								<span class="order-input-currency__symbol"
+									>$</span
+								>
+								<input
+									id="order-shipping"
+									type="number"
+									step="0.01"
+									min="0"
+									class="admin-form__input order-num-input"
+									data-shipping-fee-input
+									value={pedido.monto_envio}
+								/>
+							</div>
+						</div>
+						<div class="order-summary__row order-summary__total">
+							<div>
+								<span>Total a cobrar</span>
+								<small class="order-summary__total-hint"
+									>Monto final acordado</small
+								>
+							</div>
+							<div style="text-align: right;">
+								<strong
+									data-summary-grand-total
+									style="display: block;"
+									>{formatPrecio(pedido.total)}</strong
+								>
+								<div
+									class="order-multicurrency-preview"
+									data-multicurrency-preview
+									style="margin-top: 0.35rem; font-size: 0.82rem; color: color-mix(in srgb, var(--ink-on-panel, var(--ink)) 75%, transparent); display: flex; flex-direction: column; gap: 0.15rem;"
+								>
+									<span data-total-ves></span>
+									<span data-total-cop></span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div
+			class="order-modal"
+			id="modal-add-product"
+			hidden
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="modal-add-title"
+		>
+			<div class="order-modal__box">
+				<div class="order-modal__head">
+					<h2 id="modal-add-title">Agregar producto</h2>
+					<button
+						type="button"
+						class="admin-btn admin-btn--ghost admin-btn--icon"
+						data-close-modal
+						aria-label="Cerrar">✕</button
+					>
+				</div>
+
+				<div class="admin-form">
+					<div class="admin-form__field">
+						<label
+							for="modal-search-product"
+							class="admin-form__label"
+						>
+							Buscar producto
+						</label>
+						<div class="order-modal-search-wrap">
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+								class="order-modal-search-icon"
+							>
+								<circle cx="11" cy="11" r="8"></circle>
+								<line x1="21" y1="21" x2="16.65" y2="16.65"
+								></line>
+							</svg>
+							<input
+								type="search"
+								id="modal-search-product"
+								class="admin-form__input order-modal-search-input"
+								placeholder="Escribe el nombre del producto para filtrar…"
+								autocomplete="off"
+							/>
+						</div>
+					</div>
+
+					<label class="admin-form__field">
+						<span class="admin-form__label">
+							Producto seleccionado (<span
+								id="modal-products-found-count"
+								>{catalogo.length}</span
+							> disponibles)
+						</span>
+						<select
+							class="admin-form__select"
+							id="modal-select-product"
+						>
+							<option value="">Elige un producto</option>
+							{
+								catalogo.map((prod) => (
+									<option value={prod.id}>
+										{prod.nombre} (
+										{formatPrecio(prod.precio_base)})
+									</option>
+								))
+							}
+						</select>
+					</label>
+
+					<label
+						class="admin-form__field"
+						id="modal-variant-group"
+						hidden
+					>
+						<span class="admin-form__label">Variante / Opción</span>
+						<select
+							class="admin-form__select"
+							id="modal-select-variant"></select>
+					</label>
+
+					<div class="admin-form__grid">
+						<label class="admin-form__field">
+							Precio unitario ($)
+							<input
+								type="number"
+								step="0.01"
+								min="0"
+								class="admin-form__input"
+								id="modal-input-price"
+								value="0.00"
+							/>
+						</label>
+						<label class="admin-form__field">
+							<span
+								>Cantidad <span
+									id="modal-stock-hint"
+									class="order-stock-hint-badge"
+									hidden></span></span
+							>
+							<input
+								type="number"
+								step="1"
+								min="1"
+								class="admin-form__input"
+								id="modal-input-qty"
+								value="1"
+							/>
+						</label>
+					</div>
+
+					<div class="order-modal__actions">
+						<button
+							type="button"
+							class="admin-btn admin-btn--ghost"
+							data-close-modal>Cancelar</button
+						>
+						<button
+							type="button"
+							class="admin-btn admin-btn--primary"
+							id="modal-btn-confirm-add">Añadir al pedido</button
+						>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</AdminLayout>
+
+<script
+	define:vars={{
+		catalogoJson: JSON.stringify(catalogo),
+		stockActualJson: JSON.stringify(stockActualMap),
+		stockOriginalJson: JSON.stringify(stockOriginalPedido),
+		tasaBcv,
+		tasaCop,
+	}}
+>
+	const catalogo = JSON.parse(catalogoJson);
+	const stockActualMap = JSON.parse(stockActualJson);
+	const stockOriginalPedido = JSON.parse(stockOriginalJson);
+
+	function initOrderDetail() {
+		const page = document.querySelector("[data-order-detail-page]");
+		if (!page) return;
+
+		const orderId = page.getAttribute("data-order-id");
+		const itemsTbody = page.querySelector("[data-items-tbody]");
+		const shippingInput = page.querySelector("[data-shipping-fee-input]");
+		const subtotalEl = page.querySelector("[data-summary-subtotal]");
+		const grandTotalEl = page.querySelector("[data-summary-grand-total]");
+		const itemsCountEl = page.querySelector("[data-items-count]");
+		const notesInput = page.querySelector("[data-order-notes]");
+		const alertBox = page.querySelector("[data-order-alert]");
+
+		const btnSave = page.querySelector("[data-btn-save]");
+		const btnAccept = page.querySelector("[data-btn-accept]");
+		const btnCancel = page.querySelector("[data-btn-cancel]");
+
+		const modal = document.getElementById("modal-add-product");
+		const openModalBtn = page.querySelector("[data-open-add-product]");
+		const closeModalBtns = page.querySelectorAll("[data-close-modal]");
+		const modalSelectProd = document.getElementById("modal-select-product");
+		const modalVarGroup = document.getElementById("modal-variant-group");
+		const modalSelectVar = document.getElementById("modal-select-variant");
+		const modalInputPrice = document.getElementById("modal-input-price");
+		const modalInputQty = document.getElementById("modal-input-qty");
+		const modalBtnConfirm = document.getElementById(
+			"modal-btn-confirm-add",
+		);
+
+		const esc = (s) =>
+			String(s ?? "").replace(
+				/[&<>"']/g,
+				(c) =>
+					({
+						"&": "&amp;",
+						"<": "&lt;",
+						">": "&gt;",
+						'"': "&quot;",
+						"'": "&#39;",
+					})[c],
+			);
+
+		function formatUSD(n) {
+			return (
+				"$" +
+				(Number(n) || 0).toLocaleString("en-US", {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2,
+				})
+			);
+		}
+
+		function showAlert(msg, isError = true) {
+			if (!alertBox) return;
+			alertBox.textContent = msg;
+			alertBox.classList.toggle("is-visible", Boolean(msg));
+			alertBox.style.background = isError ? "" : "var(--success-bg)";
+			alertBox.style.color = isError ? "" : "var(--success-ink)";
+			alertBox.style.borderColor = isError ? "" : "var(--success-line)";
+			if (msg)
+				alertBox.scrollIntoView({
+					behavior: "smooth",
+					block: "center",
+				});
+		}
+
+		// Modal elements
+		const modalSearchInput = document.getElementById(
+			"modal-search-product",
+		);
+		const modalCountEl = document.getElementById(
+			"modal-products-found-count",
+		);
+		const modalStockHint = document.getElementById("modal-stock-hint");
+
+		function renderProductOptions(searchTerm = "") {
+			if (!modalSelectProd) return;
+			const term = (searchTerm || "").trim().toLowerCase();
+			const filtered = catalogo.filter((p) => {
+				if (!term) return true;
+				const haystack = `${p.nombre} ${p.slug || ""}`.toLowerCase();
+				return haystack.includes(term);
+			});
+
+			modalSelectProd.innerHTML =
+				`<option value="">Elige un producto</option>` +
+				filtered
+					.map(
+						(prod) =>
+							`<option value="${esc(prod.id)}">${esc(prod.nombre)} (${formatUSD(prod.precio_base)})</option>`,
+					)
+					.join("");
+
+			if (modalCountEl) {
+				modalCountEl.textContent = String(filtered.length);
+			}
+
+			// Si el filtro arroja 1 resultado exacto o coincide, preseleccionarlo
+			if (filtered.length === 1 && term) {
+				modalSelectProd.value = filtered[0].id;
+				modalSelectProd.dispatchEvent(new Event("change"));
+			} else {
+				modalSelectProd.dispatchEvent(new Event("change"));
+			}
+		}
+
+		modalSearchInput?.addEventListener("input", (e) => {
+			renderProductOptions(e.target.value);
+		});
+
+		function getMaxAvailableForVariant(varId, currentEditingRow = null) {
+			if (!varId) return 999;
+			// Stock en inventario actual
+			const stockActual = Number(stockActualMap[varId] ?? 0);
+			// Cantidad original reservada en este pedido
+			const origEnPedido = Number(stockOriginalPedido[varId] ?? 0);
+			// Total disponible para este pedido = stockActual + origEnPedido
+			const totalMax = stockActual + origEnPedido;
+
+			// Restar lo que ya tengan asignado OTRAS filas con la misma variante
+			let asignadoEnOtrasFilas = 0;
+			itemsTbody.querySelectorAll("[data-item-row]").forEach((r) => {
+				if (r === currentEditingRow) return;
+				if (r.getAttribute("data-variant-id") === varId) {
+					asignadoEnOtrasFilas += Math.max(
+						0,
+						Number(
+							r.querySelector("[data-item-qty-input]")?.value,
+						) || 0,
+					);
+				}
+			});
+
+			return Math.max(0, totalMax - asignadoEnOtrasFilas);
+		}
+
+		function recalculate() {
+			let subtotal = 0;
+			const rows = itemsTbody.querySelectorAll("[data-item-row]");
+			rows.forEach((row) => {
+				const price = Math.max(
+					0,
+					Number(
+						row.querySelector("[data-item-price-input]")?.value,
+					) || 0,
+				);
+				const qtyInput = row.querySelector("[data-item-qty-input]");
+				let qty = Math.max(1, Math.round(Number(qtyInput?.value) || 1));
+
+				const varId = row.getAttribute("data-variant-id");
+				if (varId) {
+					const maxPermitido = getMaxAvailableForVariant(varId, row);
+					qtyInput.setAttribute(
+						"max",
+						String(Math.max(1, maxPermitido)),
+					);
+					qtyInput.setAttribute(
+						"title",
+						`Máximo disponible: ${maxPermitido}`,
+					);
+
+					const hintEl = row.querySelector("[data-item-stock-hint]");
+					if (hintEl) {
+						hintEl.textContent = `Disponible: ${stockActualMap[varId] ?? 0} (Máx: ${maxPermitido})`;
+					}
+
+					if (maxPermitido > 0 && qty > maxPermitido) {
+						qty = maxPermitido;
+						qtyInput.value = String(qty);
+						showAlert(
+							`La cantidad se ajustó al máximo disponible en inventario (${maxPermitido}).`,
+						);
+					}
+				}
+
+				const line = price * qty;
+				subtotal += line;
+				const cell = row.querySelector("[data-item-subtotal-cell]");
+				if (cell) cell.textContent = formatUSD(line);
+			});
+			const shipping = Math.max(0, Number(shippingInput?.value) || 0);
+			const grandTotal = subtotal + shipping;
+			if (subtotalEl) subtotalEl.textContent = formatUSD(subtotal);
+			if (grandTotalEl) grandTotalEl.textContent = formatUSD(grandTotal);
+			if (itemsCountEl) itemsCountEl.textContent = String(rows.length);
+
+			const vesEl = page.querySelector("[data-total-ves]");
+			const copEl = page.querySelector("[data-total-cop]");
+			if (vesEl) {
+				if (tasaBcv > 0) {
+					const bs = grandTotal * tasaBcv;
+					vesEl.textContent = `Bs. ${bs.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Tasa: ${tasaBcv.toLocaleString("es-VE")})`;
+					vesEl.style.display = "block";
+				} else {
+					vesEl.style.display = "none";
+				}
+			}
+			if (copEl) {
+				if (tasaCop > 0) {
+					const cop = Math.round(grandTotal * tasaCop);
+					copEl.textContent = `$ ${cop.toLocaleString("es-CO")} COP (Tasa: ${tasaCop.toLocaleString("es-CO")})`;
+					copEl.style.display = "block";
+				} else {
+					copEl.style.display = "none";
+				}
+			}
+		}
+
+		itemsTbody?.addEventListener("input", (e) => {
+			if (
+				e.target.matches(
+					"[data-item-price-input], [data-item-qty-input]",
+				)
+			) {
+				recalculate();
+			}
+		});
+
+		itemsTbody?.addEventListener("change", (e) => {
+			if (e.target.matches("[data-item-qty-input]")) {
+				const row = e.target.closest("[data-item-row]");
+				const varId = row?.getAttribute("data-variant-id");
+				if (varId) {
+					const maxPermitido = getMaxAvailableForVariant(varId, row);
+					let val = Math.max(
+						1,
+						Math.round(Number(e.target.value) || 1),
+					);
+					if (maxPermitido > 0 && val > maxPermitido) {
+						e.target.value = String(maxPermitido);
+						showAlert(
+							`No hay suficiente inventario disponible. Se estableció el máximo de ${maxPermitido} unidad(es).`,
+						);
+						recalculate();
+					}
+				}
+			}
+		});
+
+		itemsTbody?.addEventListener("click", (e) => {
+			const btn = e.target.closest("[data-btn-delete-item]");
+			if (!btn) return;
+			const row = btn.closest("[data-item-row]");
+			if (!row) return;
+			const name =
+				row.getAttribute("data-product-name") || "este producto";
+			if (confirm(`¿Quitar ${name} de esta venta?`)) {
+				row.remove();
+				recalculate();
+			}
+		});
+
+		shippingInput?.addEventListener("input", recalculate);
+
+		// Modal
+		function openModal() {
+			if (!modal) return;
+			modal.hidden = false;
+			if (modalSearchInput) {
+				modalSearchInput.value = "";
+				setTimeout(() => modalSearchInput.focus(), 50);
+			}
+			renderProductOptions("");
+			modalSelectProd.value = "";
+			modalVarGroup.hidden = true;
+			modalInputPrice.value = "0.00";
+			modalInputQty.value = "1";
+			if (modalStockHint) {
+				modalStockHint.hidden = true;
+				modalStockHint.textContent = "";
+			}
+		}
+
+		function closeModal() {
+			if (modal) modal.hidden = true;
+		}
+
+		openModalBtn?.addEventListener("click", openModal);
+		closeModalBtns.forEach((b) => b.addEventListener("click", closeModal));
+		modal?.addEventListener("click", (e) => {
+			if (e.target === modal) closeModal();
+		});
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "Escape") closeModal();
+		});
+
+		function updateModalStockLimit() {
+			const prod = catalogo.find((p) => p.id === modalSelectProd.value);
+			if (!prod) {
+				if (modalStockHint) modalStockHint.hidden = true;
+				return;
+			}
+			let varId = null;
+			let stockDisp = 999;
+			if (prod.variantes && prod.variantes.length > 0) {
+				const opt = modalSelectVar.selectedOptions[0];
+				varId = opt ? opt.value : prod.variantes[0].id;
+				stockDisp = getMaxAvailableForVariant(varId, null);
+			}
+
+			if (modalStockHint) {
+				modalStockHint.hidden = false;
+				modalStockHint.textContent = `(Stock disponible: ${stockDisp})`;
+			}
+
+			modalInputQty.setAttribute("max", String(Math.max(1, stockDisp)));
+			modalInputQty.setAttribute(
+				"title",
+				`Máximo disponible: ${stockDisp}`,
+			);
+			if (stockDisp > 0 && Number(modalInputQty.value) > stockDisp) {
+				modalInputQty.value = String(stockDisp);
+			}
+		}
+
+		modalSelectProd?.addEventListener("change", () => {
+			const prod = catalogo.find((p) => p.id === modalSelectProd.value);
+			if (!prod) {
+				modalVarGroup.hidden = true;
+				if (modalStockHint) modalStockHint.hidden = true;
+				return;
+			}
+			if (prod.variantes && prod.variantes.length > 0) {
+				modalSelectVar.innerHTML = prod.variantes
+					.map((v) => {
+						const price =
+							v.precio_oferta > 0
+								? v.precio_oferta
+								: v.precio > 0
+									? v.precio
+									: prod.precio_base;
+						const disp = getMaxAvailableForVariant(v.id, null);
+						return `<option value="${esc(v.id)}" data-price="${price}" data-stock="${disp}">${esc(v.combinacion)} · Stock disp: ${disp} · ${formatUSD(price)}</option>`;
+					})
+					.join("");
+				modalVarGroup.hidden = false;
+				const first = modalSelectVar.options[0];
+				modalInputPrice.value = (
+					Number(first?.dataset.price) || prod.precio_base
+				).toFixed(2);
+			} else {
+				modalVarGroup.hidden = true;
+				const price =
+					prod.en_oferta && prod.precio_oferta > 0
+						? prod.precio_oferta
+						: prod.precio_base;
+				modalInputPrice.value = price.toFixed(2);
+			}
+			updateModalStockLimit();
+		});
+
+		modalSelectVar?.addEventListener("change", () => {
+			const opt = modalSelectVar.selectedOptions[0];
+			if (opt?.dataset.price)
+				modalInputPrice.value = Number(opt.dataset.price).toFixed(2);
+			updateModalStockLimit();
+		});
+
+		modalInputQty?.addEventListener("input", () => {
+			const prod = catalogo.find((p) => p.id === modalSelectProd?.value);
+			if (!prod) return;
+			let varId = null;
+			if (prod.variantes && prod.variantes.length > 0) {
+				const opt = modalSelectVar.selectedOptions[0];
+				varId = opt ? opt.value : prod.variantes[0].id;
+			}
+			if (varId) {
+				const maxDisp = getMaxAvailableForVariant(varId, null);
+				if (maxDisp > 0 && Number(modalInputQty.value) > maxDisp) {
+					modalInputQty.value = String(maxDisp);
+					alert(
+						`Solo hay ${maxDisp} unidad(es) disponible(s) en inventario para este producto.`,
+					);
+				}
+			}
+		});
+
+		modalBtnConfirm?.addEventListener("click", () => {
+			const prod = catalogo.find((p) => p.id === modalSelectProd?.value);
+			if (!prod) {
+				alert("Selecciona un producto.");
+				return;
+			}
+
+			let varId = null;
+			let combination = "Única";
+			if (prod.variantes && prod.variantes.length > 0) {
+				const opt = modalSelectVar.selectedOptions[0];
+				varId = opt ? opt.value : prod.variantes[0].id;
+				const found = prod.variantes.find((v) => v.id === varId);
+				combination = found ? found.combinacion : "Única";
+			}
+
+			const maxDisp = varId
+				? getMaxAvailableForVariant(varId, null)
+				: 999;
+			if (maxDisp <= 0) {
+				alert("No hay stock disponible para agregar este producto.");
+				return;
+			}
+
+			const unitPrice = Math.max(0, Number(modalInputPrice.value) || 0);
+			let qty = Math.max(1, Math.round(Number(modalInputQty.value) || 1));
+
+			if (qty > maxDisp) {
+				qty = maxDisp;
+				alert(
+					`La cantidad se ajustó al stock disponible (${maxDisp}).`,
+				);
+			}
+
+			const tr = document.createElement("tr");
+			tr.setAttribute("data-item-row", "");
+			tr.setAttribute("data-item-id", "");
+			tr.setAttribute("data-product-id", prod.id);
+			tr.setAttribute("data-variant-id", varId || "");
+			tr.setAttribute("data-product-name", prod.nombre);
+			tr.setAttribute("data-combination", combination);
+			tr.setAttribute("data-img", prod.imagen_url || "");
+			tr.setAttribute("data-stock-available", String(maxDisp));
+			tr.setAttribute("data-max-qty", String(maxDisp));
+
+			const thumb = prod.imagen_url
+				? `<img class="order-item-thumb" src="${esc(prod.imagen_url)}" alt="" />`
+				: `<span class="order-item-thumb">${esc(prod.nombre.slice(0, 2).toUpperCase())}</span>`;
+			const showCombo =
+				combination &&
+				!["DEFAULT", "Única", "Único"].includes(combination);
+
+			tr.innerHTML = `
+				<td>
+					<div class="order-item-prod">
+						${thumb}
+						<div class="admin-table__identity">
+							<span class="admin-table__name">${esc(prod.nombre)}</span>
+							${showCombo ? `<span class="admin-table__meta">${esc(combination)}</span>` : ""}
+							${varId ? `<span class="order-item-stock-tag" data-item-stock-hint>Stock disponible: ${stockActualMap[varId] ?? 0} (Máx: ${maxDisp})</span>` : ""}
+						</div>
+					</div>
+				</td>
+				<td>
+					<div class="order-input-currency">
+						<span class="order-input-currency__symbol">$</span>
+						<input type="number" step="0.01" min="0" class="admin-form__input order-num-input" data-item-price-input aria-label="Precio unitario" value="${unitPrice.toFixed(2)}" />
+					</div>
+				</td>
+				<td>
+					<input type="number" step="1" min="1" max="${maxDisp}" class="admin-form__input order-num-input order-num-input--qty" data-item-qty-input aria-label="Cantidad" title="Máximo disponible: ${maxDisp}" value="${qty}" />
+				</td>
+				<td class="order-money" data-item-subtotal-cell>${formatUSD(unitPrice * qty)}</td>
+				<td class="admin-table__td-actions">
+					<button type="button" class="admin-btn admin-btn--danger admin-btn--icon" data-btn-delete-item aria-label="Quitar producto" title="Quitar producto">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+					</button>
+				</td>
+			`;
+			itemsTbody.appendChild(tr);
+			recalculate();
+			closeModal();
+		});
+
+		function collectItems() {
+			const items = [];
+			itemsTbody.querySelectorAll("[data-item-row]").forEach((row) => {
+				items.push({
+					id: row.getAttribute("data-item-id") || undefined,
+					producto_id: row.getAttribute("data-product-id"),
+					variante_id: row.getAttribute("data-variant-id") || null,
+					nombre_producto: row.getAttribute("data-product-name"),
+					combinacion: row.getAttribute("data-combination"),
+					precio_unitario: Math.max(
+						0,
+						Number(
+							row.querySelector("[data-item-price-input]")?.value,
+						) || 0,
+					),
+					cantidad: Math.max(
+						1,
+						Math.round(
+							Number(
+								row.querySelector("[data-item-qty-input]")
+									?.value,
+							) || 1,
+						),
+					),
+					imagen_url: row.getAttribute("data-img") || null,
+				});
+			});
+			return items;
+		}
+
+		async function saveChanges() {
+			showAlert("");
+			const items = collectItems();
+			if (items.length === 0) {
+				showAlert("La venta debe tener al menos un producto.");
+				return false;
+			}
+			btnSave.disabled = true;
+			try {
+				const res = await fetch(`/api/admin/pedidos/${orderId}`, {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						items,
+						monto_envio: Math.max(
+							0,
+							Number(shippingInput?.value) || 0,
+						),
+						nota: notesInput?.value || "",
+					}),
+				});
+				const data = await res.json();
+				if (!res.ok || !data.ok)
+					throw new Error(data.error || "Error al guardar");
+				showAlert(
+					"Cambios guardados. El inventario se ajustó automáticamente.",
+					false,
+				);
+				return true;
+			} catch (err) {
+				showAlert(`No se pudo guardar: ${err.message}`);
+				return false;
+			} finally {
+				btnSave.disabled = false;
+			}
+		}
+
+		btnSave?.addEventListener("click", saveChanges);
+
+		async function changeState(action, button, confirmMsg) {
+			if (!confirm(confirmMsg)) return;
+			if (action === "confirmar") {
+				const ok = await saveChanges();
+				if (!ok) return;
+			}
+			button.disabled = true;
+			try {
+				const res = await fetch(
+					`/api/admin/pedidos/${orderId}/estado`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ action }),
+					},
+				);
+				const data = await res.json();
+				if (!res.ok || !data.ok)
+					throw new Error(
+						data.error || "No se pudo cambiar el estado",
+					);
+				window.location.reload();
+			} catch (err) {
+				showAlert(err.message);
+				button.disabled = false;
+			}
+		}
+
+		btnAccept?.addEventListener("click", () =>
+			changeState(
+				"confirmar",
+				btnAccept,
+				"¿Aceptar y confirmar esta venta? Pasará a las estadísticas.",
+			),
+		);
+		btnCancel?.addEventListener("click", () =>
+			changeState(
+				"cancelar",
+				btnCancel,
+				"¿Cancelar esta venta? El stock reservado volverá al inventario.",
+			),
+		);
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", initOrderDetail);
+	} else {
+		initOrderDetail();
+	}
+</script>

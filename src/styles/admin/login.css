@@ -176,7 +176,7 @@
 
 .admin-login__peek:hover:not(:disabled),
 .admin-login__peek:focus-visible {
-	color: var(--accent);
+	color: var(--accent-ink);
 	outline: none;
 }
 

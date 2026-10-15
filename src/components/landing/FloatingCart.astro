@@ -6,7 +6,7 @@ interface Props {
 }
 
 const {
-	storeName = 'Demo Tienda',
+	storeName = "Demo Tienda",
 	whatsapp = null,
 	storeAddress = null,
 } = Astro.props;
@@ -14,16 +14,25 @@ const {
 
 <!-- ==========================================================================
      COMPONENTE DE CARRITO FLOTANTE ARRASTRABLE Y PANEL DE PEDIDO
-     ========================================================================== -->
-
-<!-- 1. NOTIFICACIÓN TOAST FLASH -->
-<div class="confi-cart-toast" id="confi-cart-toast" data-confi-toast role="alert" aria-live="polite">
+     ========================================================================== --><!-- 1. NOTIFICACIÓN TOAST FLASH -->
+<div
+	class="confi-cart-toast"
+	id="confi-cart-toast"
+	data-confi-toast
+	role="alert"
+	aria-live="polite"
+>
 	<span class="confi-toast-icon">
 		<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-			<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+			<path
+				fill-rule="evenodd"
+				d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+				clip-rule="evenodd"></path>
 		</svg>
 	</span>
-	<span class="confi-toast-text" data-confi-toast-text>¡Producto agregado al carrito!</span>
+	<span class="confi-toast-text" data-confi-toast-text
+		>Producto agregado al carrito</span
+	>
 </div>
 
 <!-- 2. BOTÓN FLOTANTE ARRASTRABLE (DRAGGABLE PILL) -->
@@ -39,7 +48,11 @@ const {
 	<span class="confi-pill-grip" aria-hidden="true" title="Arrastrar">⋮⋮</span>
 	<span class="confi-pill-icon-wrap" aria-hidden="true">
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+			<path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+			></path>
 		</svg>
 		<span class="confi-pill-badge" data-confi-badge>0</span>
 	</span>
@@ -50,7 +63,13 @@ const {
 </aside>
 
 <!-- 3. OVERLAY BACKDROP -->
-<div class="confi-cart-backdrop" id="confi-cart-backdrop" data-confi-backdrop aria-hidden="true"></div>
+<div
+	class="confi-cart-backdrop"
+	id="confi-cart-backdrop"
+	data-confi-backdrop
+	aria-hidden="true"
+>
+</div>
 
 <!-- 4. PANEL LATERAL (DRAWER) -->
 <section
@@ -61,15 +80,23 @@ const {
 	aria-modal="true"
 	aria-label="Carrito de compras"
 	data-store-name={storeName}
-	data-whatsapp={whatsapp ?? ''}
-	data-store-address={storeAddress ?? ''}
+	data-whatsapp={whatsapp ?? ""}
+	data-store-address={storeAddress ?? ""}
 >
 	<!-- Cabecera del Drawer -->
 	<header class="confi-drawer-head">
 		<div class="confi-drawer-title-group">
 			<span class="confi-drawer-icon" aria-hidden="true">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
 				</svg>
 			</span>
 			<h2 class="confi-drawer-title">Mi Carrito</h2>
@@ -77,12 +104,31 @@ const {
 		</div>
 
 		<div class="confi-drawer-actions">
-			<button type="button" class="confi-btn-clear" data-confi-clear-btn title="Vaciar todos los productos">
+			<button
+				type="button"
+				class="confi-btn-clear"
+				data-confi-clear-btn
+				title="Vaciar todos los productos"
+			>
 				Vaciar
 			</button>
-			<button type="button" class="confi-btn-close" data-confi-close-btn aria-label="Cerrar carrito">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+			<button
+				type="button"
+				class="confi-btn-close"
+				data-confi-close-btn
+				aria-label="Cerrar carrito"
+			>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.2"
+					aria-hidden="true"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M6 18L18 6M6 6l12 12"></path>
 				</svg>
 			</button>
 		</div>
@@ -93,23 +139,44 @@ const {
 		<!-- Vista vacía -->
 		<div class="confi-cart-empty" data-confi-empty-view>
 			<div class="confi-empty-icon" aria-hidden="true">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.6"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
 				</svg>
 			</div>
 			<h3 class="confi-empty-title">Tu carrito está vacío</h3>
 			<p class="confi-empty-desc">
-				¡Explora nuestro catálogo y agrega lo que más te guste para pedirlo por WhatsApp!
+				¡Explora nuestro catálogo y agrega lo que más te guste para
+				pedirlo por WhatsApp!
 			</p>
-			<button type="button" class="confi-btn-explore" data-confi-explore-btn>
+			<button
+				type="button"
+				class="confi-btn-explore"
+				data-confi-explore-btn
+			>
 				Ver catálogo de productos
 			</button>
 		</div>
 
 		<!-- Vista con productos -->
-		<div class="confi-cart-content" data-confi-content-view style="display: none;">
+		<div
+			class="confi-cart-content"
+			data-confi-content-view
+			style="display: none;"
+		>
 			<!-- Lista de productos añadidos -->
-			<ul class="confi-items-list" data-confi-items-list aria-label="Productos en el carrito">
+			<ul
+				class="confi-items-list"
+				data-confi-items-list
+				aria-label="Productos en el carrito"
+			>
 				<!-- Inyectado dinámicamente -->
 			</ul>
 
@@ -123,23 +190,48 @@ const {
 					aria-controls="confi-cart-form-body"
 				>
 					<div class="confi-acc-head-left">
-						<svg class="confi-acc-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-							<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-							<rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+						<svg
+							class="confi-acc-icon-svg"
+							viewBox="0 0 24 24"
+							width="18"
+							height="18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path
+								d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+							></path>
+							<rect x="8" y="2" width="8" height="4" rx="1" ry="1"
+							></rect>
 						</svg>
 						<div>
-							<h4 class="confi-acc-title">Datos para tu pedido</h4>
-							<p class="confi-acc-sub">Nombre, entrega y forma de pago</p>
+							<h4 class="confi-acc-title">
+								Datos para tu pedido
+							</h4>
+							<p class="confi-acc-sub">
+								Nombre, entrega y forma de pago
+							</p>
 						</div>
 					</div>
 					<span class="confi-acc-chevron" aria-hidden="true">
 						<svg viewBox="0 0 20 20" fill="currentColor">
-							<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+							<path
+								fill-rule="evenodd"
+								d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+								clip-rule="evenodd"></path>
 						</svg>
 					</span>
 				</button>
 
-				<div class="confi-accordion-content" id="confi-cart-form-body" data-confi-accordion-body>
+				<div
+					class="confi-accordion-content"
+					id="confi-cart-form-body"
+					data-confi-accordion-body
+				>
 					<!-- Nombre completo -->
 					<div class="confi-form-group">
 						<label class="confi-form-label" for="confi-cust-name">
@@ -155,10 +247,27 @@ const {
 						/>
 					</div>
 
+					<!-- Cédula de Identidad -->
+					<div class="confi-form-group">
+						<label class="confi-form-label" for="confi-cust-cedula">
+							Cédula de Identidad / RIF <span class="req">*</span>
+						</label>
+						<input
+							type="text"
+							id="confi-cust-cedula"
+							class="confi-form-input"
+							placeholder="Ej. V-12345678"
+							autocomplete="off"
+							required
+						/>
+					</div>
+
 					<!-- Teléfono / WhatsApp -->
 					<div class="confi-form-group">
 						<label class="confi-form-label" for="confi-cust-phone">
-							Teléfono de contacto / WhatsApp <span class="req">*</span>
+							Teléfono de contacto / WhatsApp <span class="req"
+								>*</span
+							>
 						</label>
 						<input
 							type="tel"
@@ -173,47 +282,108 @@ const {
 					<!-- Modalidad de entrega -->
 					<div class="confi-form-group">
 						<label class="confi-form-label">
-							¿Cómo deseas recibir tu pedido? <span class="req">*</span>
+							¿Cómo deseas recibir tu pedido? <span class="req"
+								>*</span
+							>
 						</label>
 						<div class="confi-delivery-chips">
-							<label class="confi-delivery-chip is-selected" data-confi-chip-delivery>
-								<input type="radio" name="confi_delivery_mode" value="delivery" checked style="display: none;" />
-								<svg class="confi-delivery-chip-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<rect x="1" y="3" width="15" height="13"></rect>
-									<polygon points="16 8 20 8 23 11 23 16 16 16 8"></polygon>
+							<label
+								class="confi-delivery-chip is-selected"
+								data-confi-chip-delivery
+							>
+								<input
+									type="radio"
+									name="confi_delivery_mode"
+									value="delivery"
+									checked
+									style="display: none;"
+								/>
+								<svg
+									class="confi-delivery-chip-svg"
+									viewBox="0 0 24 24"
+									width="20"
+									height="20"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
+									<rect x="1" y="3" width="15" height="13"
+									></rect>
+									<polygon
+										points="16 8 20 8 23 11 23 16 16 16 8"
+									></polygon>
 									<circle cx="5.5" cy="18.5" r="2.5"></circle>
-									<circle cx="18.5" cy="18.5" r="2.5"></circle>
+									<circle cx="18.5" cy="18.5" r="2.5"
+									></circle>
 								</svg>
-								<span class="confi-delivery-chip-title">Envío / Delivery</span>
-								<span class="confi-delivery-chip-sub">Directo a tu puerta</span>
+								<span class="confi-delivery-chip-title"
+									>Envío / Delivery</span
+								>
+								<span class="confi-delivery-chip-sub"
+									>Directo a tu puerta</span
+								>
 							</label>
 
-							<label class="confi-delivery-chip" data-confi-chip-pickup>
-								<input type="radio" name="confi_delivery_mode" value="pickup" style="display: none;" />
-								<svg class="confi-delivery-chip-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<label
+								class="confi-delivery-chip"
+								data-confi-chip-pickup
+							>
+								<input
+									type="radio"
+									name="confi_delivery_mode"
+									value="pickup"
+									style="display: none;"
+								/>
+								<svg
+									class="confi-delivery-chip-svg"
+									viewBox="0 0 24 24"
+									width="20"
+									height="20"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									aria-hidden="true"
+								>
 									<path d="M3 21h18"></path>
-									<path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4"></path>
+									<path
+										d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4"
+									></path>
 									<path d="M5 21V10.85"></path>
 									<path d="M19 21V10.85"></path>
-									<path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"></path>
+									<path
+										d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"
+									></path>
 								</svg>
-								<span class="confi-delivery-chip-title">Retiro en tienda</span>
-								<span class="confi-delivery-chip-sub">Pick up personal</span>
+								<span class="confi-delivery-chip-title"
+									>Retiro en tienda</span
+								>
+								<span class="confi-delivery-chip-sub"
+									>Pick up personal</span
+								>
 							</label>
 						</div>
 					</div>
 
 					<!-- Ubicación y dirección (Visible si Delivery) -->
 					<div class="confi-form-group" data-confi-delivery-fields>
-						<label class="confi-form-label" for="confi-cust-address">
-							Dirección exacta de entrega <span class="req">*</span>
+						<label
+							class="confi-form-label"
+							for="confi-cust-address"
+						>
+							Dirección exacta de entrega <span class="req"
+								>*</span
+							>
 						</label>
 						<textarea
 							id="confi-cust-address"
 							class="confi-form-textarea"
 							placeholder="Sector, calle, edificio/casa, punto de referencia..."
-							rows="2"
-						></textarea>
+							rows="2"></textarea>
 
 						<input
 							type="text"
@@ -225,30 +395,45 @@ const {
 					</div>
 
 					<!-- Nota de retiro en tienda (Visible si Retiro) -->
-					<div class="confi-pickup-notice" data-confi-pickup-notice style="display: none;">
+					<div
+						class="confi-pickup-notice"
+						data-confi-pickup-notice
+						style="display: none;"
+					>
 						<span>ℹ️</span>
 						<div>
 							<strong>Retiro en tienda:</strong>
-							{storeAddress ? (
-								<p style="margin: 0.2rem 0 0 0;">{storeAddress}</p>
-							) : (
-								<p style="margin: 0.2rem 0 0 0;">Te indicaremos el punto de retiro exacto y horario de atención por WhatsApp.</p>
-							)}
+							{
+								storeAddress ? (
+									<p style="margin: 0.2rem 0 0 0;">
+										{storeAddress}
+									</p>
+								) : (
+									<p style="margin: 0.2rem 0 0 0;">
+										Te indicaremos el punto de retiro exacto
+										y horario de atención por WhatsApp.
+									</p>
+								)
+							}
 						</div>
 					</div>
 
 					<!-- Método de pago -->
 					<div class="confi-form-group">
-						<label class="confi-form-label" for="confi-cust-payment">
+						<label
+							class="confi-form-label"
+							for="confi-cust-payment"
+						>
 							Método de pago preferido <span class="req">*</span>
 						</label>
-						<select id="confi-cust-payment" class="confi-form-select">
-							<option value="Pago Móvil / Transferencia">Pago Móvil / Transferencia en Bs</option>
-							<option value="Efectivo ($ USD)">Efectivo ($ USD en mano)</option>
+						<select
+							id="confi-cust-payment"
+							class="confi-form-select"
+						>
+							<option value="Pago Móvil">Pago Móvil</option>
+							<option value="Efectivo">Efectivo</option>
 							<option value="Zelle">Zelle</option>
-							<option value="Binance Pay (USDT)">Binance Pay (USDT)</option>
-							<option value="Punto de Venta">Punto de Venta (en tienda)</option>
-							<option value="A convenir">A convenir con la tienda</option>
+							<option value="Binance">Binance</option>
 						</select>
 					</div>
 
@@ -261,8 +446,7 @@ const {
 							id="confi-cust-notes"
 							class="confi-form-textarea"
 							placeholder="Ej. Entregar después de las 2:00 PM, tengo billete de $20 exacto..."
-							rows="2"
-						></textarea>
+							rows="2"></textarea>
 					</div>
 				</div>
 			</div>
@@ -282,17 +466,28 @@ const {
 			</div>
 			<div class="confi-summary-row is-grand-total">
 				<span>Total estimado:</span>
-				<span class="confi-summary-grand-total" data-confi-grand-total>$0.00</span>
+				<span class="confi-summary-grand-total" data-confi-grand-total
+					>$0.00</span
+				>
 			</div>
 		</div>
 
-		<button type="button" class="confi-btn-checkout" data-confi-checkout-btn>
+		<button
+			type="button"
+			class="confi-btn-checkout"
+			data-confi-checkout-btn
+		>
 			<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-				<path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.39a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.8c2.16 0 4.2.84 5.73 2.37a8.06 8.06 0 0 1 2.37 5.73c0 4.47-3.64 8.1-8.1 8.1a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.13.82.84-3.05-.2-.3a8.04 8.04 0 0 1-1.24-4.26c0-4.47 3.63-8.1 8.1-8.1zm-3.5 3.86c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64 2.03.87 2.44.7 2.88.65.44-.04 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.92-1.19-.71-.63-1.19-1.41-1.33-1.65-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.79-.2-.48-.4-.41-.54-.42l-.46-.01z"></path>
+				<path
+					d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.39a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.8c2.16 0 4.2.84 5.73 2.37a8.06 8.06 0 0 1 2.37 5.73c0 4.47-3.64 8.1-8.1 8.1a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.13.82.84-3.05-.2-.3a8.04 8.04 0 0 1-1.24-4.26c0-4.47 3.63-8.1 8.1-8.1zm-3.5 3.86c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.12 3.64 2.03.87 2.44.7 2.88.65.44-.04 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.92-1.19-.71-.63-1.19-1.41-1.33-1.65-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.79-.2-.48-.4-.41-.54-.42l-.46-.01z"
+				></path>
 			</svg>
 			<span>Pedir por WhatsApp</span>
 		</button>
-		<p class="confi-checkout-helper">Serás redirigido al chat de WhatsApp de la tienda con los datos listos.</p>
+		<p class="confi-checkout-helper">
+			Serás redirigido al chat de WhatsApp de la tienda con los datos
+			listos.
+		</p>
 	</footer>
 </section>
 
@@ -303,6 +498,7 @@ const {
 	interface CartItem {
 		id: string;
 		productId: string;
+		varianteId?: string | null;
 		slug: string;
 		nombre: string;
 		combinacion: string;
@@ -314,80 +510,190 @@ const {
 
 	interface CustomerData {
 		name: string;
+		cedula: string;
 		phone: string;
-		deliveryMode: 'delivery' | 'pickup';
+		deliveryMode: "delivery" | "pickup";
 		address: string;
 		city: string;
 		paymentMethod: string;
 		notes: string;
 	}
 
-	const CART_STORAGE_KEY = 'confi_cart_v1';
-	const CUST_STORAGE_KEY = 'confi_cust_v1';
-	const POS_STORAGE_KEY = 'confi_pill_pos_v1';
-	const FLASH_STORAGE_KEY = 'confi_cart_flash';
+	const CART_STORAGE_KEY = "confi_cart_v1";
+	const CUST_STORAGE_KEY = "confi_cust_v1";
+	const POS_STORAGE_KEY = "confi_pill_pos_v1";
+	const FLASH_STORAGE_KEY = "confi_cart_flash";
 
 	function initFloatingCart() {
-		const pill = document.querySelector<HTMLElement>('[data-confi-pill]');
-		const drawer = document.querySelector<HTMLElement>('[data-confi-drawer]');
-		const backdrop = document.querySelector<HTMLElement>('[data-confi-backdrop]');
-		const toast = document.querySelector<HTMLElement>('[data-confi-toast]');
-		const toastText = document.querySelector<HTMLElement>('[data-confi-toast-text]');
+		const rawPill =
+			document.querySelector<HTMLElement>("[data-confi-pill]");
+		const rawDrawer = document.querySelector<HTMLElement>(
+			"[data-confi-drawer]",
+		);
+		const rawBackdrop = document.querySelector<HTMLElement>(
+			"[data-confi-backdrop]",
+		);
+		const toast = document.querySelector<HTMLElement>("[data-confi-toast]");
+		const toastText = document.querySelector<HTMLElement>(
+			"[data-confi-toast-text]",
+		);
 
-		if (!pill || !drawer || !backdrop) return;
+		if (!rawPill || !rawDrawer || !rawBackdrop) return;
 
-		const storeName = drawer.dataset.storeName || 'Demo Tienda';
-		const storeWa = drawer.dataset.whatsapp || '';
+		const pill = rawPill;
+		const drawer = rawDrawer;
+		const backdrop = rawBackdrop;
 
-		const badgeEl = pill.querySelector<HTMLElement>('[data-confi-badge]');
-		const pillTotalEl = pill.querySelector<HTMLElement>('[data-confi-pill-total]');
-		const drawerBadgeEl = drawer.querySelector<HTMLElement>('[data-confi-drawer-badge]');
-		const emptyView = drawer.querySelector<HTMLElement>('[data-confi-empty-view]');
-		const contentView = drawer.querySelector<HTMLElement>('[data-confi-content-view]');
-		const itemsList = drawer.querySelector<HTMLElement>('[data-confi-items-list]');
-		const footView = drawer.querySelector<HTMLElement>('[data-confi-foot]');
-		const subtotalEl = drawer.querySelector<HTMLElement>('[data-confi-subtotal]');
-		const grandTotalEl = drawer.querySelector<HTMLElement>('[data-confi-grand-total]');
-		const shippingLabel = drawer.querySelector<HTMLElement>('[data-confi-shipping-label]');
+		const storeName = drawer.dataset.storeName || "Demo Tienda";
+		const storeWa = drawer.dataset.whatsapp || "";
 
-		const closeBtn = drawer.querySelector<HTMLElement>('[data-confi-close-btn]');
-		const clearBtn = drawer.querySelector<HTMLElement>('[data-confi-clear-btn]');
-		const exploreBtn = drawer.querySelector<HTMLElement>('[data-confi-explore-btn]');
-		const checkoutBtn = drawer.querySelector<HTMLElement>('[data-confi-checkout-btn]');
+		const badgeEl = pill.querySelector<HTMLElement>("[data-confi-badge]");
+		const pillTotalEl = pill.querySelector<HTMLElement>(
+			"[data-confi-pill-total]",
+		);
+		const drawerBadgeEl = drawer.querySelector<HTMLElement>(
+			"[data-confi-drawer-badge]",
+		);
+		const emptyView = drawer.querySelector<HTMLElement>(
+			"[data-confi-empty-view]",
+		);
+		const contentView = drawer.querySelector<HTMLElement>(
+			"[data-confi-content-view]",
+		);
+		const itemsList = drawer.querySelector<HTMLElement>(
+			"[data-confi-items-list]",
+		);
+		const footView = drawer.querySelector<HTMLElement>("[data-confi-foot]");
+		const subtotalEl = drawer.querySelector<HTMLElement>(
+			"[data-confi-subtotal]",
+		);
+		const grandTotalEl = drawer.querySelector<HTMLElement>(
+			"[data-confi-grand-total]",
+		);
+		const shippingLabel = drawer.querySelector<HTMLElement>(
+			"[data-confi-shipping-label]",
+		);
+
+		const closeBtn = drawer.querySelector<HTMLElement>(
+			"[data-confi-close-btn]",
+		);
+		const clearBtn = drawer.querySelector<HTMLElement>(
+			"[data-confi-clear-btn]",
+		);
+		const exploreBtn = drawer.querySelector<HTMLElement>(
+			"[data-confi-explore-btn]",
+		);
+		const checkoutBtn = drawer.querySelector<HTMLElement>(
+			"[data-confi-checkout-btn]",
+		);
 
 		// Acordeón y Formulario
-		const accordion = drawer.querySelector<HTMLElement>('[data-confi-accordion]');
-		const accordionToggle = drawer.querySelector<HTMLElement>('[data-confi-accordion-toggle]');
-		const nameInput = drawer.querySelector<HTMLInputElement>('#confi-cust-name');
-		const phoneInput = drawer.querySelector<HTMLInputElement>('#confi-cust-phone');
-		const addressInput = drawer.querySelector<HTMLTextAreaElement>('#confi-cust-address');
-		const cityInput = drawer.querySelector<HTMLInputElement>('#confi-cust-city');
-		const paymentSelect = drawer.querySelector<HTMLSelectElement>('#confi-cust-payment');
-		const notesInput = drawer.querySelector<HTMLTextAreaElement>('#confi-cust-notes');
-		const deliveryFields = drawer.querySelector<HTMLElement>('[data-confi-delivery-fields]');
-		const pickupNotice = drawer.querySelector<HTMLElement>('[data-confi-pickup-notice]');
-		const chipDelivery = drawer.querySelector<HTMLElement>('[data-confi-chip-delivery]');
-		const chipPickup = drawer.querySelector<HTMLElement>('[data-confi-chip-pickup]');
+		const accordion = drawer.querySelector<HTMLElement>(
+			"[data-confi-accordion]",
+		);
+		const accordionToggle = drawer.querySelector<HTMLElement>(
+			"[data-confi-accordion-toggle]",
+		);
+		const nameInput =
+			drawer.querySelector<HTMLInputElement>("#confi-cust-name");
+		const cedulaInput =
+			drawer.querySelector<HTMLInputElement>("#confi-cust-cedula");
+		const phoneInput =
+			drawer.querySelector<HTMLInputElement>("#confi-cust-phone");
+		const addressInput = drawer.querySelector<HTMLTextAreaElement>(
+			"#confi-cust-address",
+		);
+		const cityInput =
+			drawer.querySelector<HTMLInputElement>("#confi-cust-city");
+		const paymentSelect = drawer.querySelector<HTMLSelectElement>(
+			"#confi-cust-payment",
+		);
+		const notesInput =
+			drawer.querySelector<HTMLTextAreaElement>("#confi-cust-notes");
+		const deliveryFields = drawer.querySelector<HTMLElement>(
+			"[data-confi-delivery-fields]",
+		);
+		const pickupNotice = drawer.querySelector<HTMLElement>(
+			"[data-confi-pickup-notice]",
+		);
+		const chipDelivery = drawer.querySelector<HTMLElement>(
+			"[data-confi-chip-delivery]",
+		);
+		const chipPickup = drawer.querySelector<HTMLElement>(
+			"[data-confi-chip-pickup]",
+		);
 
 		// Estado en memoria
 		let cart: CartItem[] = [];
 		let toastTimer: any = null;
+		let currentMoneda = "USD";
+		let currentTasaBcv = 0;
+		let currentTasaCop = 0;
+
+		try {
+			const saved = localStorage.getItem("demo_tienda_moneda_activa");
+			if (saved === "USD" || saved === "VES" || saved === "COP") {
+				currentMoneda = saved;
+			}
+			const sw = document.querySelector<HTMLElement>(
+				"[data-currency-switch]",
+			);
+			if (sw) {
+				currentTasaBcv = Number(sw.dataset.tasaBcv) || 0;
+				currentTasaCop = Number(sw.dataset.tasaCop) || 0;
+			}
+		} catch {
+			// ignore
+		}
 
 		function formatPrice(val: number): string {
-			return '$' + (Number(val) || 0).toLocaleString('en-US', {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			});
+			const base = Number(val) || 0;
+			if (currentMoneda === "VES") {
+				const tasa = currentTasaBcv > 0 ? currentTasaBcv : 1;
+				const enBs = base * tasa;
+				return (
+					"Bs. " +
+					new Intl.NumberFormat("es-VE", {
+						minimumFractionDigits: 2,
+						maximumFractionDigits: 2,
+					}).format(enBs)
+				);
+			}
+			if (currentMoneda === "COP") {
+				const tasa = currentTasaCop > 0 ? currentTasaCop : 1;
+				const enCop = Math.round(base * tasa);
+				return (
+					"$ " +
+					new Intl.NumberFormat("es-CO", {
+						maximumFractionDigits: 0,
+					}).format(enCop) +
+					" COP"
+				);
+			}
+			return (
+				"$" +
+				base.toLocaleString("en-US", {
+					minimumFractionDigits: 2,
+					maximumFractionDigits: 2,
+				})
+			);
 		}
 
 		function cleanWaPhone(phone: string): string {
-			const digits = phone.replace(/\D/g, '');
-			if (!digits) return '';
-			if (digits.startsWith('0') && digits.length === 11) {
-				return '58' + digits.slice(1);
+			const digits = phone.replace(/\D/g, "");
+			if (!digits) return "";
+			if (digits.startsWith("0") && digits.length === 11) {
+				return "58" + digits.slice(1);
 			}
-			if (digits.length === 10 && (digits.startsWith('414') || digits.startsWith('424') || digits.startsWith('412') || digits.startsWith('416') || digits.startsWith('426'))) {
-				return '58' + digits;
+			if (
+				digits.length === 10 &&
+				(digits.startsWith("414") ||
+					digits.startsWith("424") ||
+					digits.startsWith("412") ||
+					digits.startsWith("416") ||
+					digits.startsWith("426"))
+			) {
+				return "58" + digits;
 			}
 			return digits;
 		}
@@ -408,63 +714,73 @@ const {
 			try {
 				localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
 			} catch (e) {
-				console.error('Error saving cart to localStorage', e);
+				console.error("Error saving cart to localStorage", e);
 			}
 			render();
 			// Notificar a otras ventanas o componentes
-			window.dispatchEvent(new CustomEvent('confi-cart:updated', { detail: { cart } }));
+			window.dispatchEvent(
+				new CustomEvent("confi-cart:updated", { detail: { cart } }),
+			);
 		}
 
 		function showToast(msg: string) {
 			if (!toast || !toastText) return;
 			toastText.textContent = msg;
-			toast.classList.add('is-shown');
+			toast.classList.add("is-shown");
 			clearTimeout(toastTimer);
 			toastTimer = setTimeout(() => {
-				toast.classList.remove('is-shown');
+				toast.classList.remove("is-shown");
 			}, 3600);
 		}
 
 		function triggerPillBounce() {
 			if (!pill) return;
-			pill.classList.remove('has-bounce');
+			pill.classList.remove("has-bounce");
 			void pill.offsetWidth; // reflow
-			pill.classList.add('has-bounce');
+			pill.classList.add("has-bounce");
 		}
 
 		function openDrawer() {
 			if (!drawer || !backdrop) return;
-			drawer.classList.add('is-open');
-			backdrop.classList.add('is-open');
-			document.body.style.overflow = 'hidden';
+			drawer.classList.add("is-open");
+			backdrop.classList.add("is-open");
+			document.body.style.overflow = "hidden";
 		}
 
 		function closeDrawer() {
 			if (!drawer || !backdrop) return;
-			drawer.classList.remove('is-open');
-			backdrop.classList.remove('is-open');
-			document.body.style.overflow = '';
+			drawer.classList.remove("is-open");
+			backdrop.classList.remove("is-open");
+			document.body.style.overflow = "";
 		}
 
 		function render() {
-			const totalItems = cart.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
-			const subtotal = cart.reduce((acc, it) => acc + (Number(it.precio) || 0) * (Number(it.cantidad) || 0), 0);
+			const totalItems = cart.reduce(
+				(acc, it) => acc + (Number(it.cantidad) || 0),
+				0,
+			);
+			const subtotal = cart.reduce(
+				(acc, it) =>
+					acc + (Number(it.precio) || 0) * (Number(it.cantidad) || 0),
+				0,
+			);
 
 			// Actualizar flotante
 			if (badgeEl) badgeEl.textContent = String(totalItems);
 			if (pillTotalEl) pillTotalEl.textContent = formatPrice(subtotal);
-			if (drawerBadgeEl) drawerBadgeEl.textContent = `${totalItems} ${totalItems === 1 ? 'producto' : 'productos'}`;
+			if (drawerBadgeEl)
+				drawerBadgeEl.textContent = `${totalItems} ${totalItems === 1 ? "producto" : "productos"}`;
 
 			if (cart.length === 0) {
-				if (emptyView) emptyView.style.display = 'flex';
-				if (contentView) contentView.style.display = 'none';
-				if (footView) footView.style.display = 'none';
+				if (emptyView) emptyView.style.display = "flex";
+				if (contentView) contentView.style.display = "none";
+				if (footView) footView.style.display = "none";
 				return;
 			}
 
-			if (emptyView) emptyView.style.display = 'none';
-			if (contentView) contentView.style.display = 'flex';
-			if (footView) footView.style.display = 'flex';
+			if (emptyView) emptyView.style.display = "none";
+			if (contentView) contentView.style.display = "flex";
+			if (footView) footView.style.display = "flex";
 
 			if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
 			if (grandTotalEl) grandTotalEl.textContent = formatPrice(subtotal);
@@ -479,13 +795,16 @@ const {
 							? `<img src="${item.imagenUrl}" alt="${item.nombre}" loading="lazy" />`
 							: `<span class="confi-item-thumb-fallback">${item.nombre.charAt(0).toUpperCase()}</span>`;
 
-						const comboHtml = item.combinacion && item.combinacion !== 'DEFAULT' && item.combinacion !== 'Única'
-							? `<span class="confi-item-variant">${item.combinacion}</span>`
-							: '';
+						const comboHtml =
+							item.combinacion &&
+							item.combinacion !== "DEFAULT" &&
+							item.combinacion !== "Única"
+								? `<span class="confi-item-variant">${item.combinacion}</span>`
+								: "";
 
 						const limitNotice = isMax
 							? `<span class="confi-item-stock-limit">⚠️ Límite disponible alcanzado (${item.maxStock} unid.)</span>`
-							: '';
+							: "";
 
 						return `
 							<li class="confi-item-card" data-item-id="${item.id}">
@@ -511,7 +830,7 @@ const {
 												−
 											</button>
 											<span class="confi-stepper-val">${item.cantidad}</span>
-											<button type="button" class="confi-stepper-btn" data-action="inc" data-id="${item.id}" ${isMax ? 'disabled' : ''} aria-label="Sumar una unidad">
+											<button type="button" class="confi-stepper-btn" data-action="inc" data-id="${item.id}" ${isMax ? "disabled" : ""} aria-label="Sumar una unidad">
 												+
 											</button>
 										</div>
@@ -524,15 +843,17 @@ const {
 							</li>
 						`;
 					})
-					.join('');
+					.join("");
 			}
 		}
 
 		// Delegación de eventos en la lista de productos (+ / - / eliminar)
 		if (itemsList) {
-			itemsList.addEventListener('click', (e) => {
+			itemsList.addEventListener("click", (e) => {
 				const target = e.target as HTMLElement;
-				const btn = target.closest<HTMLButtonElement>('button[data-action]');
+				const btn = target.closest<HTMLButtonElement>(
+					"button[data-action]",
+				);
 				if (!btn) return;
 
 				const action = btn.dataset.action;
@@ -543,15 +864,18 @@ const {
 				if (itemIndex === -1) return;
 
 				const item = cart[itemIndex];
+				if (!item) return;
 
-				if (action === 'inc') {
+				if (action === "inc") {
 					if (item.cantidad < item.maxStock) {
 						item.cantidad += 1;
 						saveCart([...cart]);
 					} else {
-						showToast(`⚠️ Has alcanzado el límite disponible (${item.maxStock} unidades)`);
+						showToast(
+							`⚠️ Has alcanzado el límite disponible (${item.maxStock} unidades)`,
+						);
 					}
-				} else if (action === 'dec') {
+				} else if (action === "dec") {
 					if (item.cantidad > 1) {
 						item.cantidad -= 1;
 						saveCart([...cart]);
@@ -560,7 +884,7 @@ const {
 						cart.splice(itemIndex, 1);
 						saveCart([...cart]);
 					}
-				} else if (action === 'remove') {
+				} else if (action === "remove") {
 					cart.splice(itemIndex, 1);
 					saveCart([...cart]);
 				}
@@ -569,31 +893,33 @@ const {
 
 		// Vaciar carrito
 		if (clearBtn) {
-			clearBtn.addEventListener('click', () => {
+			clearBtn.addEventListener("click", () => {
 				if (cart.length === 0) return;
 				saveCart([]);
-				showToast('Carrito vaciado');
+				showToast("Carrito vaciado");
 			});
 		}
 
 		// Botón de explorar catálogo
 		if (exploreBtn) {
-			exploreBtn.addEventListener('click', () => {
+			exploreBtn.addEventListener("click", () => {
 				closeDrawer();
-				if (window.location.pathname !== '/') {
-					window.location.href = '/#todos';
+				if (window.location.pathname !== "/") {
+					window.location.href = "/#todos";
 				} else {
-					document.getElementById('todos')?.scrollIntoView({ behavior: 'smooth' });
+					document
+						.getElementById("todos")
+						?.scrollIntoView({ behavior: "smooth" });
 				}
 			});
 		}
 
 		// Cerrar drawer
-		if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-		if (backdrop) backdrop.addEventListener('click', closeDrawer);
+		if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+		if (backdrop) backdrop.addEventListener("click", closeDrawer);
 
-		document.addEventListener('keydown', (e) => {
-			if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+		document.addEventListener("keydown", (e) => {
+			if (e.key === "Escape" && drawer.classList.contains("is-open")) {
 				closeDrawer();
 			}
 		});
@@ -602,33 +928,56 @@ const {
 		// GESTIÓN DEL ACORDEÓN Y PERSISTENCIA DE DATOS DEL CLIENTE
 		// ----------------------------------------------------------------------
 		if (accordionToggle && accordion) {
-			accordionToggle.addEventListener('click', () => {
-				const isOpen = accordion.classList.toggle('is-open');
-				accordionToggle.setAttribute('aria-expanded', String(isOpen));
-				accordion.classList.remove('has-error');
+			accordionToggle.addEventListener("click", () => {
+				const isOpen = accordion.classList.toggle("is-open");
+				accordionToggle.setAttribute("aria-expanded", String(isOpen));
+				accordion.classList.remove("has-error");
 			});
 		}
 
 		function loadCustomerData(): CustomerData {
 			try {
 				const raw = localStorage.getItem(CUST_STORAGE_KEY);
-				if (!raw) return { name: '', phone: '', deliveryMode: 'delivery', address: '', city: '', paymentMethod: 'Pago Móvil / Transferencia', notes: '' };
+				if (!raw)
+					return {
+						name: "",
+						cedula: "",
+						phone: "",
+						deliveryMode: "delivery",
+						address: "",
+						city: "",
+						paymentMethod: "Pago Móvil",
+						notes: "",
+					};
 				return JSON.parse(raw);
 			} catch {
-				return { name: '', phone: '', deliveryMode: 'delivery', address: '', city: '', paymentMethod: 'Pago Móvil / Transferencia', notes: '' };
+				return {
+					name: "",
+					cedula: "",
+					phone: "",
+					deliveryMode: "delivery",
+					address: "",
+					city: "",
+					paymentMethod: "Pago Móvil",
+					notes: "",
+				};
 			}
 		}
 
 		function saveCustomerData() {
-			const selectedRadio = drawer.querySelector<HTMLInputElement>('input[name="confi_delivery_mode"]:checked');
+			const selectedRadio = drawer.querySelector<HTMLInputElement>(
+				'input[name="confi_delivery_mode"]:checked',
+			);
 			const data: CustomerData = {
-				name: nameInput?.value.trim() || '',
-				phone: phoneInput?.value.trim() || '',
-				deliveryMode: (selectedRadio?.value as 'delivery' | 'pickup') || 'delivery',
-				address: addressInput?.value.trim() || '',
-				city: cityInput?.value.trim() || '',
-				paymentMethod: paymentSelect?.value || 'Pago Móvil / Transferencia',
-				notes: notesInput?.value.trim() || '',
+				name: nameInput?.value.trim() || "",
+				cedula: cedulaInput?.value.trim() || "",
+				phone: phoneInput?.value.trim() || "",
+				deliveryMode:
+					selectedRadio?.value === "pickup" ? "pickup" : "delivery",
+				address: addressInput?.value.trim() || "",
+				city: cityInput?.value.trim() || "",
+				paymentMethod: paymentSelect?.value || "Pago Móvil",
+				notes: notesInput?.value.trim() || "",
 			};
 			try {
 				localStorage.setItem(CUST_STORAGE_KEY, JSON.stringify(data));
@@ -638,44 +987,72 @@ const {
 		// Inicializar formulario con datos previos
 		const savedCust = loadCustomerData();
 		if (nameInput && savedCust.name) nameInput.value = savedCust.name;
+		if (cedulaInput && savedCust.cedula)
+			cedulaInput.value = savedCust.cedula;
 		if (phoneInput && savedCust.phone) phoneInput.value = savedCust.phone;
-		if (addressInput && savedCust.address) addressInput.value = savedCust.address;
+		if (addressInput && savedCust.address)
+			addressInput.value = savedCust.address;
 		if (cityInput && savedCust.city) cityInput.value = savedCust.city;
-		if (paymentSelect && savedCust.paymentMethod) paymentSelect.value = savedCust.paymentMethod;
+		if (paymentSelect && savedCust.paymentMethod)
+			paymentSelect.value = savedCust.paymentMethod;
 		if (notesInput && savedCust.notes) notesInput.value = savedCust.notes;
 
-		function updateDeliveryModeUI(mode: 'delivery' | 'pickup') {
+		function updateDeliveryModeUI(mode: "delivery" | "pickup") {
 			if (chipDelivery && chipPickup) {
-				chipDelivery.classList.toggle('is-selected', mode === 'delivery');
-				chipPickup.classList.toggle('is-selected', mode === 'pickup');
+				chipDelivery.classList.toggle(
+					"is-selected",
+					mode === "delivery",
+				);
+				chipPickup.classList.toggle("is-selected", mode === "pickup");
 			}
-			if (deliveryFields) deliveryFields.style.display = mode === 'delivery' ? 'flex' : 'none';
-			if (pickupNotice) pickupNotice.style.display = mode === 'pickup' ? 'flex' : 'none';
-			if (shippingLabel) shippingLabel.textContent = mode === 'delivery' ? 'Envío por acordar' : 'Retiro en tienda';
+			if (deliveryFields)
+				deliveryFields.style.display =
+					mode === "delivery" ? "flex" : "none";
+			if (pickupNotice)
+				pickupNotice.style.display =
+					mode === "pickup" ? "flex" : "none";
+			if (shippingLabel)
+				shippingLabel.textContent =
+					mode === "delivery"
+						? "Envío por acordar"
+						: "Retiro en tienda";
 			saveCustomerData();
 		}
 
 		if (chipDelivery) {
-			chipDelivery.addEventListener('click', () => {
-				const r = chipDelivery.querySelector<HTMLInputElement>('input[type="radio"]');
+			chipDelivery.addEventListener("click", () => {
+				const r = chipDelivery.querySelector<HTMLInputElement>(
+					'input[type="radio"]',
+				);
 				if (r) r.checked = true;
-				updateDeliveryModeUI('delivery');
+				updateDeliveryModeUI("delivery");
 			});
 		}
 
 		if (chipPickup) {
-			chipPickup.addEventListener('click', () => {
-				const r = chipPickup.querySelector<HTMLInputElement>('input[type="radio"]');
+			chipPickup.addEventListener("click", () => {
+				const r = chipPickup.querySelector<HTMLInputElement>(
+					'input[type="radio"]',
+				);
 				if (r) r.checked = true;
-				updateDeliveryModeUI('pickup');
+				updateDeliveryModeUI("pickup");
 			});
 		}
 
-		updateDeliveryModeUI(savedCust.deliveryMode || 'delivery');
+		updateDeliveryModeUI(savedCust.deliveryMode || "delivery");
 
-		[nameInput, phoneInput, addressInput, cityInput, paymentSelect, notesInput].forEach((el) => {
-			el?.addEventListener('input', () => {
-				el.classList.remove('is-invalid');
+		[
+			nameInput,
+			cedulaInput,
+			phoneInput,
+			addressInput,
+			cityInput,
+			paymentSelect,
+			notesInput,
+		].forEach((el) => {
+			if (!el) return;
+			el.addEventListener("input", () => {
+				el.classList.remove("is-invalid");
 				saveCustomerData();
 			});
 		});
@@ -684,73 +1061,148 @@ const {
 		// CIERRE DEL CICLO: ENVÍO DEL PEDIDO A WHATSAPP
 		// ----------------------------------------------------------------------
 		if (checkoutBtn) {
-			checkoutBtn.addEventListener('click', () => {
+			checkoutBtn.addEventListener("click", async () => {
 				if (cart.length === 0) {
-					showToast('Tu carrito está vacío');
+					showToast("Tu carrito está vacío");
 					return;
 				}
 
-				const name = nameInput?.value.trim() || '';
-				const phone = phoneInput?.value.trim() || '';
-				const selectedRadio = drawer.querySelector<HTMLInputElement>('input[name="confi_delivery_mode"]:checked');
-				const isDelivery = selectedRadio?.value !== 'pickup';
-				const address = addressInput?.value.trim() || '';
-				const city = cityInput?.value.trim() || '';
-				const payment = paymentSelect?.value || 'A convenir';
-				const notes = notesInput?.value.trim() || '';
+				const name = nameInput?.value.trim() || "";
+				const cedula = cedulaInput?.value.trim() || "";
+				const phone = phoneInput?.value.trim() || "";
+				const selectedRadio = drawer.querySelector<HTMLInputElement>(
+					'input[name="confi_delivery_mode"]:checked',
+				);
+				const isDelivery = selectedRadio?.value !== "pickup";
+				const address = addressInput?.value.trim() || "";
+				const city = cityInput?.value.trim() || "";
+				const payment = paymentSelect?.value || "A convenir";
+				const notes = notesInput?.value.trim() || "";
 
 				// Validaciones
 				let hasError = false;
 
 				if (!name) {
 					hasError = true;
-					nameInput?.classList.add('is-invalid');
+					nameInput?.classList.add("is-invalid");
+				}
+				if (!cedula) {
+					hasError = true;
+					cedulaInput?.classList.add("is-invalid");
 				}
 				if (!phone) {
 					hasError = true;
-					phoneInput?.classList.add('is-invalid');
+					phoneInput?.classList.add("is-invalid");
 				}
 				if (isDelivery && !address) {
 					hasError = true;
-					addressInput?.classList.add('is-invalid');
+					addressInput?.classList.add("is-invalid");
 				}
 
 				if (hasError) {
 					// Abrir acordeón si está cerrado
-					if (accordion && !accordion.classList.contains('is-open')) {
-						accordion.classList.add('is-open');
-						accordionToggle?.setAttribute('aria-expanded', 'true');
+					if (accordion && !accordion.classList.contains("is-open")) {
+						accordion.classList.add("is-open");
+						accordionToggle?.setAttribute("aria-expanded", "true");
 					}
-					accordion?.classList.add('has-error');
-					setTimeout(() => accordion?.classList.remove('has-error'), 500);
+					accordion?.classList.add("has-error");
+					setTimeout(
+						() => accordion?.classList.remove("has-error"),
+						500,
+					);
 
-					const firstInvalid = drawer.querySelector<HTMLElement>('.is-invalid');
+					const firstInvalid =
+						drawer.querySelector<HTMLElement>(".is-invalid");
 					firstInvalid?.focus();
 
-					showToast('⚠️ Completa tus datos de pedido para continuar');
+					showToast("⚠️ Completa tus datos de pedido para continuar");
 					return;
 				}
 
 				saveCustomerData();
 
+				// Estado de carga en el botón
+				const originalBtnHtml = checkoutBtn.innerHTML;
+				checkoutBtn.setAttribute("disabled", "true");
+				checkoutBtn.innerHTML = `<span>Procesando y reservando...</span>`;
+
+				let pedidoCodigo = "";
+
+				try {
+					const res = await fetch("/api/pedidos", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							cliente_nombre: name,
+							cliente_cedula: cedula,
+							cliente_telefono: phone,
+							modalidad_entrega: isDelivery
+								? "delivery"
+								: "pickup",
+							direccion_envio: isDelivery
+								? `${address}${city ? ", " + city : ""}`
+								: "",
+							metodo_pago: payment,
+							nota: notes,
+							items: cart.map((it) => ({
+								productId: it.productId,
+								varianteId: it.varianteId || null,
+								combinacion: it.combinacion,
+								nombre: it.nombre,
+								precio: it.precio,
+								cantidad: it.cantidad,
+								imagenUrl: it.imagenUrl,
+							})),
+						}),
+					});
+
+					const data = await res.json();
+					if (!res.ok || !data.ok) {
+						throw new Error(
+							data.error || "No se pudo registrar el pedido",
+						);
+					}
+
+					pedidoCodigo = data.codigo || "";
+				} catch (err: any) {
+					checkoutBtn.removeAttribute("disabled");
+					checkoutBtn.innerHTML = originalBtnHtml;
+					showToast(
+						`❌ Error: ${err.message || "No se pudo guardar el pedido"}`,
+					);
+					return;
+				}
+
+				checkoutBtn.removeAttribute("disabled");
+				checkoutBtn.innerHTML = originalBtnHtml;
+
 				// Construir mensaje estructurado para WhatsApp
-				const subtotal = cart.reduce((acc, it) => acc + it.precio * it.cantidad, 0);
+				const subtotal = cart.reduce(
+					(acc, it) => acc + it.precio * it.cantidad,
+					0,
+				);
 				const formattedSubtotal = formatPrice(subtotal);
 
 				let msg = `🛍️ *¡HOLA! DESEO REALIZAR UN PEDIDO EN ${storeName.toUpperCase()}*\n`;
+				if (pedidoCodigo) {
+					msg += `🔖 *CÓDIGO DE PEDIDO:* #${pedidoCodigo}\n`;
+				}
 				msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
 				msg += `📦 *PRODUCTOS:* \n`;
 
 				cart.forEach((it) => {
-					const comboStr = it.combinacion && it.combinacion !== 'DEFAULT' && it.combinacion !== 'Única'
-						? ` (${it.combinacion})`
-						: '';
+					const comboStr =
+						it.combinacion &&
+						it.combinacion !== "DEFAULT" &&
+						it.combinacion !== "Única"
+							? ` (${it.combinacion})`
+							: "";
 					msg += `• ${it.cantidad}x ${it.nombre}${comboStr} — ${formatPrice(it.precio * it.cantidad)}\n`;
 				});
 
 				msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
 				msg += `💰 *SUBTOTAL:* ${formattedSubtotal}\n`;
-				msg += `🚚 *MODALIDAD:* ${isDelivery ? 'Envío a domicilio / Delivery' : 'Retiro en tienda (Pick up)'}\n`;
+				msg += `🚚 *MODALIDAD:* ${isDelivery ? "Envío a domicilio / Delivery" : "Retiro en tienda (Pick up)"}\n`;
 
 				if (isDelivery) {
 					msg += `📍 *DIRECCIÓN:* ${address}\n`;
@@ -768,19 +1220,28 @@ const {
 				msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
 				msg += `👤 *DATOS DEL CLIENTE:* \n`;
 				msg += `• Nombre: ${name}\n`;
+				if (cedula) msg += `• Cédula/DNI: ${cedula}\n`;
 				msg += `• Teléfono: ${phone}\n\n`;
 				msg += `Quedo a la espera de su confirmación para coordinar el pago y la entrega. ¡Muchas gracias!`;
 
 				const targetWa = cleanWaPhone(storeWa);
 				if (!targetWa) {
-					showToast('⚠️ No se ha configurado el WhatsApp de la tienda');
+					showToast(
+						"⚠️ No se ha configurado el WhatsApp de la tienda",
+					);
 					return;
 				}
 
 				const waUrl = `https://wa.me/${targetWa}?text=${encodeURIComponent(msg)}`;
-				window.open(waUrl, '_blank');
+				window.open(waUrl, "_blank");
 
-				showToast('✅ ¡Abriendo WhatsApp con tu pedido!');
+				// Vaciar carrito tras concretar pedido
+				saveCart([]);
+				closeDrawer();
+
+				showToast(
+					`✅ ¡Pedido #${pedidoCodigo} registrado y stock preventivo reservado!`,
+				);
 			});
 		}
 
@@ -799,22 +1260,32 @@ const {
 				const raw = localStorage.getItem(POS_STORAGE_KEY);
 				if (!raw) return;
 				const pos = JSON.parse(raw);
-				if (typeof pos.left === 'number' && typeof pos.top === 'number') {
+				if (
+					typeof pos.left === "number" &&
+					typeof pos.top === "number"
+				) {
 					const btnW = pill.offsetWidth || 150;
 					const btnH = pill.offsetHeight || 50;
-					const safeLeft = Math.max(12, Math.min(window.innerWidth - btnW - 12, pos.left));
-					const safeTop = Math.max(12, Math.min(window.innerHeight - btnH - 12, pos.top));
+					const safeLeft = Math.max(
+						12,
+						Math.min(window.innerWidth - btnW - 12, pos.left),
+					);
+					const safeTop = Math.max(
+						12,
+						Math.min(window.innerHeight - btnH - 12, pos.top),
+					);
 
-					pill.style.left = safeLeft + 'px';
-					pill.style.top = safeTop + 'px';
-					pill.style.right = 'auto';
-					pill.style.bottom = 'auto';
+					pill.style.left = safeLeft + "px";
+					pill.style.top = safeTop + "px";
+					pill.style.right = "auto";
+					pill.style.bottom = "auto";
 				}
 			} catch {}
 		}
 
 		function onPointerStart(e: MouseEvent | TouchEvent) {
-			const point = 'touches' in e ? e.touches[0] : e;
+			const point = "touches" in e ? e.touches[0] : e;
+			if (!point) return;
 			dragStartX = point.clientX;
 			dragStartY = point.clientY;
 
@@ -824,13 +1295,14 @@ const {
 
 			isDragging = true;
 			hasMoved = false;
-			pill.style.transition = 'none';
-			pill.classList.add('is-dragging');
+			pill.style.transition = "none";
+			pill.classList.add("is-dragging");
 		}
 
 		function onPointerMove(e: MouseEvent | TouchEvent) {
 			if (!isDragging) return;
-			const point = 'touches' in e ? e.touches[0] : e;
+			const point = "touches" in e ? e.touches[0] : e;
+			if (!point) return;
 			const dx = point.clientX - dragStartX;
 			const dy = point.clientY - dragStartY;
 
@@ -845,27 +1317,34 @@ const {
 				const maxLeft = window.innerWidth - btnW - 12;
 				const maxTop = window.innerHeight - btnH - 12;
 
-				const nextLeft = Math.max(12, Math.min(maxLeft, initialLeft + dx));
+				const nextLeft = Math.max(
+					12,
+					Math.min(maxLeft, initialLeft + dx),
+				);
 				const nextTop = Math.max(12, Math.min(maxTop, initialTop + dy));
 
-				pill.style.left = nextLeft + 'px';
-				pill.style.top = nextTop + 'px';
-				pill.style.right = 'auto';
-				pill.style.bottom = 'auto';
+				pill.style.left = nextLeft + "px";
+				pill.style.top = nextTop + "px";
+				pill.style.right = "auto";
+				pill.style.bottom = "auto";
 			}
 		}
 
 		function onPointerEnd() {
 			if (!isDragging) return;
 			isDragging = false;
-			pill.classList.remove('is-dragging');
-			pill.style.transition = 'transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease';
+			pill.classList.remove("is-dragging");
+			pill.style.transition =
+				"transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease";
 
 			if (hasMoved) {
 				// Guardar posición
 				const rect = pill.getBoundingClientRect();
 				try {
-					localStorage.setItem(POS_STORAGE_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
+					localStorage.setItem(
+						POS_STORAGE_KEY,
+						JSON.stringify({ left: rect.left, top: rect.top }),
+					);
 				} catch {}
 			} else {
 				// Clic o tap simple -> Abrir carrito
@@ -873,32 +1352,42 @@ const {
 			}
 		}
 
-		pill.addEventListener('mousedown', onPointerStart);
-		window.addEventListener('mousemove', onPointerMove, { passive: false });
-		window.addEventListener('mouseup', onPointerEnd);
+		pill.addEventListener("mousedown", onPointerStart);
+		window.addEventListener("mousemove", onPointerMove, { passive: false });
+		window.addEventListener("mouseup", onPointerEnd);
 
-		pill.addEventListener('touchstart', onPointerStart, { passive: true });
-		window.addEventListener('touchmove', onPointerMove, { passive: false });
-		window.addEventListener('touchend', onPointerEnd);
+		pill.addEventListener("touchstart", onPointerStart, { passive: true });
+		window.addEventListener("touchmove", onPointerMove, { passive: false });
+		window.addEventListener("touchend", onPointerEnd);
 
-		pill.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter' || e.key === ' ') {
+		pill.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" || e.key === " ") {
 				e.preventDefault();
 				openDrawer();
 			}
 		});
 
-		window.addEventListener('resize', () => {
-			const rect = pill.getBoundingClientRect();
-			if (pill.style.left) {
-				const btnW = pill.offsetWidth;
-				const btnH = pill.offsetHeight;
-				const safeLeft = Math.max(12, Math.min(window.innerWidth - btnW - 12, rect.left));
-				const safeTop = Math.max(12, Math.min(window.innerHeight - btnH - 12, rect.top));
-				pill.style.left = safeLeft + 'px';
-				pill.style.top = safeTop + 'px';
-			}
-		}, { passive: true });
+		window.addEventListener(
+			"resize",
+			() => {
+				const rect = pill.getBoundingClientRect();
+				if (pill.style.left) {
+					const btnW = pill.offsetWidth;
+					const btnH = pill.offsetHeight;
+					const safeLeft = Math.max(
+						12,
+						Math.min(window.innerWidth - btnW - 12, rect.left),
+					);
+					const safeTop = Math.max(
+						12,
+						Math.min(window.innerHeight - btnH - 12, rect.top),
+					);
+					pill.style.left = safeLeft + "px";
+					pill.style.top = safeTop + "px";
+				}
+			},
+			{ passive: true },
+		);
 
 		// ----------------------------------------------------------------------
 		// PROCESAR FLASH DE PRODUCTO RECIÉN AGREGADO (REDIRECCIÓN DESDE PDP)
@@ -908,21 +1397,18 @@ const {
 				const flashRaw = sessionStorage.getItem(FLASH_STORAGE_KEY);
 				if (!flashRaw) return;
 				sessionStorage.removeItem(FLASH_STORAGE_KEY);
-				const data = JSON.parse(flashRaw);
-				if (data && data.name) {
-					// Pulso y notificación en el flotante, MANTENIENDO EL DRAWER CERRADO
-					triggerPillBounce();
-					const comboText = data.combo ? ` (${data.combo})` : '';
-					showToast(`🛒 ¡${data.qty}x ${data.name}${comboText} agregado al carrito!`);
-				}
+				// Asegurar drawer cerrado, pulso y notificación en el flotante
+				closeDrawer();
+				triggerPillBounce();
+				showToast("Producto agregado al carrito");
 			} catch {}
 		}
 
 		// ----------------------------------------------------------------------
 		// EVENTO EXTERNO PARA AGREGAR PRODUCTOS (DESDE CUALQUIER COMPONENTE)
 		// ----------------------------------------------------------------------
-		window.addEventListener('confi-cart:add', ((e: CustomEvent) => {
-			const detail = e.detail;
+		window.addEventListener("confi-cart:add", ((e: Event) => {
+			const detail = (e as CustomEvent).detail;
 			if (!detail || !detail.product) return;
 
 			const prod = detail.product;
@@ -931,14 +1417,19 @@ const {
 
 			// Buscar si ya existe este ítem
 			const existingIndex = cart.findIndex((it) => it.id === prod.id);
-			const currentInCart = existingIndex >= 0 ? cart[existingIndex].cantidad : 0;
+			const currentInCart =
+				existingIndex >= 0 ? cart[existingIndex].cantidad : 0;
 
 			if (currentInCart + qtyToAdd > maxStock) {
 				const availableToAdd = maxStock - currentInCart;
 				if (availableToAdd <= 0) {
-					showToast(`⚠️ Ya tienes las ${maxStock} unidades disponibles en tu carrito.`);
+					showToast(
+						`⚠️ Ya tienes las ${maxStock} unidades disponibles en tu carrito.`,
+					);
 				} else {
-					showToast(`⚠️ Solo puedes agregar ${availableToAdd} unidad(es) más de este producto.`);
+					showToast(
+						`⚠️ Solo puedes agregar ${availableToAdd} unidad(es) más de este producto.`,
+					);
 				}
 				return;
 			}
@@ -949,9 +1440,10 @@ const {
 				cart.push({
 					id: prod.id,
 					productId: prod.productId,
+					varianteId: prod.varianteId || null,
 					slug: prod.slug,
 					nombre: prod.nombre,
-					combinacion: prod.combinacion || 'Única',
+					combinacion: prod.combinacion || "Única",
 					precio: Number(prod.precio) || 0,
 					imagenUrl: prod.imagenUrl || null,
 					cantidad: qtyToAdd,
@@ -960,26 +1452,39 @@ const {
 			}
 
 			saveCart([...cart]);
+			closeDrawer();
 			triggerPillBounce();
 
 			if (detail.redirectToCatalog) {
 				try {
-					sessionStorage.setItem(FLASH_STORAGE_KEY, JSON.stringify({
-						name: prod.nombre,
-						qty: qtyToAdd,
-						combo: prod.combinacion,
-					}));
+					sessionStorage.setItem(
+						FLASH_STORAGE_KEY,
+						JSON.stringify({
+							added: true,
+						}),
+					);
 				} catch {}
-				window.location.href = '/#todos';
+				window.location.href = "/";
 			} else {
-				showToast(`🛒 ¡${qtyToAdd}x ${prod.nombre} agregado al carrito!`);
+				showToast("Producto agregado al carrito");
 			}
 		}) as EventListener);
 
 		// Sincronización entre pestañas
-		window.addEventListener('storage', (e) => {
+		window.addEventListener("storage", (e) => {
 			if (e.key === CART_STORAGE_KEY) {
 				cart = loadCart();
+				render();
+			}
+		});
+
+		// Cambio dinámico de moneda
+		window.addEventListener("confi-currency:change", (e: any) => {
+			const { moneda, tasaBcv, tasaCop } = e.detail || {};
+			if (moneda) {
+				currentMoneda = moneda;
+				if (tasaBcv) currentTasaBcv = Number(tasaBcv);
+				if (tasaCop) currentTasaCop = Number(tasaCop);
 				render();
 			}
 		});
@@ -991,8 +1496,8 @@ const {
 		checkFlashNotice();
 	}
 
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', initFloatingCart);
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", initFloatingCart);
 	} else {
 		initFloatingCart();
 	}

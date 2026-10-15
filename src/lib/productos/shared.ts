@@ -18,12 +18,31 @@ export type ProductoVariante = {
 	stock: number;
 	sku: string;
 	precio: number;
+	precio_oferta: number;
 };
 
 export type ProductoDetalleTexto = {
 	id: string;
 	atributo_id: string;
 	valor: string;
+};
+
+export type TipoMovimientoStock = 'entrada' | 'salida' | 'venta' | 'devolucion' | 'ajuste';
+
+export type ProductoMovimientoStock = {
+	id: string;
+	producto_id: string;
+	variante_id: string | null;
+	variante_combinacion?: string | null;
+	variante_sku?: string | null;
+	tipo: TipoMovimientoStock;
+	cantidad: number;
+	stock_anterior: number;
+	stock_nuevo: number;
+	motivo: string | null;
+	usuario_id: string | null;
+	usuario_nombre?: string | null;
+	fecha_registro: string;
 };
 
 export type ProductoListado = {
@@ -42,6 +61,8 @@ export type ProductoListado = {
 	precio_por_variante: boolean;
 	precio_min: number;
 	precio_max: number;
+	precio_oferta_min?: number;
+	precio_oferta_max?: number;
 	activo: boolean;
 	stock_total: number;
 	skus: string[];
@@ -60,18 +81,64 @@ export type CombinacionParte = {
 	valor: string;
 };
 
-export function formatPrecio(value: number) {
+export type MonedaCodigo = 'USD' | 'VES' | 'COP';
+
+export function formatPrecioConMoneda(
+	value: number,
+	moneda: MonedaCodigo = 'USD',
+	tasas?: { tasa_bcv?: number | null; tasa_cop?: number | null }
+): string {
+	const base = Number(value) || 0;
+	if (moneda === 'VES') {
+		const tasa = Number(tasas?.tasa_bcv) || 1;
+		const enBs = base * tasa;
+		return (
+			'Bs. ' +
+			new Intl.NumberFormat('es-VE', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			}).format(enBs)
+		);
+	}
+	if (moneda === 'COP') {
+		const tasa = Number(tasas?.tasa_cop) || 1;
+		const enCop = Math.round(base * tasa);
+		return (
+			'$ ' +
+			new Intl.NumberFormat('es-CO', {
+				maximumFractionDigits: 0,
+			}).format(enCop) +
+			' COP'
+		);
+	}
 	return new Intl.NumberFormat('es-VE', {
 		style: 'currency',
 		currency: 'USD',
 		minimumFractionDigits: 2,
-	}).format(value);
+	}).format(base);
+}
+
+export function formatPrecio(value: number) {
+	return formatPrecioConMoneda(value, 'USD');
 }
 
 export function formatPrecioRango(min: number, max: number) {
 	if (!Number.isFinite(min) || !Number.isFinite(max)) return formatPrecio(0);
 	if (min === max) return formatPrecio(min);
 	return `${formatPrecio(Math.min(min, max))} – ${formatPrecio(Math.max(min, max))}`;
+}
+
+export function formatPrecioRangoConMoneda(
+	min: number,
+	max: number,
+	moneda: MonedaCodigo = 'USD',
+	tasas?: { tasa_bcv?: number | null; tasa_cop?: number | null }
+) {
+	if (!Number.isFinite(min) || !Number.isFinite(max)) return formatPrecioConMoneda(0, moneda, tasas);
+	if (min === max) return formatPrecioConMoneda(min, moneda, tasas);
+	const menor = Math.min(min, max);
+	const mayor = Math.max(min, max);
+	return `${formatPrecioConMoneda(menor, moneda, tasas)} – ${formatPrecioConMoneda(mayor, moneda, tasas)}`;
 }
 
 export function formatStock(value: number) {
@@ -151,6 +218,12 @@ export function toListado(item: Producto): ProductoListado {
 	const min = item.precio_por_variante && precios.length > 0 ? Math.min(...precios) : item.precio_base;
 	const max = item.precio_por_variante && precios.length > 0 ? Math.max(...precios) : item.precio_base;
 
+	const ofertas = item.variantes
+		.map((variante) => variante.precio_oferta)
+		.filter((value) => Number.isFinite(value) && value > 0);
+	const minOferta = item.precio_por_variante && ofertas.length > 0 ? Math.min(...ofertas) : item.precio_oferta;
+	const maxOferta = item.precio_por_variante && ofertas.length > 0 ? Math.max(...ofertas) : item.precio_oferta;
+
 	return {
 		id: item.id,
 		categoria_id: item.categoria_id,
@@ -167,6 +240,8 @@ export function toListado(item: Producto): ProductoListado {
 		precio_por_variante: item.precio_por_variante,
 		precio_min: min,
 		precio_max: max,
+		precio_oferta_min: minOferta,
+		precio_oferta_max: maxOferta,
 		activo: item.activo,
 		stock_total: item.variantes.reduce((total, variante) => total + variante.stock, 0),
 		skus: item.variantes.map((variante) => variante.sku).filter(Boolean),

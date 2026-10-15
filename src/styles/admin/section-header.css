@@ -12,8 +12,8 @@
 	font-weight: 600;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	color: var(--accent);
-	background: var(--bg);
+	color: var(--accent-ink);
+	background: var(--accent);
 }
 
 .admin-section-header__title {

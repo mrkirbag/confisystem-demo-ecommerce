@@ -1,0 +1,234 @@
+---
+import type { MonedaCodigo } from '@/lib/tasas';
+
+interface Props {
+	tasaBcv?: number | null;
+	tasaCop?: number | null;
+	defaultMoneda?: MonedaCodigo;
+	variant?: 'storefront' | 'admin';
+	compact?: boolean;
+}
+
+const {
+	tasaBcv = null,
+	tasaCop = null,
+	defaultMoneda = 'USD',
+	variant = 'storefront',
+	compact = false,
+} = Astro.props;
+
+const bcvVal = Number(tasaBcv) || 0;
+const copVal = Number(tasaCop) || 0;
+---
+
+<div
+	class:list={[
+		'currency-switch',
+		`currency-switch--${variant}`,
+		{ 'currency-switch--compact': compact },
+	]}
+	data-currency-switch
+	data-tasa-bcv={bcvVal}
+	data-tasa-cop={copVal}
+	data-default-moneda={defaultMoneda}
+	role="group"
+	aria-label="Selector de moneda"
+>
+	<div class="currency-switch__pills" role="radiogroup">
+		<button
+			type="button"
+			class="currency-switch__btn is-active"
+			data-currency-btn="USD"
+			role="radio"
+			aria-checked="true"
+			title="Precios en Dólares estadounidenses (USD)"
+		>
+			<span class="currency-switch__code">USD</span>
+		</button>
+
+		<button
+			type="button"
+			class="currency-switch__btn"
+			data-currency-btn="VES"
+			role="radio"
+			aria-checked="false"
+			title={bcvVal > 0 ? `Precios en Bolívares (Tasa: Bs. ${bcvVal.toLocaleString('es-VE')})` : 'Precios en Bolívares (VES)'}
+		>
+			<span class="currency-switch__code">BS</span>
+		</button>
+
+		<button
+			type="button"
+			class="currency-switch__btn"
+			data-currency-btn="COP"
+			role="radio"
+			aria-checked="false"
+			title={copVal > 0 ? `Precios en Pesos Colombianos (Tasa: $ ${copVal.toLocaleString('es-CO')} COP)` : 'Precios en Pesos (COP)'}
+		>
+			<span class="currency-switch__code">COP</span>
+		</button>
+	</div>
+</div>
+
+<style>
+	.currency-switch {
+		display: inline-flex;
+		align-items: center;
+		position: relative;
+		user-select: none;
+	}
+
+	.currency-switch__pills {
+		display: inline-flex;
+		align-items: center;
+		padding: 3px;
+		background: var(--color-secundario, #ffffff);
+		color: var(--color-texto, #1c1917);
+		border: 1px solid color-mix(in srgb, var(--color-texto, #1c1917) 18%, var(--color-secundario, #ffffff));
+		border-radius: 999px;
+		gap: 2px;
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+	}
+
+	.currency-switch--admin .currency-switch__pills {
+		background: var(--color-secundario, #ffffff);
+		border: 1px solid color-mix(in srgb, var(--color-texto, #1c1917) 18%, var(--color-secundario, #ffffff));
+	}
+
+	.currency-switch__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.35rem 0.65rem;
+		border: 1px solid transparent;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--color-texto, #1c1917);
+		font-family: inherit;
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.03em;
+		cursor: pointer;
+		transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+		outline: none;
+		line-height: 1;
+		white-space: nowrap;
+	}
+
+	.currency-switch--compact .currency-switch__btn {
+		padding: 0.25rem 0.5rem;
+		font-size: 0.73rem;
+	}
+
+	.currency-switch__btn:hover:not(.is-active) {
+		color: var(--color-primario, #0f766e);
+		background: color-mix(in srgb, var(--color-fondo, #f3efe6) 70%, transparent);
+	}
+
+	.currency-switch__btn.is-active {
+		background: var(--color-fondo, #f3efe6);
+		color: var(--color-primario, #0f766e);
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+	}
+
+	.currency-switch__code {
+		font-size: 0.75rem;
+		letter-spacing: 0.04em;
+		font-weight: 700;
+	}
+
+	@media (max-width: 640px) {
+		.currency-switch__btn {
+			padding: 0.26rem 0.45rem;
+			font-size: 0.72rem;
+		}
+		.currency-switch__code {
+			font-size: 0.7rem;
+		}
+	}
+</style>
+
+<script>
+	const CURRENCY_KEY = 'demo_tienda_moneda_activa';
+
+	function initCurrencySwitches() {
+		const switches = document.querySelectorAll<HTMLElement>('[data-currency-switch]');
+		if (switches.length === 0) return;
+
+		// Obtener moneda almacenada (por defecto USD)
+		let currentMoneda = 'USD';
+		try {
+			const saved = localStorage.getItem(CURRENCY_KEY);
+			if (saved === 'USD' || saved === 'VES' || saved === 'COP') {
+				currentMoneda = saved;
+			}
+		} catch {
+			// ignore localStorage error
+		}
+
+		function syncUI(moneda: string) {
+			switches.forEach((sw) => {
+				const btns = sw.querySelectorAll<HTMLButtonElement>('[data-currency-btn]');
+				btns.forEach((btn) => {
+					const code = btn.dataset.currencyBtn;
+					const active = code === moneda;
+					btn.classList.toggle('is-active', active);
+					btn.setAttribute('aria-checked', String(active));
+				});
+			});
+		}
+
+		function broadcastCurrencyChange(moneda: string) {
+			try {
+				localStorage.setItem(CURRENCY_KEY, moneda);
+			} catch {
+				// ignore
+			}
+			syncUI(moneda);
+
+			// Obtener tasas del primer switch disponible
+			const firstSw = switches[0];
+			const tasaBcv = Number(firstSw?.dataset.tasaBcv) || 0;
+			const tasaCop = Number(firstSw?.dataset.tasaCop) || 0;
+
+			window.dispatchEvent(
+				new CustomEvent('confi-currency:change', {
+					detail: {
+						moneda,
+						tasaBcv,
+						tasaCop,
+					},
+				})
+			);
+		}
+
+		switches.forEach((sw) => {
+			const btns = sw.querySelectorAll<HTMLButtonElement>('[data-currency-btn]');
+			btns.forEach((btn) => {
+				btn.addEventListener('click', (e) => {
+					e.preventDefault();
+					const targetCode = btn.dataset.currencyBtn;
+					if (targetCode && targetCode !== currentMoneda) {
+						currentMoneda = targetCode;
+						broadcastCurrencyChange(currentMoneda);
+					}
+				});
+			});
+		});
+
+		// Sincronizar UI inicial
+		syncUI(currentMoneda);
+
+		// Si otra pestaña cambia la moneda
+		window.addEventListener('storage', (e) => {
+			if (e.key === CURRENCY_KEY && e.newValue) {
+				currentMoneda = e.newValue;
+				broadcastCurrencyChange(currentMoneda);
+			}
+		});
+	}
+
+	// Ejecutar inmediatamente
+	initCurrencySwitches();
+	document.addEventListener('astro:page-load', initCurrencySwitches);
+</script>

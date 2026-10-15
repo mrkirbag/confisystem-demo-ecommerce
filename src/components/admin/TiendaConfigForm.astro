@@ -1,5 +1,5 @@
 ---
-import type { TiendaConfiguracionInput } from '@/lib/tienda';
+import type { TiendaConfiguracionInput } from "@/lib/tienda";
 
 interface Props {
 	values?: Partial<TiendaConfiguracionInput>;
@@ -9,11 +9,16 @@ interface Props {
 const { values = {}, logoUrl = null } = Astro.props;
 
 function val(key: keyof TiendaConfiguracionInput) {
-	return values[key] ?? '';
+	return values[key] ?? "";
 }
 ---
 
-<form class="admin-form" data-admin-form data-method="PUT" action="/api/admin/tienda">
+<form
+	class="admin-form"
+	data-admin-form
+	data-method="PUT"
+	action="/api/admin/tienda"
+>
 	<div class="admin-form__alert" role="alert" data-form-alert hidden></div>
 
 	<section class="admin-form__card">
@@ -27,8 +32,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					name="nombre_tienda"
 					required
 					maxlength="120"
-					placeholder="Mi tienda"
-					value={val('nombre_tienda')}
+					value={val("nombre_tienda")}
 				/>
 			</label>
 
@@ -39,8 +43,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="text"
 					name="rif"
 					maxlength="20"
-					placeholder="J-00000000-0"
-					value={val('rif')}
+					value={val("rif")}
 				/>
 			</label>
 
@@ -51,8 +54,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="text"
 					name="horario"
 					maxlength="120"
-					placeholder="Lun–Sáb 9:00–18:00"
-					value={val('horario')}
+					value={val("horario")}
 				/>
 			</label>
 		</div>
@@ -68,8 +70,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="tel"
 					name="telefono"
 					maxlength="30"
-					placeholder="0412-0000000"
-					value={val('telefono')}
+					value={val("telefono")}
 				/>
 			</label>
 
@@ -80,8 +81,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="tel"
 					name="whatsapp"
 					maxlength="20"
-					placeholder="584120000000"
-					value={val('whatsapp')}
+					value={val("whatsapp")}
 				/>
 			</label>
 
@@ -92,8 +92,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="email"
 					name="correo"
 					maxlength="160"
-					placeholder="hola@mitienda.com"
-					value={val('correo')}
+					value={val("correo")}
 				/>
 			</label>
 
@@ -103,9 +102,8 @@ function val(key: keyof TiendaConfiguracionInput) {
 					class="admin-form__input admin-form__textarea"
 					name="direccion"
 					rows="3"
-					maxlength="240"
-					placeholder="Calle, sector, ciudad"
-				>{val('direccion')}</textarea>
+					maxlength="240">{val("direccion")}</textarea
+				>
 			</label>
 		</div>
 	</section>
@@ -120,8 +118,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="text"
 					name="instagram"
 					maxlength="80"
-					placeholder="@mitienda"
-					value={val('instagram')}
+					value={val("instagram")}
 				/>
 			</label>
 
@@ -132,15 +129,17 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="text"
 					name="tiktok"
 					maxlength="80"
-					placeholder="@mitienda"
-					value={val('tiktok')}
+					value={val("tiktok")}
 				/>
 			</label>
 
 			<div class="admin-form__field admin-form__field--full">
 				<span>Logo</span>
 				<div
-					class:list={['admin-upload', { 'has-file': Boolean(logoUrl) }]}
+					class:list={[
+						"admin-upload",
+						{ "has-file": Boolean(logoUrl) },
+					]}
 					data-logo-drop
 				>
 					<div class="admin-upload__preview" data-logo-preview>
@@ -148,16 +147,34 @@ function val(key: keyof TiendaConfiguracionInput) {
 							logoUrl ? (
 								<img src={logoUrl} alt="Logo actual" />
 							) : (
-								<span class="admin-upload__placeholder" aria-hidden="true">
+								<span
+									class="admin-upload__placeholder"
+									aria-hidden="true"
+								>
 									<svg viewBox="0 0 24 24" fill="none">
-										<rect x="3.5" y="5" width="17" height="14" rx="2.2" stroke="currentColor" stroke-width="1.6"></rect>
-										<circle cx="9" cy="10.2" r="1.5" stroke="currentColor" stroke-width="1.6"></circle>
+										<rect
+											x="3.5"
+											y="5"
+											width="17"
+											height="14"
+											rx="2.2"
+											stroke="currentColor"
+											stroke-width="1.6"
+										/>
+										<circle
+											cx="9"
+											cy="10.2"
+											r="1.5"
+											stroke="currentColor"
+											stroke-width="1.6"
+										/>
 										<path
 											d="M7.5 16.5 11 13l2.2 2.1 1.6-1.8 3.7 3.2"
 											stroke="currentColor"
 											stroke-width="1.6"
 											stroke-linecap="round"
-											stroke-linejoin="round"></path>
+											stroke-linejoin="round"
+										/>
 									</svg>
 								</span>
 							)
@@ -165,12 +182,24 @@ function val(key: keyof TiendaConfiguracionInput) {
 					</div>
 
 					<div class="admin-upload__body">
-						<p class="admin-upload__title">Arrastra una imagen o selecciónala</p>
-						<p class="admin-upload__name" data-logo-name>
-							{logoUrl ? 'Logo actual de la tienda' : 'Ningún archivo seleccionado'}
+						<p class="admin-upload__title">
+							Arrastra una imagen o selecciónala
 						</p>
-						<label class="admin-btn admin-btn--ghost admin-upload__cta">
-							<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+						<p class="admin-upload__name" data-logo-name>
+							{
+								logoUrl
+									? "Logo actual de la tienda"
+									: "Ningún archivo seleccionado"
+							}
+						</p>
+						<label
+							class="admin-btn admin-btn--ghost admin-upload__cta"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								aria-hidden="true"
+							>
 								<path
 									d="M12 16V7m0 0 3.2 3.2M12 7 8.8 10.2"
 									stroke="currentColor"
@@ -191,9 +220,17 @@ function val(key: keyof TiendaConfiguracionInput) {
 								data-logo-file
 							/>
 						</label>
-						<p class="admin-form__hint">JPG, PNG, WebP o AVIF · máx. 5 MB · se optimiza a WebP</p>
+						<p class="admin-form__hint">
+							JPG, PNG, WebP o AVIF · máx. 5 MB · se optimiza a
+							WebP
+						</p>
 					</div>
-					<input type="hidden" name="logo_url" value={logoUrl ?? ''} data-logo-url />
+					<input
+						type="hidden"
+						name="logo_url"
+						value={logoUrl ?? ""}
+						data-logo-url
+					/>
 				</div>
 			</div>
 
@@ -204,62 +241,103 @@ function val(key: keyof TiendaConfiguracionInput) {
 					type="text"
 					name="google_analytics"
 					maxlength="40"
-					placeholder="G-XXXXXXXXXX"
-					value={val('google_analytics')}
+					value={val("google_analytics")}
+				/>
+			</label>
+		</div>
+	</section>
+
+	<section class="admin-form__card">
+		<h2 class="admin-form__legend">Sistema Multitasa</h2>
+		<p class="admin-form__hint" style="margin-bottom: 1.25rem;">
+			El precio base de tus productos siempre se calcula en dólares (USD)
+		</p>
+		<div class="admin-form__grid">
+			<label class="admin-form__field">
+				Tasa Bolívares (Bs. por 1 USD)
+				<input
+					class="admin-form__input"
+					type="number"
+					step="0.0001"
+					min="0"
+					name="tasa_bcv"
+					placeholder="Ej. 36.50"
+					value={val("tasa_bcv")}
+				/>
+			</label>
+
+			<label class="admin-form__field">
+				Tasa Pesos Colombianos (COP por 1 USD)
+				<input
+					class="admin-form__input"
+					type="number"
+					step="0.01"
+					min="0"
+					name="tasa_cop"
+					placeholder="Ej. 4200.00"
+					value={val("tasa_cop")}
 				/>
 			</label>
 		</div>
 	</section>
 
 	<div class="admin-form__actions">
-		<button type="submit" class="admin-btn admin-btn--primary" data-form-submit>
+		<button
+			type="submit"
+			class="admin-btn admin-btn--primary"
+			data-form-submit
+		>
 			<span data-btn-label>Guardar cambios</span>
 		</button>
 	</div>
 </form>
 
 <script>
-	const form = document.querySelector('[data-admin-form]');
-	const alertBox = document.querySelector('[data-form-alert]');
-	const submitBtn = document.querySelector('[data-form-submit]');
-	const label = document.querySelector('[data-btn-label]');
-	const logoFile = document.querySelector('[data-logo-file]');
-	const logoUrlInput = document.querySelector('[data-logo-url]');
-	const logoPreview = document.querySelector('[data-logo-preview]');
-	const logoDrop = document.querySelector('[data-logo-drop]');
-	const logoName = document.querySelector('[data-logo-name]');
+	const form = document.querySelector("[data-admin-form]");
+	const alertBox = document.querySelector("[data-form-alert]");
+	const submitBtn = document.querySelector("[data-form-submit]");
+	const label = document.querySelector("[data-btn-label]");
+	const logoFile = document.querySelector("[data-logo-file]");
+	const logoUrlInput = document.querySelector("[data-logo-url]");
+	const logoPreview = document.querySelector("[data-logo-preview]");
+	const logoDrop = document.querySelector("[data-logo-drop]");
+	const logoName = document.querySelector("[data-logo-name]");
 
 	if (label instanceof HTMLElement) {
-		label.dataset.idle = label.textContent || 'Guardar cambios';
+		label.dataset.idle = label.textContent || "Guardar cambios";
 	}
 
 	function showAlert(message: string) {
 		if (!(alertBox instanceof HTMLElement)) return;
 		alertBox.hidden = false;
 		alertBox.textContent = message;
-		alertBox.classList.add('is-visible');
-		alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+		alertBox.classList.add("is-visible");
+		alertBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
 	}
 
 	function setLoading(isLoading: boolean, text?: string) {
-		if (!(submitBtn instanceof HTMLButtonElement) || !(label instanceof HTMLElement)) return;
+		if (
+			!(submitBtn instanceof HTMLButtonElement) ||
+			!(label instanceof HTMLElement)
+		)
+			return;
 		submitBtn.disabled = isLoading;
-		submitBtn.setAttribute('aria-busy', String(isLoading));
+		submitBtn.setAttribute("aria-busy", String(isLoading));
 		label.textContent = isLoading
-			? text || 'Guardando…'
-			: label.dataset.idle || 'Guardar cambios';
+			? text || "Guardando…"
+			: label.dataset.idle || "Guardar cambios";
 	}
 
 	function setLogoPreview(src: string, fileName?: string) {
 		if (!(logoPreview instanceof HTMLElement)) return;
 		logoPreview.replaceChildren();
-		const img = document.createElement('img');
+		const img = document.createElement("img");
 		img.src = src;
-		img.alt = 'Logo';
+		img.alt = "Logo";
 		logoPreview.append(img);
-		logoDrop?.classList.add('has-file');
+		logoDrop?.classList.add("has-file");
 		if (logoName instanceof HTMLElement) {
-			logoName.textContent = fileName || 'Logo seleccionado';
+			logoName.textContent = fileName || "Logo seleccionado";
 		}
 	}
 
@@ -271,7 +349,7 @@ function val(key: keyof TiendaConfiguracionInput) {
 		setLogoPreview(URL.createObjectURL(file), file.name);
 	}
 
-	logoFile?.addEventListener('change', () => {
+	logoFile?.addEventListener("change", () => {
 		if (!(logoFile instanceof HTMLInputElement)) return;
 		const file = logoFile.files?.[0];
 		if (!file) return;
@@ -279,44 +357,47 @@ function val(key: keyof TiendaConfiguracionInput) {
 	});
 
 	if (logoDrop instanceof HTMLElement) {
-		logoDrop.addEventListener('dragover', (event) => {
+		logoDrop.addEventListener("dragover", (event) => {
 			event.preventDefault();
-			logoDrop.classList.add('is-dragover');
+			logoDrop.classList.add("is-dragover");
 		});
-		logoDrop.addEventListener('dragleave', () => {
-			logoDrop.classList.remove('is-dragover');
+		logoDrop.addEventListener("dragleave", () => {
+			logoDrop.classList.remove("is-dragover");
 		});
-		logoDrop.addEventListener('drop', (event) => {
+		logoDrop.addEventListener("drop", (event) => {
 			event.preventDefault();
-			logoDrop.classList.remove('is-dragover');
+			logoDrop.classList.remove("is-dragover");
 			const file = event.dataTransfer?.files?.[0];
 			if (file) applyLogoFile(file);
 		});
 	}
 
-	form?.addEventListener('submit', async (event) => {
+	form?.addEventListener("submit", async (event) => {
 		event.preventDefault();
 		if (!(form instanceof HTMLFormElement)) return;
 
 		const data = Object.fromEntries(new FormData(form).entries());
-		if (!String(data.nombre_tienda || '').trim()) {
-			showAlert('El nombre de la tienda es obligatorio.');
+		if (!String(data.nombre_tienda || "").trim()) {
+			showAlert("El nombre de la tienda es obligatorio.");
 			return;
 		}
 
 		setLoading(true);
 
 		try {
-			const file = logoFile instanceof HTMLInputElement ? logoFile.files?.[0] : null;
+			const file =
+				logoFile instanceof HTMLInputElement
+					? logoFile.files?.[0]
+					: null;
 			if (file) {
-				setLoading(true, 'Subiendo logo…');
+				setLoading(true, "Subiendo logo…");
 				const uploadData = new FormData();
-				uploadData.append('kind', 'logo');
-				uploadData.append('file', file);
+				uploadData.append("kind", "logo");
+				uploadData.append("file", file);
 
-				const uploaded = await fetch('/api/admin/upload', {
-					method: 'POST',
-					headers: { Accept: 'application/json' },
+				const uploaded = await fetch("/api/admin/upload", {
+					method: "POST",
+					headers: { Accept: "application/json" },
 					body: uploadData,
 				});
 				const body = (await uploaded.json().catch(() => ({}))) as {
@@ -324,36 +405,42 @@ function val(key: keyof TiendaConfiguracionInput) {
 					url?: string;
 				};
 				if (!uploaded.ok || !body.url) {
-					showAlert(body.error || 'No se pudo subir el logo.');
+					showAlert(body.error || "No se pudo subir el logo.");
 					setLoading(false);
 					return;
 				}
 
 				data.logo_url = body.url;
-				if (logoUrlInput instanceof HTMLInputElement) logoUrlInput.value = body.url;
+				if (logoUrlInput instanceof HTMLInputElement)
+					logoUrlInput.value = body.url;
 				setLogoPreview(body.url, file.name);
 			}
 
-			setLoading(true, 'Guardando…');
-			const response = await fetch(form.getAttribute('action') || '/api/admin/tienda', {
-				method: 'PUT',
-				headers: {
-					Accept: 'application/json',
-					'Content-Type': 'application/json',
+			setLoading(true, "Guardando…");
+			const response = await fetch(
+				form.getAttribute("action") || "/api/admin/tienda",
+				{
+					method: "PUT",
+					headers: {
+						Accept: "application/json",
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(data),
 				},
-				body: JSON.stringify(data),
-			});
+			);
 
 			const payload = await response.json().catch(() => ({}));
 			if (!response.ok) {
-				showAlert(payload.error || 'No se pudo guardar.');
+				showAlert(payload.error || "No se pudo guardar.");
 				setLoading(false);
 				return;
 			}
 
-			window.location.assign(payload.redirect || '/admin/configuracion/tienda?ok=updated');
+			window.location.assign(
+				payload.redirect || "/admin/configuracion/tienda?ok=updated",
+			);
 		} catch {
-			showAlert('No se pudo guardar. Revisa la conexión.');
+			showAlert("No se pudo guardar. Revisa la conexión.");
 			setLoading(false);
 		}
 	});

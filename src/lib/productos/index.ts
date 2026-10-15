@@ -22,7 +22,9 @@ import {
 	type ProductoDetalleTexto,
 	type ProductoImagen,
 	type ProductoListado,
+	type ProductoMovimientoStock,
 	type ProductoVariante,
+	type TipoMovimientoStock,
 } from './shared';
 
 export {
@@ -34,7 +36,9 @@ export {
 	allocateSkus,
 	cartesianCombinaciones,
 	formatPrecio,
+	formatPrecioConMoneda,
 	formatPrecioRango,
+	formatPrecioRangoConMoneda,
 	formatSkus,
 	formatStock,
 	inferVarianteSeleccion,
@@ -45,7 +49,9 @@ export {
 	type ProductoDetalleTexto,
 	type ProductoImagen,
 	type ProductoListado,
+	type ProductoMovimientoStock,
 	type ProductoVariante,
+	type TipoMovimientoStock,
 } from './shared';
 
 export type ProductoImagenInput = {
@@ -58,6 +64,7 @@ export type ProductoVarianteInput = {
 	stock: number;
 	sku: string;
 	precio: number;
+	precio_oferta: number;
 };
 
 export type ProductoDetalleInput = {
@@ -147,6 +154,12 @@ async function ensureProductoSchema() {
 				`);
 			}
 
+			if (!(await tableHasColumn('producto_stock_variantes', 'precio_oferta'))) {
+				await addColumn(
+					`ALTER TABLE producto_stock_variantes ADD COLUMN precio_oferta REAL NOT NULL DEFAULT 0`,
+				);
+			}
+
 			if (!(await tableHasColumn('productos', 'precio_por_variante'))) {
 				await addColumn(
 					`ALTER TABLE productos ADD COLUMN precio_por_variante INTEGER NOT NULL DEFAULT 0`,
@@ -163,6 +176,7 @@ async function ensureProductoSchema() {
 			}
 
 			await ensureVarianteSkus();
+			await ensureMovimientosStockSchema();
 		})();
 	}
 
@@ -262,6 +276,11 @@ function mapListado(row: Record<string, unknown>): ProductoListado {
 	const precio_min = Number.isFinite(minRaw) ? minRaw : base;
 	const precio_max = Number.isFinite(maxRaw) ? maxRaw : base;
 
+	const minOfertaRaw = row.precio_oferta_min == null ? NaN : Number(row.precio_oferta_min);
+	const maxOfertaRaw = row.precio_oferta_max == null ? NaN : Number(row.precio_oferta_max);
+	const precio_oferta_min = Number.isFinite(minOfertaRaw) ? minOfertaRaw : Number(row.precio_oferta ?? 0);
+	const precio_oferta_max = Number.isFinite(maxOfertaRaw) ? maxOfertaRaw : Number(row.precio_oferta ?? 0);
+
 	return {
 		id: String(row.id),
 		categoria_id: String(row.categoria_id),
@@ -278,6 +297,8 @@ function mapListado(row: Record<string, unknown>): ProductoListado {
 		precio_por_variante: asBool(row.precio_por_variante),
 		precio_min: asBool(row.precio_por_variante) ? precio_min : base,
 		precio_max: asBool(row.precio_por_variante) ? precio_max : base,
+		precio_oferta_min,
+		precio_oferta_max,
 		activo: asBool(row.activo),
 		stock_total: Number(row.stock_total ?? 0),
 		skus: asText(row.skus)
@@ -321,6 +342,16 @@ const SELECT_LIST = `
 			WHERE producto_id = p.id
 		) AS precio_max,
 		(
+			SELECT MIN(CASE WHEN precio_oferta > 0 THEN precio_oferta ELSE NULL END)
+			FROM producto_stock_variantes
+			WHERE producto_id = p.id
+		) AS precio_oferta_min,
+		(
+			SELECT MAX(CASE WHEN precio_oferta > 0 THEN precio_oferta ELSE NULL END)
+			FROM producto_stock_variantes
+			WHERE producto_id = p.id
+		) AS precio_oferta_max,
+		(
 			SELECT GROUP_CONCAT(sku, ',')
 			FROM producto_stock_variantes
 			WHERE producto_id = p.id AND sku IS NOT NULL AND TRIM(sku) != ''
@@ -359,11 +390,13 @@ export function sanitizeProductoInput(raw: Record<string, unknown>): ProductoInp
 		seenCombo.add(combinacion);
 		const stock = asStock(row.stock);
 		const precio = asPrice(row.precio);
+		const precio_oferta = asPrice(row.precio_oferta);
 		variantes.push({
 			combinacion,
 			stock: Number.isFinite(stock) ? stock : 0,
 			sku: asText(row.sku).slice(0, 40),
 			precio: Number.isFinite(precio) ? precio : 0,
+			precio_oferta: Number.isFinite(precio_oferta) ? precio_oferta : 0,
 		});
 	}
 
@@ -381,6 +414,17 @@ export function sanitizeProductoInput(raw: Record<string, unknown>): ProductoInp
 		detalles.push({ atributo_id, valor: valor.slice(0, 400) });
 	}
 
+	const enOferta = asBool(raw.en_oferta);
+	const precioPorVariante = asBool(raw.precio_por_variante);
+	const variantOfferMin = variantes
+		.map((v) => v.precio_oferta)
+		.filter((p) => p > 0);
+	const rawPrecioOferta = asPrice(raw.precio_oferta);
+	const effectivePrecioOferta =
+		precioPorVariante && variantOfferMin.length > 0
+			? Math.min(...variantOfferMin)
+			: rawPrecioOferta;
+
 	return {
 		subcategoria_id: asText(raw.subcategoria_id),
 		nombre: asText(raw.nombre),
@@ -388,13 +432,20 @@ export function sanitizeProductoInput(raw: Record<string, unknown>): ProductoInp
 		descripcion: asText(raw.descripcion).slice(0, 4000),
 		precio_base: asPrice(raw.precio_base),
 		es_tendencia: asBool(raw.es_tendencia),
-		en_oferta: asBool(raw.en_oferta),
-		precio_oferta: asPrice(raw.precio_oferta),
-		precio_por_variante: asBool(raw.precio_por_variante),
+		en_oferta: enOferta,
+		precio_oferta: enOferta ? effectivePrecioOferta : 0,
+		precio_por_variante: precioPorVariante,
 		imagenes,
-		variantes: asBool(raw.precio_por_variante)
-			? variantes
-			: variantes.map((item) => ({ ...item, precio: asPrice(raw.precio_base) })),
+		variantes: precioPorVariante
+			? variantes.map((item) => ({
+					...item,
+					precio_oferta: enOferta ? item.precio_oferta : 0,
+			  }))
+			: variantes.map((item) => ({
+					...item,
+					precio: asPrice(raw.precio_base),
+					precio_oferta: enOferta ? effectivePrecioOferta : 0,
+			  })),
 		detalles,
 		activo: raw.activo == null ? undefined : asBool(raw.activo),
 	};
@@ -408,16 +459,22 @@ export function validateProductoInput(input: ProductoInput) {
 	if (!Number.isFinite(input.precio_base)) return 'El precio no es válido.';
 	if (input.precio_base < 0) return 'El precio no puede ser negativo.';
 	if (input.en_oferta) {
-		if (!Number.isFinite(input.precio_oferta) || input.precio_oferta <= 0) {
-			return 'Indica el precio de oferta.';
-		}
-		const minimo = input.precio_por_variante
-			? Math.min(input.precio_base, ...input.variantes.map((item) => item.precio))
-			: input.precio_base;
-		if (input.precio_oferta >= minimo) {
-			return input.precio_por_variante
-				? 'El precio de oferta debe ser menor que el precio más bajo de las variantes.'
-				: 'El precio de oferta debe ser menor que el precio normal.';
+		if (input.precio_por_variante) {
+			for (const v of input.variantes) {
+				if (!Number.isFinite(v.precio_oferta) || v.precio_oferta <= 0) {
+					return `Indica el precio de oferta para la combinación “${v.combinacion}”.`;
+				}
+				if (v.precio_oferta >= v.precio) {
+					return `El precio de oferta de “${v.combinacion}” debe ser menor que su precio normal.`;
+				}
+			}
+		} else {
+			if (!Number.isFinite(input.precio_oferta) || input.precio_oferta <= 0) {
+				return 'Indica el precio de oferta.';
+			}
+			if (input.precio_oferta >= input.precio_base) {
+				return 'El precio de oferta debe ser menor que el precio normal.';
+			}
 		}
 	}
 	if (input.imagenes.length > MAX_IMAGENES) return 'Puedes subir como máximo 3 imágenes.';
@@ -480,7 +537,7 @@ async function loadVariantes(ids: string[]) {
 	const placeholders = ids.map(() => '?').join(', ');
 	const result = await db.execute({
 		sql: `
-			SELECT id, producto_id, combinacion, stock, sku, precio
+			SELECT id, producto_id, combinacion, stock, sku, precio, COALESCE(precio_oferta, 0) AS precio_oferta
 			FROM producto_stock_variantes
 			WHERE producto_id IN (${placeholders})
 			ORDER BY combinacion COLLATE NOCASE
@@ -497,6 +554,7 @@ async function loadVariantes(ids: string[]) {
 			stock: Number(row.stock ?? 0),
 			sku: asText(row.sku),
 			precio: Number(row.precio ?? 0),
+			precio_oferta: Number(row.precio_oferta ?? 0),
 		});
 		map.set(productoId, list);
 	}
@@ -786,8 +844,8 @@ async function syncVariantes(productoId: string, slug: string, variantes: Produc
 		const current = byCombo.get(variante.combinacion);
 		if (current) {
 			await db.execute({
-				sql: `UPDATE producto_stock_variantes SET stock = ?, sku = ?, precio = ? WHERE id = ?`,
-				args: [variante.stock, sku, variante.precio, current.id],
+				sql: `UPDATE producto_stock_variantes SET stock = ?, sku = ?, precio = ?, precio_oferta = ? WHERE id = ?`,
+				args: [variante.stock, sku, variante.precio, variante.precio_oferta ?? 0, current.id],
 			});
 			keepIds.add(current.id);
 			continue;
@@ -796,10 +854,10 @@ async function syncVariantes(productoId: string, slug: string, variantes: Produc
 		const id = randomUUID();
 		await db.execute({
 			sql: `
-				INSERT INTO producto_stock_variantes (id, producto_id, combinacion, stock, sku, precio)
-				VALUES (?, ?, ?, ?, ?, ?)
+				INSERT INTO producto_stock_variantes (id, producto_id, combinacion, stock, sku, precio, precio_oferta)
+				VALUES (?, ?, ?, ?, ?, ?, ?)
 			`,
-			args: [id, productoId, variante.combinacion, variante.stock, sku, variante.precio],
+			args: [id, productoId, variante.combinacion, variante.stock, sku, variante.precio, variante.precio_oferta ?? 0],
 		});
 		keepIds.add(id);
 	}
@@ -974,3 +1032,222 @@ export function knownProductoError(error: unknown) {
 	if (message === 'DETALLE_NUMERO') return 'Hay un dato numérico inválido en los detalles.';
 	return null;
 }
+
+export async function ensureMovimientosStockSchema() {
+	const db = getDb();
+	try {
+		await db.execute(`
+			CREATE TABLE IF NOT EXISTS producto_movimientos_stock (
+				id TEXT PRIMARY KEY,
+				producto_id TEXT NOT NULL,
+				variante_id TEXT,
+				tipo TEXT NOT NULL CHECK(tipo IN ('entrada', 'salida', 'venta', 'devolucion', 'ajuste')),
+				cantidad INTEGER NOT NULL,
+				stock_anterior INTEGER NOT NULL,
+				stock_nuevo INTEGER NOT NULL,
+				motivo TEXT,
+				usuario_id TEXT,
+				fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+				FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+				FOREIGN KEY (variante_id) REFERENCES producto_stock_variantes(id) ON DELETE SET NULL,
+				FOREIGN KEY (usuario_id) REFERENCES usuarios_admin(id) ON DELETE SET NULL
+			)
+		`);
+		await db.execute(`
+			CREATE INDEX IF NOT EXISTS idx_movimientos_producto ON producto_movimientos_stock(producto_id)
+		`);
+		await db.execute(`
+			CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON producto_movimientos_stock(fecha_registro)
+		`);
+	} catch (error) {
+		console.warn('Aviso verificando tabla movimientos stock:', error);
+	}
+}
+
+export type RegistrarMovimientoInput = {
+	productoId: string;
+	varianteId?: string | null;
+	tipo: TipoMovimientoStock;
+	cantidad: number;
+	stockAnterior: number;
+	stockNuevo: number;
+	motivo?: string | null;
+	usuarioId?: string | null;
+};
+
+export async function registrarMovimientoStock(input: RegistrarMovimientoInput) {
+	await ensureMovimientosStockSchema();
+	const db = getDb();
+	try {
+		await db.execute({
+			sql: `
+				INSERT INTO producto_movimientos_stock (
+					id, producto_id, variante_id, tipo, cantidad, stock_anterior, stock_nuevo, motivo, usuario_id
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`,
+			args: [
+				randomUUID(),
+				input.productoId,
+				input.varianteId || null,
+				input.tipo,
+				Math.round(input.cantidad),
+				Math.round(input.stockAnterior),
+				Math.round(input.stockNuevo),
+				input.motivo ? input.motivo.trim() : null,
+				input.usuarioId || null,
+			],
+		});
+	} catch (error) {
+		console.error('Error registrando movimiento de stock:', error);
+	}
+}
+
+export type AjustarStockInput = {
+	productoId: string;
+	varianteId?: string | null;
+	tipo: 'entrada' | 'salida';
+	cantidad: number;
+	motivo?: string | null;
+	usuarioId?: string | null;
+};
+
+export async function ajustarStockProducto(input: AjustarStockInput) {
+	await ensureProductoSchema();
+	const db = getDb();
+
+	const prod = await getProductoById(input.productoId);
+	if (!prod) throw new Error('Producto no encontrado.');
+
+	const cant = Math.max(1, Math.round(Number(input.cantidad) || 0));
+	if (cant <= 0) throw new Error('La cantidad debe ser mayor a 0.');
+
+	let variante: ProductoVariante | undefined;
+	if (input.varianteId) {
+		variante = prod.variantes.find((v) => v.id === input.varianteId);
+		if (!variante) throw new Error('Variante no encontrada.');
+	} else if (prod.variantes.length === 1) {
+		variante = prod.variantes[0];
+	} else if (prod.variantes.length > 1) {
+		throw new Error('Debes especificar qué variante deseas modificar.');
+	} else {
+		throw new Error('El producto no tiene variantes configuradas.');
+	}
+
+	const stockAnterior = Number(variante.stock) || 0;
+	let stockNuevo = stockAnterior;
+
+	if (input.tipo === 'entrada') {
+		stockNuevo = stockAnterior + cant;
+	} else if (input.tipo === 'salida') {
+		if (cant > stockAnterior) {
+			throw new Error(`Stock insuficiente. El stock actual es de ${stockAnterior} unidades.`);
+		}
+		stockNuevo = stockAnterior - cant;
+	} else {
+		throw new Error('Tipo de ajuste inválido.');
+	}
+
+	await db.execute({
+		sql: `UPDATE producto_stock_variantes SET stock = ? WHERE id = ?`,
+		args: [stockNuevo, variante.id],
+	});
+
+	await registrarMovimientoStock({
+		productoId: prod.id,
+		varianteId: variante.id,
+		tipo: input.tipo,
+		cantidad: cant,
+		stockAnterior,
+		stockNuevo,
+		motivo: input.motivo || (input.tipo === 'entrada' ? 'Reposición manual' : 'Descuento manual'),
+		usuarioId: input.usuarioId || null,
+	});
+
+	const actualizado = await getProductoById(prod.id);
+	return actualizado!;
+}
+
+export type FiltrosMovimientosStock = {
+	desde?: string; // YYYY-MM-DD
+	hasta?: string; // YYYY-MM-DD
+	tipo?: string;
+	varianteId?: string;
+};
+
+export async function listMovimientosStock(
+	productoId: string,
+	filtros: FiltrosMovimientosStock = {},
+): Promise<ProductoMovimientoStock[]> {
+	await ensureMovimientosStockSchema();
+	const db = getDb();
+
+	const conditions: string[] = ['m.producto_id = ?'];
+	const args: (string | number)[] = [productoId];
+
+	if (filtros.tipo && filtros.tipo.trim()) {
+		conditions.push('m.tipo = ?');
+		args.push(filtros.tipo.trim());
+	}
+
+	if (filtros.varianteId && filtros.varianteId.trim()) {
+		conditions.push('m.variante_id = ?');
+		args.push(filtros.varianteId.trim());
+	}
+
+	if (filtros.desde && filtros.desde.trim()) {
+		conditions.push('date(m.fecha_registro) >= date(?)');
+		args.push(filtros.desde.trim());
+	}
+
+	if (filtros.hasta && filtros.hasta.trim()) {
+		conditions.push('date(m.fecha_registro) <= date(?)');
+		args.push(filtros.hasta.trim());
+	}
+
+	const whereClause = conditions.join(' AND ');
+
+	const result = await db.execute({
+		sql: `
+			SELECT
+				m.id,
+				m.producto_id,
+				m.variante_id,
+				v.combinacion AS variante_combinacion,
+				v.sku AS variante_sku,
+				m.tipo,
+				m.cantidad,
+				m.stock_anterior,
+				m.stock_nuevo,
+				m.motivo,
+				m.usuario_id,
+				COALESCE(u.nombre, 'Sistema') AS usuario_nombre,
+				m.fecha_registro
+			FROM producto_movimientos_stock m
+			LEFT JOIN producto_stock_variantes v ON v.id = m.variante_id
+			LEFT JOIN usuarios_admin u ON u.id = m.usuario_id
+			WHERE ${whereClause}
+			ORDER BY m.fecha_registro DESC, m.rowid DESC
+		`,
+		args,
+	});
+
+	return result.rows.map((raw) => {
+		const row = raw as Record<string, unknown>;
+		return {
+			id: String(row.id),
+			producto_id: String(row.producto_id),
+			variante_id: row.variante_id ? String(row.variante_id) : null,
+			variante_combinacion: row.variante_combinacion ? String(row.variante_combinacion) : null,
+			variante_sku: row.variante_sku ? String(row.variante_sku) : null,
+			tipo: String(row.tipo) as TipoMovimientoStock,
+			cantidad: Number(row.cantidad ?? 0),
+			stock_anterior: Number(row.stock_anterior ?? 0),
+			stock_nuevo: Number(row.stock_nuevo ?? 0),
+			motivo: row.motivo ? String(row.motivo) : null,
+			usuario_id: row.usuario_id ? String(row.usuario_id) : null,
+			usuario_nombre: row.usuario_nombre ? String(row.usuario_nombre) : null,
+			fecha_registro: String(row.fecha_registro || ''),
+		};
+	});
+}
+

@@ -17,30 +17,26 @@ export type Atributo = {
 
 export const TIPO_INFO: Record<
 	AtributoTipo,
-	{ label: string; hint: string; example: string; needsOptions: boolean }
+	{ label: string; hint: string; needsOptions: boolean }
 > = {
 	seleccion_unica: {
-		label: 'Elige una',
-		hint: 'El cliente elige una sola.',
-		example: 'Talla: S, M o L',
+		label: 'Una opción',
+		hint: 'Defines una lista y el cliente elige solo una.',
 		needsOptions: true,
 	},
 	multiseleccion: {
-		label: 'Elige varias',
-		hint: 'Puede marcar más de una.',
-		example: 'Material: algodón y lino',
+		label: 'Varias opciones',
+		hint: 'Defines una lista y el cliente puede marcar varias.',
 		needsOptions: true,
 	},
 	texto: {
-		label: 'Texto',
-		hint: 'Se escribe en cada producto.',
-		example: 'Marca, composición',
+		label: 'Texto libre',
+		hint: 'Lo escribes tú en cada producto.',
 		needsOptions: false,
 	},
 	numero: {
 		label: 'Número',
-		hint: 'Un número en cada producto.',
-		example: 'Peso, centímetros',
+		hint: 'Un valor numérico que escribes en cada producto.',
 		needsOptions: false,
 	},
 };

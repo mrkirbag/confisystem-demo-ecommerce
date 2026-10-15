@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Deshabilitar rastreo en panel de administración y rutas de API
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /api
+
+Sitemap: https://confiservicio.com/sitemap.xml

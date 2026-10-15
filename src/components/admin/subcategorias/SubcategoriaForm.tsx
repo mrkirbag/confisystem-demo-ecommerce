@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { Categoria } from '@/lib/categorias/shared';
 import { isValidSlug, slugify, type Subcategoria } from '@/lib/subcategorias/shared';
 import ImageUpload from '../crud/ImageUpload';
@@ -32,8 +32,7 @@ export default function SubcategoriaForm({
 	const activas = categorias.filter((item) => item.activo);
 	const [categoriaId, setCategoriaId] = useState(values?.categoria_id || activas[0]?.id || '');
 	const [nombre, setNombre] = useState(values?.nombre ?? '');
-	const [slug, setSlug] = useState(values?.slug ?? '');
-	const [slugLocked, setSlugLocked] = useState(mode === 'edit');
+	const slug = slugify(nombre.trim());
 	const [imagenUrl, setImagenUrl] = useState(values?.imagen_url ?? null);
 	const [file, setFile] = useState<File | null>(null);
 	const [fileName, setFileName] = useState('');
@@ -56,17 +55,12 @@ export default function SubcategoriaForm({
 		activas.find((item) => item.id === categoriaId)?.slug ??
 		'';
 
-	useEffect(() => {
-		if (slugLocked) return;
-		setSlug(slugify(nombre));
-	}, [nombre, slugLocked]);
-
 	async function handleSubmit(event: FormEvent) {
 		event.preventDefault();
 		setError('');
 
 		const nombreTrim = nombre.trim();
-		const slugTrim = slugify(slug.trim() || nombreTrim);
+		const slugTrim = slug;
 
 		if (!categoriaId) {
 			setError('Elige una categoría.');
@@ -195,26 +189,12 @@ export default function SubcategoriaForm({
 							minLength={2}
 							maxLength={80}
 							autoFocus
-							placeholder="Routers"
 							value={nombre}
 							onChange={(event) => setNombre(event.target.value)}
 						/>
-					</label>
-
-					<label className="admin-form__field admin-form__field--full">
-						Slug
-						<input
-							className="admin-form__input"
-							type="text"
-							required
-							maxLength={80}
-							placeholder="routers"
-							value={slug}
-							onChange={(event) => {
-								setSlugLocked(true);
-								setSlug(slugify(event.target.value));
-							}}
-						/>
+						<span className="admin-form__hint">
+							Slug: <strong>{slug || '—'}</strong>
+						</span>
 					</label>
 
 					<ImageUpload

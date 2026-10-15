@@ -9,5 +9,5 @@ const items = await listCategorias();
 ---
 
 <AdminLayout title="Categorías">
-	<CategoriasCrud client:load initialItems={items} />
+	<CategoriasCrud client:only="react" initialItems={items} />
 </AdminLayout>

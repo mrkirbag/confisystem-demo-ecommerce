@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Atributo } from '@/lib/atributos/shared';
 import type { Categoria } from '@/lib/categorias/shared';
 import {
+	descuentoPorcentaje,
 	formatPrecio,
 	formatPrecioRango,
 	formatSkus,
@@ -12,9 +13,21 @@ import {
 import type { Subcategoria } from '@/lib/subcategorias/shared';
 import ConfirmDialog from '../crud/ConfirmDialog';
 import FormModal from '../crud/FormModal';
-import { IconEye, IconPencil, IconPlus, IconSearch, IconTrash } from '../crud/icons';
+import {
+	IconEye,
+	IconHistory,
+	IconMinusCircle,
+	IconPencil,
+	IconPlus,
+	IconPlusCircle,
+	IconPrinter,
+	IconSearch,
+	IconTrash,
+} from '../crud/icons';
 import ProductoForm from './ProductoForm';
 import ProductoPreview from './ProductoPreview';
+import StockAjusteModal from './StockAjusteModal';
+import StockHistorialModal from './StockHistorialModal';
 
 type Props = {
 	initialItems: ProductoListado[];
@@ -29,7 +42,10 @@ type Vista = 'activos' | 'eliminados';
 type Modal =
 	| { kind: 'create' }
 	| { kind: 'edit'; item: ProductoListado }
-	| { kind: 'preview'; item: ProductoListado };
+	| { kind: 'preview'; item: ProductoListado }
+	| { kind: 'stock_add'; item: ProductoListado }
+	| { kind: 'stock_sub'; item: ProductoListado }
+	| { kind: 'stock_history'; item: ProductoListado };
 
 export default function ProductosCrud({ initialItems, categorias, subcategorias, atributos, storeName }: Props) {
 	const [items, setItems] = useState(initialItems);
@@ -226,10 +242,21 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 										: 'productos'}
 						</span>
 					</p>
-					<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
-						<IconPlus />
-						Nuevo producto
-					</button>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+						<button
+							type="button"
+							className="admin-btn admin-btn--ghost admin-btn--icon-label"
+							onClick={() => window.print()}
+							title="Imprimir catálogo de productos"
+						>
+							<IconPrinter />
+							Imprimir
+						</button>
+						<button type="button" className="admin-btn admin-btn--primary" onClick={openCreate}>
+							<IconPlus />
+							Nuevo producto
+						</button>
+					</div>
 				</div>
 				<div className="admin-toolbar__filters">
 					<div className="admin-toolbar__seg" role="group" aria-label="Estado">
@@ -286,7 +313,6 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 						<input
 							className="admin-toolbar__control"
 							type="search"
-							placeholder="Buscar…"
 							value={query}
 							onChange={(event) => setQuery(event.target.value)}
 						/>
@@ -354,7 +380,21 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 						<tbody>
 							{filtered.map((item) => {
 								const agotado = item.stock_total <= 0;
-								const oferta = item.en_oferta && item.precio_oferta > 0;
+								const minOferta =
+									item.precio_por_variante && (item.precio_oferta_min ?? 0) > 0
+										? item.precio_oferta_min!
+										: item.precio_oferta;
+								const maxOferta =
+									item.precio_por_variante && (item.precio_oferta_max ?? 0) > 0
+										? item.precio_oferta_max!
+										: item.precio_oferta;
+								const oferta = item.en_oferta && minOferta > 0;
+								const referencia = item.precio_por_variante ? item.precio_min : item.precio_base;
+								const descuento = oferta ? descuentoPorcentaje(referencia, minOferta) : 0;
+								const precioOfertaLabel =
+									item.precio_por_variante && minOferta > 0
+										? formatPrecioRango(minOferta, maxOferta)
+										: formatPrecio(item.precio_oferta);
 								return (
 								<tr key={item.id}>
 									<td className="admin-table__cell-main">
@@ -386,7 +426,12 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 										{oferta ? (
 											<span className="admin-price admin-price--offer">
 												<s>{formatPrecioRango(item.precio_min, item.precio_max)}</s>
-												<strong>{formatPrecio(item.precio_oferta)}</strong>
+												<span className="admin-price__now">
+													<strong>{precioOfertaLabel}</strong>
+													{descuento > 0 ? (
+														<span className="admin-price__discount">−{descuento}%</span>
+													) : null}
+												</span>
 											</span>
 										) : (
 											formatPrecioRango(item.precio_min, item.precio_max)
@@ -396,33 +441,65 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 										<div className="admin-table__actions">
 											<button
 												type="button"
-												className="admin-btn admin-btn--success admin-btn--icon-label"
+												className="admin-btn admin-btn--success admin-btn--icon"
+												title="Ver vista previa"
+												aria-label="Ver producto"
 												onClick={() => setModal({ kind: 'preview', item })}
 											>
 												<IconEye />
-												Ver
 											</button>
 											<button
 												type="button"
-												className="admin-btn admin-btn--info admin-btn--icon-label"
+												className="admin-btn admin-btn--info admin-btn--icon"
+												title="Editar producto"
+												aria-label="Editar producto"
 												onClick={() => setModal({ kind: 'edit', item })}
 											>
 												<IconPencil />
-												Editar
+											</button>
+											<button
+												type="button"
+												className="admin-btn admin-btn--success admin-btn--icon"
+												title="Agregar / Reponer stock"
+												aria-label="Agregar stock"
+												onClick={() => setModal({ kind: 'stock_add', item })}
+											>
+												<IconPlusCircle />
+											</button>
+											<button
+												type="button"
+												className="admin-btn admin-btn--danger admin-btn--icon"
+												title="Restar / Descontar stock"
+												aria-label="Restar stock"
+												disabled={item.stock_total <= 0}
+												onClick={() => setModal({ kind: 'stock_sub', item })}
+											>
+												<IconMinusCircle />
+											</button>
+											<button
+												type="button"
+												className="admin-btn admin-btn--ghost admin-btn--icon"
+												title="Historial de movimientos de stock"
+												aria-label="Historial de stock"
+												onClick={() => setModal({ kind: 'stock_history', item })}
+											>
+												<IconHistory />
 											</button>
 											{item.activo ? (
 												<button
 													type="button"
-													className="admin-btn admin-btn--danger admin-btn--icon-label"
+													className="admin-btn admin-btn--danger admin-btn--icon"
+													title="Eliminar producto"
+													aria-label="Eliminar producto"
 													onClick={() => requestDeactivate(item)}
 												>
 													<IconTrash />
-													Eliminar
 												</button>
 											) : (
 												<button
 													type="button"
 													className="admin-btn admin-btn--ghost admin-btn--icon-label"
+													title="Restaurar producto"
 													onClick={() => activate(item)}
 												>
 													Restaurar
@@ -445,10 +522,34 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 						? 'Vista previa'
 						: modal?.kind === 'edit'
 							? 'Editar producto'
-							: 'Nuevo producto'
+							: modal?.kind === 'stock_add'
+								? 'Agregar Stock'
+								: modal?.kind === 'stock_sub'
+									? 'Restar Stock'
+									: modal?.kind === 'stock_history'
+										? 'Historial de Stock'
+										: 'Nuevo producto'
 				}
-				kicker={modal?.kind === 'preview' ? 'Así lo verá el cliente' : undefined}
-				size={modal?.kind === 'preview' ? 'preview' : 'sheet'}
+				kicker={
+					modal?.kind === 'preview'
+						? 'Así lo verá el cliente'
+						: modal?.kind === 'stock_add'
+							? 'Reposición de inventario'
+							: modal?.kind === 'stock_sub'
+								? 'Descuento o merma de inventario'
+								: modal?.kind === 'stock_history'
+									? 'Trazabilidad y movimientos'
+									: undefined
+				}
+				size={
+					modal?.kind === 'preview'
+						? 'preview'
+						: modal?.kind === 'stock_history'
+							? 'lg'
+							: modal?.kind === 'stock_add' || modal?.kind === 'stock_sub'
+								? 'md'
+								: 'sheet'
+				}
 				onClose={() => setModal(null)}
 			>
 				{modal?.kind === 'create' ? (
@@ -482,6 +583,39 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 						productoId={modal.item.id}
 						atributos={atributos}
 						storeName={storeName}
+					/>
+				) : null}
+				{modal?.kind === 'stock_add' ? (
+					<StockAjusteModal
+						key={`add-${modal.item.id}`}
+						producto={modal.item}
+						modo="entrada"
+						onClose={() => setModal(null)}
+						onSuccess={(updated) => {
+							upsert(updated);
+							setModal(null);
+							showFlash('Stock agregado exitosamente.');
+						}}
+					/>
+				) : null}
+				{modal?.kind === 'stock_sub' ? (
+					<StockAjusteModal
+						key={`sub-${modal.item.id}`}
+						producto={modal.item}
+						modo="salida"
+						onClose={() => setModal(null)}
+						onSuccess={(updated) => {
+							upsert(updated);
+							setModal(null);
+							showFlash('Stock descontado exitosamente.');
+						}}
+					/>
+				) : null}
+				{modal?.kind === 'stock_history' ? (
+					<StockHistorialModal
+						key={`history-${modal.item.id}`}
+						producto={modal.item}
+						onClose={() => setModal(null)}
 					/>
 				) : null}
 			</FormModal>

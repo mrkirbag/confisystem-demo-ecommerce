@@ -10,5 +10,5 @@ const users = await listUsuarios();
 ---
 
 <AdminLayout title="Usuarios">
-	<UsuariosCrud client:load initialUsers={users} currentUserId={admin.id} />
+	<UsuariosCrud client:only="react" initialUsers={users} currentUserId={admin.id} />
 </AdminLayout>
