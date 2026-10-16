@@ -48,6 +48,7 @@ const tiktokHref = cleanTiktok
 	: null;
 
 const cleanDireccion = cleanString(brand.direccion);
+const cleanHorario = cleanString(brand.horario);
 const cleanTelefono = cleanString(brand.telefono);
 const cleanCorreo = cleanString(brand.correo);
 ---
@@ -56,7 +57,7 @@ const cleanCorreo = cleanString(brand.correo);
 	<div class="shead__bg-glow" aria-hidden="true"></div>
 
 	<div class="shead__inner">
-		<!-- Marca y Datos Principales -->
+		<!-- Marca y Datos Principales Centrados (Logo arriba, nombre debajo) -->
 		<div class="shead__brand">
 			<div class="shead__logo-wrapper">
 				{
@@ -79,6 +80,51 @@ const cleanCorreo = cleanString(brand.correo);
 				<h1 class="shead__name">{brand.nombre}</h1>
 			</div>
 		</div>
+
+		<!-- Información adicional: Horario y Ubicación a los lados con space-between -->
+		<div class="shead__meta-bar">
+			<div class="shead__meta-item shead__meta-item--hours">
+				<svg
+					class="shead__meta-icon"
+					viewBox="0 0 24 24"
+					width="17"
+					height="17"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="10" />
+					<polyline points="12 6 12 12 16 14" />
+				</svg>
+				<span class="shead__meta-text">
+					{cleanHorario || "Lun–Sáb 9:00 AM - 6:00 PM"}
+				</span>
+			</div>
+
+			<div class="shead__meta-item shead__meta-item--location">
+				<svg
+					class="shead__meta-icon"
+					viewBox="0 0 24 24"
+					width="17"
+					height="17"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+					<circle cx="12" cy="10" r="3" />
+				</svg>
+				<span class="shead__meta-text" title={cleanDireccion || "Tienda física y envíos a nivel nacional"}>
+					{cleanDireccion || "Envíos nacionales y retiro"}
+				</span>
+			</div>
+		</div>
 	</div>
 </header>
 
@@ -86,86 +132,96 @@ const cleanCorreo = cleanString(brand.correo);
 	.shead {
 		position: relative;
 		overflow: hidden;
-		padding: 1rem 1.5rem;
+		padding: 1.6rem 1.5rem 1.15rem;
 		background:
 			radial-gradient(
 				90% 120% at 85% 15%,
-				color-mix(in srgb, var(--accent) 14%, transparent),
+				color-mix(in srgb, var(--accent) 16%, transparent),
 				transparent 60%
 			),
 			linear-gradient(
 				135deg,
-				color-mix(in srgb, var(--accent) 8%, var(--bg)),
-				var(--bg) 70%
+				color-mix(in srgb, var(--accent) 10%, var(--bg)),
+				var(--bg) 75%
 			);
 		border-bottom: 1px solid var(--line);
 		scroll-margin-top: var(--store-bar-h);
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.shead__bg-glow {
 		position: absolute;
 		top: -40%;
 		right: -10%;
-		width: 420px;
-		height: 420px;
+		width: 450px;
+		height: 450px;
 		border-radius: 50%;
 		background: radial-gradient(
 			circle,
-			color-mix(in srgb, var(--accent) 18%, transparent) 0%,
+			color-mix(in srgb, var(--accent) 22%, transparent) 0%,
 			transparent 70%
 		);
-		filter: blur(45px);
+		filter: blur(55px);
 		pointer-events: none;
-		opacity: 0.7;
+		opacity: 0.75;
 	}
 
 	.shead__inner {
 		position: relative;
 		z-index: 1;
 		display: flex;
-		flex-wrap: wrap;
+		flex-direction: column;
 		align-items: center;
-		justify-content: space-between;
-		gap: 1.5rem;
-		max-width: 78rem;
+		justify-content: center;
+		gap: 0.85rem;
+		width: 100%;
+		max-width: 68rem;
 		margin: 0 auto;
 	}
 
+	/* Logo centrado con el nombre debajo */
 	.shead__brand {
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		gap: 1.15rem;
-		min-width: 0;
+		text-align: center;
+		gap: 0.55rem;
+		width: 100%;
 	}
 
 	.shead__logo-wrapper {
 		position: relative;
 		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.shead__logo {
-		width: 3.6rem;
-		height: 3.6rem;
-		border-radius: 1rem;
+		width: 4rem;
+		height: 4rem;
+		border-radius: 1.1rem;
 		object-fit: cover;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22), 0 0 0 1px color-mix(in srgb, var(--panel) 30%, transparent);
 		border: 2px solid color-mix(in srgb, var(--panel) 90%, transparent);
-		transition: transform 0.2s ease;
+		background: var(--panel);
+		transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 	}
 
 	.shead__logo:hover {
-		transform: scale(1.03);
+		transform: scale(1.05);
 	}
 
 	.shead__fallback {
 		display: grid;
 		place-items: center;
-		width: 3.6rem;
-		height: 3.6rem;
-		border-radius: 1rem;
+		width: 4rem;
+		height: 4rem;
+		border-radius: 1.1rem;
 		background: linear-gradient(
 			135deg,
 			var(--accent),
@@ -173,61 +229,122 @@ const cleanCorreo = cleanString(brand.correo);
 		);
 		color: var(--accent-ink);
 		font-family: var(--font-titulos);
-		font-size: 2.1rem;
-		font-weight: 800;
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+		font-size: 2.2rem;
+		font-weight: 850;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+		border: 2px solid color-mix(in srgb, #fff 15%, transparent);
 	}
 
 	.shead__text {
 		display: flex;
 		flex-direction: column;
-		gap: 0.35rem;
-		min-width: 0;
+		align-items: center;
+		gap: 0.2rem;
+		max-width: 90%;
 	}
 
 	.shead__name {
 		margin: 0;
 		font-family: var(--font-titulos);
-		font-size: clamp(1.8rem, 4vw, 2.7rem);
-		font-weight: 850;
+		font-size: clamp(1.6rem, 3.2vw, 2.25rem);
+		font-weight: 900;
 		letter-spacing: -0.035em;
 		line-height: 1.1;
 		color: #ffffff;
+		text-align: center;
 		text-wrap: balance;
-		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 	}
 
-	.shead__actions {
+	/* Ubicación y Horario uno al lado del otro con space-between */
+	.shead__meta-bar {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.65rem;
+		justify-content: space-between;
+		gap: 1.25rem;
+		width: 100%;
+		padding-top: 0.65rem;
+		border-top: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
+	}
+
+	.shead__meta-item {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		font-size: clamp(0.85rem, 2vw, 0.95rem);
+		font-weight: 500;
+		color: var(--muted);
+		line-height: 1.35;
+	}
+
+	.shead__meta-item--hours {
+		text-align: left;
+		justify-content: flex-start;
+		max-width: 48%;
+	}
+
+	.shead__meta-item--location {
+		text-align: right;
+		justify-content: flex-end;
+		max-width: 48%;
+	}
+
+	.shead__meta-icon {
+		flex-shrink: 0;
+		color: var(--accent);
+		opacity: 0.95;
+	}
+
+	.shead__meta-text {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	@media (max-width: 900px) {
 		.shead {
-			padding: clamp(0.35rem, 1.2vh, 0.65rem) 1rem;
+			padding: clamp(1.4rem, 3.5vh, 2rem) 1rem clamp(1.2rem, 3vh, 1.6rem);
+		}
+
+		.shead__inner {
+			gap: 1.15rem;
 		}
 
 		.shead__brand {
-			gap: 0.65rem;
+			gap: 0.75rem;
 		}
 
 		.shead__logo,
 		.shead__fallback {
-			width: 2.35rem;
-			height: 2.35rem;
-			font-size: 1.15rem;
-			border-radius: 0.65rem;
+			width: 4.25rem;
+			height: 4.25rem;
+			font-size: 2.2rem;
+			border-radius: 1rem;
 		}
 
 		.shead__name {
-			font-size: clamp(1.1rem, 3.4vw, 1.35rem);
+			font-size: clamp(1.45rem, 5.2vw, 1.85rem);
 		}
 
-		.shead__actions {
-			width: 100%;
-			margin-top: 0.2rem;
+		.shead__meta-bar {
+			padding-top: 0.75rem;
+			gap: 0.75rem;
+		}
+
+		.shead__meta-item {
+			font-size: 0.8rem;
+			gap: 0.4rem;
+		}
+
+		.shead__meta-icon {
+			width: 15px;
+			height: 15px;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.shead__meta-text {
+			font-size: 0.76rem;
 		}
 	}
 </style>

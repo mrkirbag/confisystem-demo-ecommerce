@@ -1,7 +1,6 @@
 ---
 import '../styles/admin/index.css';
 import AdminSidebarNav from '@/components/admin/AdminSidebarNav.astro';
-import CurrencySwitch from '@/components/landing/CurrencySwitch.astro';
 import {
 	getTiendaConfig,
 	getTiendaPersonalizacion,
@@ -63,7 +62,6 @@ const isPanel = variant === 'panel';
 							<span class="admin-mobile-bar__name">{storeName}</span>
 						</div>
 						<div class="admin-mobile-bar__actions">
-							<CurrencySwitch tasaBcv={config.tasa_bcv} tasaCop={config.tasa_cop} variant="admin" compact />
 							<button
 								type="button"
 								class="admin-burger"
@@ -93,9 +91,6 @@ const isPanel = variant === 'panel';
 								)}
 								<span class="admin-sidebar__name">{storeName}</span>
 							</a>
-							<div class="admin-sidebar__currency-wrap">
-								<CurrencySwitch tasaBcv={config.tasa_bcv} tasaCop={config.tasa_cop} variant="admin" />
-							</div>
 						</div>
 
 						<AdminSidebarNav pathname={pathname} />

@@ -156,7 +156,7 @@ const originalCount = productosTendencia.length;
 									</h2>
 									<p class="strending__subtitle">
 										Los favoritos de nuestros clientes con la
-										mejor calidad y disponibilidad inmediata.
+										mejor calidad y disponibilidad inmediata
 									</p>
 								</div>
 
@@ -1164,13 +1164,8 @@ const originalCount = productosTendencia.length;
 
 		if (slides.length > 0 && baseCount > 0) {
 			function getRowsCount(): number {
-				if (slides.length < 2) return 1;
-				const r0 = slides[0]?.getBoundingClientRect();
-				const r1 = slides[1]?.getBoundingClientRect();
-				if (r0 && r1 && Math.abs(r1.left - r0.left) < 6 && r1.top > r0.top + 10) {
-					return 2;
-				}
-				return window.innerWidth <= 900 ? 2 : 1;
+				// Siempre 1 fila de cards a la vez (1 sola card visible por columna en móvil y PC)
+				return 1;
 			}
 
 			function getBaseCols(): number {
@@ -2463,20 +2458,18 @@ const originalCount = productosTendencia.length;
 			padding-top: var(--store-bar-h);
 		}
 
-		/* COMPORTAMIENTO MÓVIL: Head + Ticker + Tendencias con scroll natural y espacio desahogado */
+		/* COMPORTAMIENTO MÓVIL: Head + Ticker + Tendencias con scroll natural y altura ajustada */
 		.shero {
-			min-height: calc(100vh - var(--store-bar-h));
-			min-height: calc(100dvh - var(--store-bar-h));
+			min-height: auto;
 			display: flex;
 			flex-direction: column;
-			justify-content: space-between;
 			flex-shrink: 0;
 			position: relative;
 		}
 
 		.shero :global(.shead) {
 			flex-shrink: 0;
-			padding: clamp(0.45rem, 1.5vh, 0.85rem) 1rem;
+			padding: clamp(1rem, 2.5vh, 1.6rem) 1rem;
 		}
 
 		.shero :global(.sticker) {
@@ -2484,31 +2477,28 @@ const originalCount = productosTendencia.length;
 		}
 
 		.shero .strending {
-			flex: 1 1 auto;
-			min-height: calc(100vh - var(--store-bar-h));
-			min-height: calc(100dvh - var(--store-bar-h));
+			flex: 0 0 auto;
+			min-height: auto;
 			box-sizing: border-box;
 			display: flex;
 			flex-direction: column;
-			justify-content: space-between;
-			padding: clamp(0.65rem, 1.8vh, 1rem) clamp(0.65rem, 3vw, 1rem);
+			padding: clamp(0.75rem, 2vh, 1.15rem) clamp(0.65rem, 3vw, 1rem);
 			border-bottom: 1px solid var(--line);
 			scroll-margin-top: var(--store-bar-h);
 		}
 
 		.shero .strending__inner {
-			flex: 1 1 auto;
+			flex: 0 0 auto;
 			min-height: 0;
 			display: flex;
 			flex-direction: column;
-			justify-content: space-between;
 			width: 100%;
-			height: 100%;
+			height: auto;
 		}
 
 		.shero .strending__head {
 			margin-top: 0.15rem;
-			margin-bottom: clamp(0.35rem, 1vh, 0.6rem);
+			margin-bottom: 0.65rem;
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
@@ -2555,53 +2545,52 @@ const originalCount = productosTendencia.length;
 		}
 
 		.strending__carousel {
-			flex: 1 1 auto;
+			flex: 0 0 auto;
 			min-height: 0;
 			display: flex;
 			align-items: stretch;
-			padding: 0.2rem 0;
+			padding: 0.25rem 0 0.5rem;
 			overflow: hidden;
 			touch-action: pan-y;
 		}
 
 		.strending__track {
-			display: grid !important;
-			grid-template-rows: repeat(2, 1fr) !important;
-			grid-auto-flow: column !important;
-			grid-auto-columns: clamp(160px, 46vw, 215px) !important;
-			gap: 0.6rem 0.75rem !important;
-			align-items: stretch;
-			height: 100%;
+			display: flex !important;
+			flex-direction: row !important;
+			align-items: stretch !important;
+			gap: 1.15rem !important;
+			height: auto;
 			min-height: 0;
 			width: max-content;
 		}
 
 		.strending__slide {
-			width: auto !important;
-			max-width: none !important;
-			flex: none !important;
+			flex: 0 0 clamp(240px, 72vw, 310px) !important;
+			width: clamp(240px, 72vw, 310px) !important;
+			max-width: 310px !important;
 			height: 100%;
-			min-height: 0;
+			align-self: stretch;
 			display: flex;
 			flex-direction: column;
 		}
 
 		.strending__slide :global(.scard) {
 			height: 100%;
-			min-height: 0;
+			flex: 1 1 auto;
 			display: flex;
 			flex-direction: column;
-			border-radius: 1rem;
+			border-radius: 1.25rem;
 			border: 1.5px solid color-mix(in srgb, var(--line) 75%, #16a34a);
-			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+			box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
 			background: var(--panel) !important;
 			overflow: hidden;
 		}
 
 		.strending__slide :global(.scard__media) {
 			flex: 0 0 auto;
-			aspect-ratio: 16 / 10 !important;
-			max-height: clamp(85px, 15vh, 135px) !important;
+			aspect-ratio: 4 / 5 !important;
+			min-height: 0 !important;
+			max-height: 290px !important;
 			background: var(--panel) !important;
 			width: 100%;
 			position: relative;
@@ -2609,7 +2598,7 @@ const originalCount = productosTendencia.length;
 		}
 
 		.strending__slide :global(.scard__img) {
-			padding: 0.25rem;
+			padding: 0.75rem;
 			object-fit: contain;
 		}
 
@@ -2619,12 +2608,12 @@ const originalCount = productosTendencia.length;
 			display: flex;
 			flex-direction: column;
 			justify-content: space-between;
-			padding: 0.5rem 0.65rem 0.6rem;
-			gap: 0.2rem;
+			padding: 0.85rem 1rem 0.95rem;
+			gap: 0.4rem;
 		}
 
 		.strending__slide :global(.scard__cat) {
-			font-size: 0.64rem;
+			font-size: 0.72rem;
 			margin: 0;
 			white-space: nowrap;
 			overflow: hidden;
@@ -2632,44 +2621,44 @@ const originalCount = productosTendencia.length;
 		}
 
 		.strending__slide :global(.scard__name) {
-			font-size: 0.8rem;
-			font-weight: 750;
-			line-height: 1.2;
+			font-size: 1.05rem;
+			font-weight: 800;
+			line-height: 1.25;
 			margin: 0;
 			display: -webkit-box;
 			-webkit-line-clamp: 2;
 			-webkit-box-orient: vertical;
 			overflow: hidden;
-			min-height: calc(0.8rem * 1.2 * 2);
+			min-height: calc(1.05rem * 1.25 * 2);
 		}
 
 		.strending__slide :global(.scard__foot) {
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-			gap: 0.35rem;
-			margin-top: auto;
+			gap: 0.6rem;
+			margin-top: 0.2rem;
 		}
 
 		.strending__slide :global(.scard__price) {
 			display: flex;
 			flex-direction: column;
-			gap: 0.1rem;
+			gap: 0.15rem;
 		}
 
 		.strending__slide :global(.scard__price-now) {
-			font-size: 0.95rem;
-			font-weight: 850;
+			font-size: 1.2rem;
+			font-weight: 900;
 			line-height: 1.1;
 		}
 
 		.strending__slide :global(.scard__price-old) {
-			font-size: 0.72rem;
+			font-size: 0.8rem;
 		}
 
 		.strending__slide :global(.scard__quick-add-btn) {
-			width: 2rem;
-			height: 2rem;
+			width: 2.5rem;
+			height: 2.5rem;
 			flex-shrink: 0;
 		}
 

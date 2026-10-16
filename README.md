@@ -179,6 +179,28 @@ Solo son **3 archivos** de configuración y los favicons:
 4. **`public/` (Logos y Favicons)**:
    Reemplaza los archivos de `favicon.ico`, `favicon.png`, `favicon.svg` y `favicon.webp` por los de la marca del nuevo cliente.
 
+5. **💱 Sistema Multimoneda y Tasas (USD / Bs / COP)**:
+   Por defecto, el switch multimoneda y la sección de tasas en el panel vienen **desactivados** (`false`) para clientes que solo cobran en USD.
+   Si un cliente específico requiere mostrar precios en varias monedas y gestionar sus tasas oficiales (BCV / COP):
+   - **Activar el Switch en la Tienda**:
+     En `src/pages/index.astro` (y `src/pages/landing/[slug].astro`), agrega `showCurrencySwitch={true}` al componente `<StoreNav />`:
+     ```astro
+     <StoreNav
+         storeName={storeName}
+         logoUrl={brand.logoUrl}
+         categorias={navCategorias}
+         tasaBcv={configuracion?.tasa_bcv || config.tasa_bcv}
+         tasaCop={configuracion?.tasa_cop || config.tasa_cop}
+         showCurrencySwitch={true}
+     />
+     ```
+   - **Activar la Sección de Tasas en el Admin**:
+     En `src/pages/admin/configuracion/tienda/index.astro`, agrega `showTasas={true}` al formulario `<TiendaConfigForm />`:
+     ```astro
+     <TiendaConfigForm values={values} logoUrl={logoUrl} showTasas={true} />
+     ```
+     Con esto aparecerá la tarjeta *"Sistema Multitasa"* en `/admin/configuracion/tienda` para que el cliente ingrese sus tasas (BCV y COP) y el catálogo haga las conversiones automáticamente.
+
 ---
 
 ## 🚀 Paso 6: Despliegue en Netlify

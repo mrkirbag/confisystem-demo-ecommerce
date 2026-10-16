@@ -224,12 +224,6 @@
 	gap: 0.85rem;
 }
 
-.admin-sidebar__currency-wrap {
-	width: 100%;
-	display: flex;
-	justify-content: flex-start;
-}
-
 .admin-sidebar__brand {
 	display: flex;
 	align-items: center;

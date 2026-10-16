@@ -31,7 +31,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   BARRA SUPERIOR / BREADCRUMBS
+   BARRA SUPERIOR / BREADCRUMBS (STICKY HEADER)
    -------------------------------------------------------------------------- */
 .pdp-nav-strip {
 	max-width: 1240px;
@@ -42,6 +42,20 @@
 	justify-content: space-between;
 	gap: 0.75rem 1rem;
 	font-size: 0.84rem;
+	position: sticky;
+	top: 0;
+	z-index: 20;
+	background: color-mix(in srgb, var(--color-fondo) 90%, transparent);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	padding: 0.65rem 0;
+}
+
+@media (max-width: 900px) {
+	.pdp-nav-strip {
+		top: var(--store-bar-h);
+		padding: 0.6rem 0;
+	}
 }
 
 .pdp-back-btn {
@@ -183,7 +197,7 @@
    -------------------------------------------------------------------------- */
 .pdp-gallery-card {
 	position: sticky;
-	top: 1.5rem;
+	top: 3.8rem;
 	align-self: start;
 	z-index: 5;
 	box-sizing: border-box;
@@ -209,7 +223,7 @@
 }
 
 .pdp-box-pad {
-	padding: clamp(1.2rem, 2.5vw, 2rem);
+	padding: .75rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -267,7 +281,7 @@
 
 .pdp-thumb-item {
 	width: 4.5rem;
-	height: 4.5rem;
+	height: 6.5rem;
 	border-radius: 0.65rem;
 	border: 2px solid transparent;
 	background: var(--color-secundario);
@@ -302,8 +316,8 @@
 	flex: 1;
 	min-width: 0;
 	aspect-ratio: 1 / 1;
-	min-height: 380px;
-	max-height: 520px;
+	min-height: calc(480px - 1rem);
+	max-height: calc(680px - 1rem);
 	border-radius: 0.85rem;
 	border: none;
 	background: var(--color-secundario);
@@ -316,13 +330,14 @@
 
 @media (min-width: 861px) {
 	.pdp-hero-container {
-		max-height: min(520px, calc(100vh - 7rem));
+		min-height: calc(520px - 1rem);
+		max-height: min(calc(680px - 1rem), calc(100vh - 7rem));
 	}
 }
 
 @media (max-width: 640px) {
 	.pdp-hero-container {
-		min-height: 300px;
+		min-height: calc(320px - 1rem);
 	}
 }
 

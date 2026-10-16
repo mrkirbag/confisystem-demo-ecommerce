@@ -1578,63 +1578,6 @@ const productJsonLd = {
 			});
 		}
 
-		// Mantener la imagen fija en PC incluso al final del scroll
-		const galleryCard = qs("[data-pdp-gallery-card]", container);
-		const mainGrid = qs(".pdp-main-grid", container);
-
-		let cardLeft = 0;
-		let cardWidth = 0;
-
-		function updateCardDims() {
-			if (!galleryCard || window.innerWidth <= 860) return;
-			if (galleryCard.style.position !== "fixed") {
-				const rect = galleryCard.getBoundingClientRect();
-				cardLeft = rect.left;
-				cardWidth = rect.width;
-			} else if (mainGrid) {
-				cardLeft = mainGrid.getBoundingClientRect().left;
-			}
-		}
-
-		function syncStickyGallery() {
-			if (!galleryCard || !mainGrid) return;
-
-			if (window.innerWidth <= 860) {
-				galleryCard.style.position = "";
-				galleryCard.style.top = "";
-				galleryCard.style.left = "";
-				galleryCard.style.width = "";
-				return;
-			}
-
-			const gridRect = mainGrid.getBoundingClientRect();
-			const cardHeight = galleryCard.offsetHeight;
-			const stickyTop = 24; // 1.5rem
-
-			// Si el final del grid empujaría la imagen hacia arriba, fijarla permanentemente en pantalla
-			if (gridRect.bottom <= stickyTop + cardHeight) {
-				if (!cardLeft || !cardWidth) updateCardDims();
-				galleryCard.style.position = "fixed";
-				galleryCard.style.top = stickyTop + "px";
-				galleryCard.style.left = cardLeft + "px";
-				galleryCard.style.width = cardWidth + "px";
-			} else {
-				galleryCard.style.position = "";
-				galleryCard.style.top = "";
-				galleryCard.style.left = "";
-				galleryCard.style.width = "";
-				updateCardDims();
-			}
-		}
-
-		window.addEventListener("scroll", syncStickyGallery, { passive: true });
-		window.addEventListener("resize", () => {
-			updateCardDims();
-			syncStickyGallery();
-		}, { passive: true });
-		updateCardDims();
-		syncStickyGallery();
-
 		// Sincronizar estado inicial
 		updateVariant();
 

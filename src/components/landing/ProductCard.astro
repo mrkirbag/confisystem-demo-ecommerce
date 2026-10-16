@@ -328,14 +328,8 @@ const searchKeywords = `${producto.nombre} ${catLabel}`.toLowerCase();
 	}
 
 	.scard__price.is-offer .scard__price-now {
-		color: var(--accent, #0f766e);
-		-webkit-text-stroke: 3px #000;
-		paint-order: stroke fill;
-		text-shadow:
-			-1px -1px 0 #000,
-			1px -1px 0 #000,
-			-1px 1px 0 #000,
-			1px 1px 0 #000;
+		color: var(--ink-on-panel, var(--ink));
+		text-shadow: 0 1px 4px color-mix(in srgb, var(--accent, #0f766e) 30%, transparent);
 	}
 
 	.scard__foot {

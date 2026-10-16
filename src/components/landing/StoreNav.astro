@@ -21,6 +21,7 @@ interface Props {
 	ofertasCount?: number;
 	tasaBcv?: number | null;
 	tasaCop?: number | null;
+	showCurrencySwitch?: boolean;
 }
 
 const {
@@ -30,6 +31,7 @@ const {
 	ofertasCount = 0,
 	tasaBcv = null,
 	tasaCop = null,
+	showCurrencySwitch = false,
 } = Astro.props;
 const initial = storeName.trim().charAt(0).toUpperCase() || "D";
 ---
@@ -47,7 +49,11 @@ const initial = storeName.trim().charAt(0).toUpperCase() || "D";
 	</a>
 
 	<div class="snav__bar-actions">
-		<CurrencySwitch tasaBcv={tasaBcv} tasaCop={tasaCop} variant="storefront" compact />
+		{
+			showCurrencySwitch && (
+				<CurrencySwitch tasaBcv={tasaBcv} tasaCop={tasaCop} variant="storefront" compact />
+			)
+		}
 		<button
 			type="button"
 			class="snav__burger"
@@ -77,9 +83,13 @@ const initial = storeName.trim().charAt(0).toUpperCase() || "D";
 		<a class="snav__brand" href="#top" aria-label="Ir al inicio">
 			<span class="snav__name">{storeName}</span>
 		</a>
-		<div class="snav__currency-wrap">
-			<CurrencySwitch tasaBcv={tasaBcv} tasaCop={tasaCop} variant="storefront" />
-		</div>
+		{
+			showCurrencySwitch && (
+				<div class="snav__currency-wrap">
+					<CurrencySwitch tasaBcv={tasaBcv} tasaCop={tasaCop} variant="storefront" />
+				</div>
+			)
+		}
 	</div>
 
 	<nav class="snav__nav" aria-label="Catálogo">
@@ -528,23 +538,9 @@ const initial = storeName.trim().charAt(0).toUpperCase() || "D";
 			color: var(--ink-on-panel, var(--ink));
 		}
 
-		.snav__bar-logo {
-			width: 2rem;
-			height: 2rem;
-			border-radius: 0.55rem;
-			object-fit: cover;
-		}
-
+		.snav__bar-logo,
 		.snav__bar-fallback {
-			display: grid;
-			place-items: center;
-			width: 2rem;
-			height: 2rem;
-			border-radius: 0.55rem;
-			background: var(--accent);
-			color: var(--accent-ink);
-			font-weight: 800;
-			font-size: 0.9rem;
+			display: none !important;
 		}
 
 		.snav__bar-name {
