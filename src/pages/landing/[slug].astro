@@ -1080,9 +1080,14 @@ const productJsonLd = {
 	const qsa = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
 
 	try {
-		const saved = localStorage.getItem("demo_tienda_moneda_activa");
-		if (saved === "USD" || saved === "VES" || saved === "COP") {
-			state.currentMoneda = saved;
+		const sw = document.querySelector("[data-currency-switch]");
+		if (sw) {
+			const saved = localStorage.getItem("demo_tienda_moneda_activa");
+			if (saved === "USD" || saved === "VES" || saved === "COP") {
+				state.currentMoneda = saved;
+			}
+		} else {
+			state.currentMoneda = "USD";
 		}
 	} catch {
 		// ignore
@@ -1105,10 +1110,11 @@ const productJsonLd = {
 				maximumFractionDigits: 0,
 			}).format(enCop) + " COP";
 		}
-		return new Intl.NumberFormat("es-VE", {
+		return new Intl.NumberFormat("en-US", {
 			style: "currency",
 			currency: "USD",
 			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
 		}).format(base);
 	};
 

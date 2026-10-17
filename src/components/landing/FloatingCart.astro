@@ -631,16 +631,18 @@ const {
 		let currentTasaCop = 0;
 
 		try {
-			const saved = localStorage.getItem("demo_tienda_moneda_activa");
-			if (saved === "USD" || saved === "VES" || saved === "COP") {
-				currentMoneda = saved;
-			}
 			const sw = document.querySelector<HTMLElement>(
 				"[data-currency-switch]",
 			);
 			if (sw) {
+				const saved = localStorage.getItem("demo_tienda_moneda_activa");
+				if (saved === "USD" || saved === "VES" || saved === "COP") {
+					currentMoneda = saved;
+				}
 				currentTasaBcv = Number(sw.dataset.tasaBcv) || 0;
 				currentTasaCop = Number(sw.dataset.tasaCop) || 0;
+			} else {
+				currentMoneda = "USD";
 			}
 		} catch {
 			// ignore

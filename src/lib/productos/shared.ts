@@ -111,10 +111,11 @@ export function formatPrecioConMoneda(
 			' COP'
 		);
 	}
-	return new Intl.NumberFormat('es-VE', {
+	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
 		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
 	}).format(base);
 }
 

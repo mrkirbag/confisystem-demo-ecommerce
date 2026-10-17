@@ -1511,10 +1511,11 @@ const originalCount = productosTendencia.length;
 				maximumFractionDigits: 0,
 			}).format(enCop) + " COP";
 		}
-		return new Intl.NumberFormat("es-VE", {
+		return new Intl.NumberFormat("en-US", {
 			style: "currency",
 			currency: "USD",
 			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
 		}).format(base);
 	}
 
@@ -1566,14 +1567,21 @@ const originalCount = productosTendencia.length;
 		}
 	});
 
-	// Al cargar la página, chequear si ya había una moneda guardada
+	// Al cargar la página, solo sincronizar moneda guardada si el switch está presente y habilitado en la UI
 	try {
-		const savedCurrency = localStorage.getItem("demo_tienda_moneda_activa");
-		if (savedCurrency && savedCurrency !== "USD") {
-			const sw = document.querySelector<HTMLElement>("[data-currency-switch]");
-			const bcv = Number(sw?.dataset.tasaBcv) || 0;
-			const cop = Number(sw?.dataset.tasaCop) || 0;
-			applyCurrencyToCards(savedCurrency, bcv, cop);
+		const sw = document.querySelector<HTMLElement>("[data-currency-switch]");
+		if (sw) {
+			const savedCurrency = localStorage.getItem("demo_tienda_moneda_activa");
+			if (savedCurrency && savedCurrency !== "USD") {
+				const bcv = Number(sw.dataset.tasaBcv) || 0;
+				const cop = Number(sw.dataset.tasaCop) || 0;
+				applyCurrencyToCards(savedCurrency, bcv, cop);
+			}
+		} else {
+			// Si el switch está deshabilitado / oculto, garantizar que todo esté en USD
+			try {
+				localStorage.removeItem("demo_tienda_moneda_activa");
+			} catch {}
 		}
 	} catch {
 		// ignore
