@@ -53,7 +53,7 @@ El panel administrativo cuenta con una barra de navegación lateral (en computad
 
 En la parte superior del menú lateral y en la cabecera móvil encontrará el **Selector de Moneda**.
 
-* Permite previsualizar los montos en **Dólares estadounidenses (USD / $)**, **Bolívares (VES / Bs.)** calculados a tasa oficial BCV, o **Pesos Colombianos (COP / $)**.
+* Permite previsualizar los montos en **Dólares estadounidenses (USD / $)**, **Bolívares (VES / Bs.)** calculados a la tasa de cambio establecida por la tienda, o **Pesos Colombianos (COP / $)**.
 * Las tasas de cambio oficiales se configuran en **Configuración > Tienda**. Todas las conversiones se efectúan de forma automática en tiempo real tanto en la administración como en la vitrina pública.
 
 ---
@@ -165,7 +165,7 @@ El módulo **Configuración** permite parametrizar las bases del sistema:
 * **Ruta**: `/admin/configuracion/tienda`
 * **Información Comercial**: Nombre oficial, RIF / NIT, teléfonos de contacto, correo y dirección física.
 * **Redes y Mensajería**: Enlaces a WhatsApp, Instagram y TikTok que alimentan los accesos directos de la tienda.
-* **Tasas de Cambio**: Configuración del valor de la tasa oficial BCV (Bs.) y tasa COP ($).
+* **Tasas de Cambio**: Configuración del valor de la tasa del dólar a Bolívares (Bs.) y tasa COP ($).
 * **Logotipo**: Carga y actualización de la imagen institucional visible en la cabecera, pie de página y favicons.
 
 ### 8.2. Identidad Visual y Personalización

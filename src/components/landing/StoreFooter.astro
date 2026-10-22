@@ -1,4 +1,6 @@
 ---
+import { buildWhatsAppLink } from "@/lib/whatsapp";
+
 interface BrandInfo {
 	nombre: string;
 	logoUrl: string | null;
@@ -37,9 +39,10 @@ const cleanWhatsapp = cleanString(brand.whatsapp);
 const cleanInstagram = cleanString(brand.instagram);
 const cleanTiktok = cleanString(brand.tiktok);
 
-const waHref = cleanWhatsapp
-	? `https://wa.me/${cleanWhatsapp.replace(/[^\d+]/g, "")}?text=${encodeURIComponent(`Hola, me gustaría más información sobre ${brand.nombre}.`)}`
-	: null;
+const waHref = buildWhatsAppLink(
+	cleanWhatsapp,
+	`Hola, me gustaría más información sobre ${brand.nombre}.`
+);
 
 const instagramHref = cleanInstagram
 	? cleanInstagram.startsWith("http://") ||

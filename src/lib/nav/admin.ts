@@ -1,4 +1,5 @@
 export type AdminNavIcon =
+	| 'dashboard'
 	| 'catalogo'
 	| 'categorias'
 	| 'subcategorias'
@@ -30,6 +31,13 @@ export type AdminNavGroup = {
 export type AdminNavEntry = AdminNavLeaf | AdminNavGroup;
 
 export const ADMIN_NAV: AdminNavEntry[] = [
+	{
+		type: 'link',
+		href: '/admin',
+		label: 'Dashboard',
+		kicker: 'Panel Principal',
+		icon: 'dashboard',
+	},
 	{
 		type: 'group',
 		id: 'catalogo',

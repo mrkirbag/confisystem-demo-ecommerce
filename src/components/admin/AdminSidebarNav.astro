@@ -5,6 +5,7 @@ import {
 	ClipboardList,
 	FolderTree,
 	Layers3,
+	LayoutDashboard,
 	Package,
 	Palette,
 	Settings,
@@ -12,7 +13,6 @@ import {
 	Store,
 	Tags,
 	Users,
-	type LucideIcon,
 } from 'lucide-react';
 import {
 	getAdminNav,
@@ -28,7 +28,10 @@ interface Props {
 const { pathname } = Astro.props;
 const nav = getAdminNav();
 
-const ICONS: Record<AdminNavIcon, LucideIcon> = {
+const ChevronDownIcon = ChevronDown as any;
+
+const ICONS: Record<AdminNavIcon, any> = {
+	dashboard: LayoutDashboard,
 	catalogo: Layers3,
 	categorias: Tags,
 	subcategorias: FolderTree,
@@ -44,9 +47,10 @@ const ICONS: Record<AdminNavIcon, LucideIcon> = {
 
 const iconProps = {
 	className: 'admin-sidebar__icon',
+	class: 'admin-sidebar__icon',
 	size: 18,
 	strokeWidth: 1.9,
-	'aria-hidden': 'true',
+	'aria-hidden': true,
 };
 ---
 
@@ -85,8 +89,9 @@ const iconProps = {
 							<GroupIcon {...iconProps} />
 							<span class="admin-sidebar__label">{entry.label}</span>
 						</span>
-						<ChevronDown
+						<ChevronDownIcon
 							className="admin-sidebar__chevron"
+							class="admin-sidebar__chevron"
 							size={16}
 							strokeWidth={2}
 							aria-hidden="true"

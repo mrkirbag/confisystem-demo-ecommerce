@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from '../db';
+import { formatWhatsAppNumber } from '../whatsapp';
 
 export type TiendaConfig = {
 	id: string;
@@ -142,7 +143,7 @@ export function sanitizeTiendaInput(raw: Record<string, unknown>): TiendaConfigu
 		horario: asText(raw.horario),
 		instagram: asText(raw.instagram),
 		tiktok: asText(raw.tiktok),
-		whatsapp: asText(raw.whatsapp)?.replace(/[^\d+]/g, '') ?? null,
+		whatsapp: formatWhatsAppNumber(asText(raw.whatsapp)) || null,
 		logo_url: asText(raw.logo_url),
 		google_analytics: asText(raw.google_analytics),
 		tasa_bcv: asNumber(raw.tasa_bcv),

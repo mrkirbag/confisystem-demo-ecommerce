@@ -22,6 +22,7 @@ import {
 	googleFontsHref,
 	themeStyleVars,
 } from "@/lib/tienda";
+import { formatWhatsAppNumber, buildWhatsAppLink } from "@/lib/whatsapp";
 
 export const prerender = false;
 
@@ -212,18 +213,20 @@ const catLabel = producto.subcategoria_nombre
 	? `${producto.categoria_nombre} / ${producto.subcategoria_nombre}`
 	: producto.categoria_nombre;
 
-const waNumber = brand.whatsapp;
+const waNumber = formatWhatsAppNumber(brand.whatsapp);
 const buildWaText = (nombre: string, combo: string, cantidad: number) => {
 	const suffix = combo && combo !== COMBINACION_UNICA ? ` (${combo})` : "";
 	return `Hola, me interesa comprar: ${nombre}${suffix} x${cantidad}`;
 };
-const waHref = waNumber
-	? `https://wa.me/${waNumber}?text=${encodeURIComponent(buildWaText(producto.nombre, combinacion, 1))}`
-	: null;
+const waHref = buildWhatsAppLink(
+	waNumber,
+	buildWaText(producto.nombre, combinacion, 1)
+);
 
-const waAskHref = waNumber
-	? `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hola, tengo una pregunta sobre: ${producto.nombre}`)}`
-	: null;
+const waAskHref = buildWhatsAppLink(
+	waNumber,
+	`Hola, tengo una pregunta sobre: ${producto.nombre}`
+);
 
 const pdpData = {
 	id: producto.id,
@@ -1222,8 +1225,29 @@ const productJsonLd = {
 		};
 	}
 
+	function cleanWaDigits(phone) {
+		if (!phone) return "";
+		let digits = String(phone).replace(/\D/g, "");
+		if (!digits) return "";
+		if (digits.startsWith("00")) digits = digits.slice(2);
+		if (digits.startsWith("580") && (digits.length === 12 || digits.length === 13)) {
+			digits = "58" + digits.slice(3);
+		}
+		if (digits.length === 11 && digits.startsWith("0")) {
+			digits = "58" + digits.slice(1);
+		}
+		if (
+			digits.length === 10 &&
+			["414", "424", "412", "416", "426"].some((p) => digits.startsWith(p))
+		) {
+			digits = "58" + digits;
+		}
+		return digits;
+	}
+
 	function getWaLink(nombre, combo, qty) {
-		if (!state.data.whatsapp) return null;
+		const cleanPhone = cleanWaDigits(state.data.whatsapp);
+		if (!cleanPhone) return null;
 		const suffix =
 			combo && combo !== state.data.combinacionUnica
 				? " (" + combo + ")"
@@ -1232,7 +1256,7 @@ const productJsonLd = {
 			"Hola, me interesa comprar: " + nombre + suffix + " x" + qty;
 		return (
 			"https://wa.me/" +
-			state.data.whatsapp +
+			cleanPhone +
 			"?text=" +
 			encodeURIComponent(text)
 		);
@@ -1387,8 +1411,8 @@ const productJsonLd = {
 			const v = getCurrentVariant();
 			const stock = v ? Number(v.stock || 0) : 0;
 			if (stock <= 0) {
-				const toast = document.querySelector<HTMLElement>('[data-confi-toast]');
-				const toastText = document.querySelector<HTMLElement>('[data-confi-toast-text]');
+				const toast = document.querySelector('[data-confi-toast]');
+				const toastText = document.querySelector('[data-confi-toast-text]');
 				if (toast && toastText) {
 					toastText.textContent = "⚠️ Sin stock disponible para esta selección.";
 					toast.classList.add("is-shown");
