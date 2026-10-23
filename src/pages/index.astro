@@ -1615,30 +1615,13 @@ const originalCount = productosTendencia.length;
 		position: relative;
 		overflow: hidden;
 		padding: 2rem clamp(1rem, 3.5vw, 2.5rem) 1.65rem;
-		background:
-			radial-gradient(
-				90% 120% at 50% 0%,
-				color-mix(in srgb, #16a34a 10%, transparent),
-				transparent 75%
-			),
-			color-mix(in srgb, var(--panel) 40%, var(--bg));
+		background: var(--bg);
 		border-bottom: 1px solid var(--line);
 		scroll-margin-top: 0;
 	}
 
 	.strending__glow {
-		position: absolute;
-		top: -10%;
-		left: 30%;
-		width: 480px;
-		height: 280px;
-		background: radial-gradient(
-			circle,
-			color-mix(in srgb, #16a34a 18%, transparent) 0%,
-			transparent 70%
-		);
-		filter: blur(55px);
-		pointer-events: none;
+		display: none;
 	}
 
 	.strending__inner {

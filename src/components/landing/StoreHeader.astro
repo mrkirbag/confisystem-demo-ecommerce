@@ -57,8 +57,6 @@ const cleanCorreo = cleanString(brand.correo);
 ---
 
 <header class="shead" id="top">
-	<div class="shead__bg-glow" aria-hidden="true"></div>
-
 	<div class="shead__inner">
 		<!-- Marca y Datos Principales Centrados (Logo arriba, nombre debajo) -->
 		<div class="shead__brand">
@@ -136,17 +134,7 @@ const cleanCorreo = cleanString(brand.correo);
 		position: relative;
 		overflow: hidden;
 		padding: 1.6rem 1.5rem 1.15rem;
-		background:
-			radial-gradient(
-				90% 120% at 85% 15%,
-				color-mix(in srgb, var(--accent) 16%, transparent),
-				transparent 60%
-			),
-			linear-gradient(
-				135deg,
-				color-mix(in srgb, var(--accent) 10%, var(--bg)),
-				var(--bg) 75%
-			);
+		background: var(--bg);
 		border-bottom: 1px solid var(--line);
 		scroll-margin-top: var(--store-bar-h);
 		display: flex;
@@ -154,23 +142,6 @@ const cleanCorreo = cleanString(brand.correo);
 		align-items: center;
 		width: 100%;
 		box-sizing: border-box;
-	}
-
-	.shead__bg-glow {
-		position: absolute;
-		top: -40%;
-		right: -10%;
-		width: 450px;
-		height: 450px;
-		border-radius: 50%;
-		background: radial-gradient(
-			circle,
-			color-mix(in srgb, var(--accent) 22%, transparent) 0%,
-			transparent 70%
-		);
-		filter: blur(55px);
-		pointer-events: none;
-		opacity: 0.75;
 	}
 
 	.shead__inner {
@@ -225,11 +196,7 @@ const cleanCorreo = cleanString(brand.correo);
 		width: 4rem;
 		height: 4rem;
 		border-radius: 1.1rem;
-		background: linear-gradient(
-			135deg,
-			var(--accent),
-			color-mix(in srgb, var(--accent) 80%, #000)
-		);
+		background: var(--accent);
 		color: var(--accent-ink);
 		font-family: var(--font-titulos);
 		font-size: 2.2rem;
@@ -253,10 +220,9 @@ const cleanCorreo = cleanString(brand.correo);
 		font-weight: 900;
 		letter-spacing: -0.035em;
 		line-height: 1.1;
-		color: #ffffff;
+		color: var(--ink);
 		text-align: center;
 		text-wrap: balance;
-		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 	}
 
 	/* Ubicación y Horario uno al lado del otro con space-between */
