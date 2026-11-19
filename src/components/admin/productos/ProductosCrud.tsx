@@ -242,7 +242,7 @@ export default function ProductosCrud({ initialItems, categorias, subcategorias,
 										: 'productos'}
 						</span>
 					</p>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+					<div className="admin-toolbar__actions">
 						<button
 							type="button"
 							className="admin-btn admin-btn--ghost admin-btn--icon-label"

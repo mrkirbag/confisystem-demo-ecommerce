@@ -186,6 +186,8 @@
 	position: sticky;
 	top: 0;
 	height: 100vh;
+	height: 100dvh;
+	max-height: 100dvh;
 	display: flex;
 	flex-direction: column;
 	border-right: 1px solid var(--line);
@@ -386,7 +388,7 @@
 /* Abajo: logout fijo */
 .admin-sidebar__foot {
 	flex-shrink: 0;
-	padding: 0.85rem 0.9rem 1.1rem;
+	padding: 0.85rem 0.9rem max(1.1rem, env(safe-area-inset-bottom));
 	border-top: 1px solid var(--line);
 	background: var(--panel);
 	display: flex;
